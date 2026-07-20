@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Family Recipes
 
-## Getting Started
+A private recipe app: list recipes and add them four ways — by hand, from a URL,
+from a photo, or by voice (the last three via AI extraction through OpenRouter).
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, TypeScript, Turbopack) + **Tailwind CSS v4**
+- **SQLite** database via **Prisma 6** (`prisma/dev.db`)
+- AI extraction via **OpenRouter** (added in Phase 2)
+
+## Requirements
+
+- **Node.js 20.9+** (this machine uses [nvm](https://github.com/nvm-sh/nvm) — run
+  `nvm use 20` first, since the system Node is too old).
+
+## Running locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+nvm use 20            # ensure Node 20+
+npm install           # first time only
+npx prisma migrate dev # first time / after schema changes — creates prisma/dev.db
+npm run dev           # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment variables (`.env`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+DATABASE_URL="file:./dev.db"                              # already set
+OPENROUTER_API_KEY="sk-or-v1-..."                         # your OpenRouter key
+OPENROUTER_MODEL="google/gemma-4-31b-it:free"             # free, vision-capable
+OPENROUTER_MODEL_FALLBACK="nvidia/nemotron-nano-12b-v2-vl:free"  # used if primary is busy
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Free models only** (project rule). They are rate-limited (a few requests/min),
+so the extractor retries on 429 and falls back to the second model.
 
-## Learn More
+`.env*` is gitignored. So is `prisma/dev.db` (the recipes) and `public/uploads`
+(photos) — **these are backed up separately, never committed.**
 
-To learn more about Next.js, take a look at the following resources:
+## Status
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- ✅ **Phase 0** — project + database
+- ✅ **Phase 1** — manual add, recipe list + detail, edit, soft-delete to Trash + restore
+- ✅ **Phase 2** — OpenRouter extraction (`lib/extractRecipe.ts`) + URL import
+  (`/recipes/import/url`), including downloading the recipe's image. Note: some
+  big sites (AllRecipes, etc.) block server-side fetches with a 403 — photo
+  import covers those.
+- ✅ **Phase 3** — photo import (`/recipes/import/photo`): take/upload a photo,
+  a vision model reads it, the photo is saved as the recipe's image.
+- ✅ **Phase 4** — voice import (`/recipes/import/voice`): record with the
+  browser's Web Speech API (free, Chrome/Safari), edit the transcript, extract.
+  Doubles as a paste-text importer. All four add-methods are now done.
+- ⬜ **Later** — AI-generated image to replace the placeholder; deploy + backups
+  + single-password site gate (Phase 5)
+- ⬜ **Phase 5** — deploy, backups, single-password site gate
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Notes
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Login is deferred: there is one seeded owner (`lib/user.ts`) and every recipe is
+  attached to it. The schema is already multi-user (`userId`), so adding logins later
+  needs no data migration.
+- Deleting a recipe is a **soft delete** (`deletedAt`) — it goes to Trash and can be
+  restored. "Delete forever" in Trash is the only hard delete.

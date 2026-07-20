@@ -1,65 +1,74 @@
-import Image from "next/image";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { getDefaultUserId } from "@/lib/user";
+import { parseList } from "@/lib/recipes";
+import RecipeImage from "@/components/RecipeImage";
 
-export default function Home() {
+// Always render fresh from the database.
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const userId = await getDefaultUserId();
+  const recipes = await prisma.recipe.findMany({
+    where: { userId, deletedAt: null },
+    orderBy: { createdAt: "desc" },
+  });
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-6">
+      <div className="flex items-end justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Recipes</h1>
+        <span className="text-sm text-stone-500">
+          {recipes.length} {recipes.length === 1 ? "recipe" : "recipes"}
+        </span>
+      </div>
+
+      {recipes.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-stone-300 p-10 text-center dark:border-stone-700">
+          <p className="text-stone-600 dark:text-stone-400">
+            No recipes yet.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/recipes/new"
+            className="mt-4 inline-block rounded-lg bg-amber-600 px-4 py-2 font-medium text-white hover:bg-amber-700"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Add your first recipe
+          </Link>
         </div>
-      </main>
+      ) : (
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {recipes.map((recipe) => {
+            const ingredientCount = parseList(recipe.ingredients).length;
+            return (
+              <li key={recipe.id}>
+                <Link
+                  href={`/recipes/${recipe.id}`}
+                  className="block h-full overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition hover:border-amber-300 hover:shadow-md dark:border-stone-800 dark:bg-stone-900"
+                >
+                  <RecipeImage
+                    src={recipe.imagePath}
+                    alt={recipe.title}
+                    className="aspect-video w-full"
+                  />
+                  <div className="p-4">
+                  <h2 className="font-semibold">{recipe.title}</h2>
+                  {recipe.description && (
+                    <p className="mt-1 line-clamp-2 text-sm text-stone-600 dark:text-stone-400">
+                      {recipe.description}
+                    </p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-stone-500">
+                    <span>{ingredientCount} ingredients</span>
+                    {recipe.cookTime && <span>· {recipe.cookTime}</span>}
+                    {recipe.servings && <span>· serves {recipe.servings}</span>}
+                  </div>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

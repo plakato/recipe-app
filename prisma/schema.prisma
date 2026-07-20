@@ -1,0 +1,45 @@
+// Recipe app database schema.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// A user owns recipes. Login is deferred: we seed exactly one default user for
+// now and attach every recipe to it. Turning on login later just lets more
+// User rows be created — no migration needed.
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String? // bcrypt hash — null until login is enabled
+  name      String?
+  recipes   Recipe[]
+  createdAt DateTime @default(now())
+}
+
+model Recipe {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  title        String
+  description  String?
+  ingredients  String // JSON-encoded string[] — e.g. ["2 cups flour","1 tsp salt"]
+  instructions String // JSON-encoded string[] — ordered steps
+  servings     String?
+  prepTime     String?
+  cookTime     String?
+  sourceType   String    @default("manual") // "url" | "photo" | "voice" | "manual"
+  sourceUrl    String?
+  imagePath    String? // stored photo path, if any
+  deletedAt    DateTime? // soft delete — set instead of erasing (Trash)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([deletedAt])
+}
