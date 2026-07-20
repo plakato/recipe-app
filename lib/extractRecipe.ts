@@ -160,26 +160,47 @@ async function runExtraction(messages: ChatMessage[]): Promise<RecipeDraft> {
     : new Error("Recipe extraction failed.");
 }
 
+// A hint telling the model what language the recipe is in improves accuracy,
+// especially for handwriting. e.g. "Slovak", "Czech".
+function languageLine(languageHint?: string): string {
+  return languageHint
+    ? ` The recipe is written in ${languageHint}; read it carefully in that language.`
+    : "";
+}
+
 // Extract a recipe from plain text (used by URL and voice import).
-export function extractRecipeFromText(source: string): Promise<RecipeDraft> {
+export function extractRecipeFromText(
+  source: string,
+  languageHint?: string,
+): Promise<RecipeDraft> {
   return runExtraction([
     { role: "system", content: SYSTEM_PROMPT },
     {
       role: "user",
-      content: `Extract the recipe from the following material:\n\n${source}`,
+      content: `Extract the recipe from the following material.${languageLine(
+        languageHint,
+      )}\n\n${source}`,
     },
   ]);
 }
 
 // Extract a recipe from an image (used by photo import in Phase 3).
 // imageDataUrl is a data: URL (e.g. "data:image/jpeg;base64,....").
-export function extractRecipeFromImage(imageDataUrl: string): Promise<RecipeDraft> {
+export function extractRecipeFromImage(
+  imageDataUrl: string,
+  languageHint?: string,
+): Promise<RecipeDraft> {
   return runExtraction([
     { role: "system", content: SYSTEM_PROMPT },
     {
       role: "user",
       content: [
-        { type: "text", text: "Extract the recipe shown in this image." },
+        {
+          type: "text",
+          text: `Extract the recipe shown in this image.${languageLine(
+            languageHint,
+          )} Transcribe printed or handwritten text as accurately as you can.`,
+        },
         { type: "image_url", image_url: { url: imageDataUrl } },
       ],
     },

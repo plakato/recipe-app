@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import RecipeForm from "@/components/RecipeForm";
 import { createRecipe, importRecipeFromText } from "@/app/actions";
 import type { RecipeDraft } from "@/lib/recipes";
@@ -20,8 +21,9 @@ function getRecognitionCtor(): (new () => Recognition) | null {
 }
 
 const LANGS = [
-  { code: "cs-CZ", label: "Čeština" },
-  { code: "en-US", label: "English" },
+  { code: "sk-SK", label: "Slovenčina", hint: "Slovak" },
+  { code: "cs-CZ", label: "Čeština", hint: "Czech" },
+  { code: "en-US", label: "English", hint: "English" },
 ];
 
 const inputClass =
@@ -30,7 +32,7 @@ const inputClass =
 export default function VoiceImport() {
   const [supported, setSupported] = useState(true);
   const [recording, setRecording] = useState(false);
-  const [lang, setLang] = useState("cs-CZ");
+  const [lang, setLang] = useState("sk-SK");
   const [transcript, setTranscript] = useState("");
   const [interim, setInterim] = useState("");
   const [loading, setLoading] = useState(false);
@@ -94,7 +96,8 @@ export default function VoiceImport() {
   async function handleExtract() {
     setLoading(true);
     setError(null);
-    const result = await importRecipeFromText(transcript);
+    const hint = LANGS.find((l) => l.code === lang)?.hint;
+    const result = await importRecipeFromText(transcript, hint);
     setLoading(false);
     if (result.ok) setDraft(result.draft);
     else setError(result.error);
@@ -128,58 +131,70 @@ export default function VoiceImport() {
     );
   }
 
+  // No speech support (e.g. Firefox): send them to manual entry rather than a
+  // type-it-yourself fallback — we already have a good manual form.
+  if (!supported) {
+    return (
+      <div className="space-y-3">
+        <p className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
+          This browser doesn&rsquo;t support voice recording. Try Chrome or
+          Safari — or simply add the recipe by hand.
+        </p>
+        <Link
+          href="/recipes/new"
+          className="inline-block rounded-lg bg-amber-600 px-4 py-2 font-medium text-white hover:bg-amber-700"
+        >
+          ✍️ Enter by hand
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {supported ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={recording ? stopRecording : startRecording}
-            className={
-              recording
-                ? "rounded-lg bg-red-600 px-5 py-2.5 font-medium text-white shadow-sm hover:bg-red-700"
-                : "rounded-lg bg-amber-600 px-5 py-2.5 font-medium text-white shadow-sm hover:bg-amber-700"
-            }
-          >
-            {recording ? "■ Stop recording" : "● Start recording"}
-          </button>
-          <select
-            value={lang}
-            onChange={(e) => setLang(e.target.value)}
-            disabled={recording}
-            className={`${inputClass} w-auto`}
-            aria-label="Spoken language"
-          >
-            {LANGS.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-          {recording && (
-            <span className="flex items-center gap-2 text-sm text-red-600">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
-              Listening…
-            </span>
-          )}
-        </div>
-      ) : (
-        <p className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
-          Your browser doesn&rsquo;t support voice recording (try Chrome or
-          Safari). You can still type or paste the recipe below and import it.
-        </p>
-      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={recording ? stopRecording : startRecording}
+          className={
+            recording
+              ? "rounded-lg bg-red-600 px-5 py-2.5 font-medium text-white shadow-sm hover:bg-red-700"
+              : "rounded-lg bg-amber-600 px-5 py-2.5 font-medium text-white shadow-sm hover:bg-amber-700"
+          }
+        >
+          {recording ? "■ Stop recording" : "● Start recording"}
+        </button>
+        <select
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+          disabled={recording}
+          className={`${inputClass} w-auto`}
+          aria-label="Spoken language"
+        >
+          {LANGS.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.label}
+            </option>
+          ))}
+        </select>
+        {recording && (
+          <span className="flex items-center gap-2 text-sm text-red-600">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
+            Listening…
+          </span>
+        )}
+      </div>
 
       <div className="space-y-1">
         <label className="block text-sm font-medium text-stone-700 dark:text-stone-300">
           Transcript{" "}
-          <span className="text-stone-400">(you can edit before importing)</span>
+          <span className="text-stone-400">(fix any mistakes before importing)</span>
         </label>
         <textarea
           value={transcript + (interim ? " " + interim : "")}
           onChange={(e) => setTranscript(e.target.value)}
           rows={8}
-          placeholder="Speak the recipe, or type/paste it here: title, ingredients, and steps…"
+          placeholder="Your words will appear here as you speak…"
           className={inputClass}
         />
       </div>

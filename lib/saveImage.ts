@@ -16,8 +16,8 @@ const EXT_BY_TYPE: Record<string, string> = {
   "image/webp": "webp",
   "image/gif": "gif",
   "image/avif": "avif",
-  "image/heic": "heic",
-  "image/heif": "heif",
+  // Note: HEIC/HEIF aren't here on purpose — we convert them to JPEG first
+  // (browsers can't display HEIC and many models can't read it).
 };
 
 // Write bytes to public/uploads with a random name; return the public path.
@@ -60,12 +60,30 @@ export async function downloadImageToUploads(
 export async function saveUploadedImage(
   file: File,
 ): Promise<{ imagePath: string; dataUrl: string } | null> {
-  const type = (file.type ?? "").split(";")[0].trim();
+  let type = (file.type ?? "").split(";")[0].trim();
+  let buf = Buffer.from(await file.arrayBuffer());
+  if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return null;
+
+  // iPhone photos are often HEIC/HEIF. Browsers can't display them and many
+  // models can't read them, so convert to JPEG first. The type is sometimes
+  // empty on these, so also sniff the filename.
+  const isHeic =
+    type === "image/heic" ||
+    type === "image/heif" ||
+    /\.hei[cf]$/i.test(file.name ?? "");
+  if (isHeic) {
+    try {
+      const { default: convert } = await import("heic-convert");
+      const out = await convert({ buffer: buf, format: "JPEG", quality: 0.9 });
+      buf = Buffer.from(out);
+      type = "image/jpeg";
+    } catch {
+      return null; // conversion failed — treated as unsupported
+    }
+  }
+
   const ext = EXT_BY_TYPE[type];
   if (!ext) return null;
-
-  const buf = Buffer.from(await file.arrayBuffer());
-  if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return null;
 
   const imagePath = await saveBuffer(buf, ext);
   const dataUrl = `data:${type};base64,${buf.toString("base64")}`;

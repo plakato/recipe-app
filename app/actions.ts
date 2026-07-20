@@ -67,13 +67,14 @@ export async function importRecipeFromUrl(url: string): Promise<ImportResult> {
 // by pasting plain text. Extracts a draft for review.
 export async function importRecipeFromText(
   rawText: string,
+  languageHint?: string,
 ): Promise<ImportResult> {
   const text = rawText.trim();
   if (!text) {
     return { ok: false, error: "Please record or type the recipe first." };
   }
   try {
-    const draft = await extractRecipeFromText(text);
+    const draft = await extractRecipeFromText(text, languageHint);
     return { ok: true, draft };
   } catch (err) {
     const message =
@@ -91,6 +92,7 @@ export async function importRecipeFromPhoto(
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Please choose a photo first." };
   }
+  const language = String(formData.get("language") ?? "").trim() || undefined;
   try {
     const saved = await saveUploadedImage(file);
     if (!saved) {
@@ -99,7 +101,7 @@ export async function importRecipeFromPhoto(
         error: "That image type isn't supported, or it's too large (max 8 MB).",
       };
     }
-    const draft = await extractRecipeFromImage(saved.dataUrl);
+    const draft = await extractRecipeFromImage(saved.dataUrl, language);
     return {
       ok: true,
       draft: { ...draft, imagePath: saved.imagePath },
