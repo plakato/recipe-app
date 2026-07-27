@@ -57,16 +57,20 @@ export async function downloadImageToUploads(
 
 // Save an uploaded photo (photo import). Returns both the public path to store
 // on the recipe and a base64 data URL to send to the vision model.
+// Longest edge we downscale photos to. Big enough to read text/handwriting,
+// small enough to keep memory, upload size, and model cost/latency low.
+const MAX_DIMENSION = 2000;
+
 export async function saveUploadedImage(
   file: File,
 ): Promise<{ imagePath: string; dataUrl: string } | null> {
-  let type = (file.type ?? "").split(";")[0].trim();
+  const type = (file.type ?? "").split(";")[0].trim();
   let buf = Buffer.from(await file.arrayBuffer());
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return null;
 
-  // iPhone photos are often HEIC/HEIF. Browsers can't display them and many
-  // models can't read them, so convert to JPEG first. The type is sometimes
-  // empty on these, so also sniff the filename.
+  // iPhone photos are often HEIC/HEIF. Browsers can't display them and sharp's
+  // libvips here can't decode HEVC, so convert to JPEG with heic-convert first.
+  // The type is sometimes empty on these, so also sniff the filename.
   const isHeic =
     type === "image/heic" ||
     type === "image/heif" ||
@@ -74,18 +78,39 @@ export async function saveUploadedImage(
   if (isHeic) {
     try {
       const { default: convert } = await import("heic-convert");
-      const out = await convert({ buffer: buf, format: "JPEG", quality: 0.9 });
+      const out = await convert({ buffer: buf, format: "JPEG", quality: 0.92 });
       buf = Buffer.from(out);
-      type = "image/jpeg";
     } catch {
       return null; // conversion failed — treated as unsupported
     }
+  } else if (!EXT_BY_TYPE[type]) {
+    return null; // not an image type we accept
   }
 
-  const ext = EXT_BY_TYPE[type];
-  if (!ext) return null;
+  // Downscale + re-encode to a modest JPEG. This is the single biggest fix for
+  // "out of memory": full-res photos become huge base64 payloads. It also makes
+  // reading faster and cheaper. Auto-rotate honors the photo's EXIF orientation.
+  // isJpeg tracks the true output format so the file extension can't lie.
+  let isJpeg = isHeic; // HEIC was already converted to JPEG above
+  try {
+    const { default: sharp } = await import("sharp");
+    buf = await sharp(buf)
+      .rotate()
+      .resize(MAX_DIMENSION, MAX_DIMENSION, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: 82 })
+      .toBuffer();
+    isJpeg = true;
+  } catch {
+    // sharp couldn't process it: keep the buffer as-is. HEIC is already JPEG;
+    // other accepted types keep their original extension/mime below.
+  }
 
+  const ext = isJpeg ? "jpg" : EXT_BY_TYPE[type] ?? "jpg";
+  const outType = isJpeg ? "image/jpeg" : type;
   const imagePath = await saveBuffer(buf, ext);
-  const dataUrl = `data:${type};base64,${buf.toString("base64")}`;
+  const dataUrl = `data:${outType};base64,${buf.toString("base64")}`;
   return { imagePath, dataUrl };
 }

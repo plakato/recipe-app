@@ -31,3 +31,9 @@ Running list of things we've decided to do later, so they don't get lost.
   stronger (paid) vision model — deferred by the "free models only" rule.
 - Some big recipe sites (AllRecipes, Sally's Baking) block server-side URL
   fetches with a 403 — use photo import for those.
+- **Photo uploads** are downscaled to 2000px JPEG (`lib/saveImage.ts`) to avoid
+  out-of-memory errors and huge payloads; the Server Action body limit is
+  raised to 12mb (`next.config.ts`). HEIC is decoded by `heic-convert` (WASM),
+  which still loads the full image — extremely large HEICs (e.g. 48MP) could in
+  theory still strain memory; typical 12MP phone photos are fine. sharp here
+  can't decode HEIC (libvips has no HEVC plugin), so it's only used to resize.
