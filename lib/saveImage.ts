@@ -57,9 +57,9 @@ export async function downloadImageToUploads(
 
 // Save an uploaded photo (photo import). Returns both the public path to store
 // on the recipe and a base64 data URL to send to the vision model.
-// Longest edge we downscale photos to. Big enough to read text/handwriting,
-// small enough to keep memory, upload size, and model cost/latency low.
-const MAX_DIMENSION = 2000;
+// Longest edge we downscale photos to. Needs enough detail for handwriting,
+// while keeping memory, upload size, and model cost/latency reasonable.
+const MAX_DIMENSION = 3000;
 
 export async function saveUploadedImage(
   file: File,
@@ -78,7 +78,10 @@ export async function saveUploadedImage(
   if (isHeic) {
     try {
       const { default: convert } = await import("heic-convert");
-      const out = await convert({ buffer: buf, format: "JPEG", quality: 0.92 });
+      // High-quality JPEG intermediate. (PNG would be lossless but heic-convert
+      // encodes PNG extremely slowly — minutes for a full-size photo.) q0.95
+      // keeps handwriting detail; the final JPEG below is q90.
+      const out = await convert({ buffer: buf, format: "JPEG", quality: 0.95 });
       buf = Buffer.from(out);
     } catch {
       return null; // conversion failed — treated as unsupported
@@ -100,7 +103,7 @@ export async function saveUploadedImage(
         fit: "inside",
         withoutEnlargement: true,
       })
-      .jpeg({ quality: 82 })
+      .jpeg({ quality: 90 })
       .toBuffer();
     isJpeg = true;
   } catch {
