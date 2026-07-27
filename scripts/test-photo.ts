@@ -14,8 +14,15 @@ if (!path) {
   const ext = path.split(".").pop()?.toLowerCase();
   const type = ext === "png" ? "image/png" : "image/jpeg";
   const dataUrl = `data:${type};base64,${buf.toString("base64")}`;
-  console.log("Image bytes:", buf.byteLength, "-> extracting via vision model…");
-  const draft = await extractRecipeFromImage(dataUrl);
+  const model = process.argv[3]; // optional model override
+  console.log(
+    "Image bytes:",
+    buf.byteLength,
+    "-> extracting via",
+    model ?? "default free model",
+    "…",
+  );
+  const draft = await extractRecipeFromImage(dataUrl, "English", model);
   console.log("\n=== EXTRACTED DRAFT ===");
   console.log("title       :", draft.title);
   console.log("servings    :", draft.servings ?? "");

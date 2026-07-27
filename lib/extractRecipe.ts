@@ -135,11 +135,20 @@ async function callModel(model: string, messages: ChatMessage[]): Promise<string
   throw new Error(`OpenRouter kept rate-limiting ${model}.`);
 }
 
-// Try the primary free model, then the fallback, then surface the error.
-async function runExtraction(messages: ChatMessage[]): Promise<RecipeDraft> {
+// Try the (optional) override model first, then the primary free model, then
+// the fallback, then surface the error. The override lets callers opt into a
+// stronger paid model (e.g. for handwriting) while still degrading to free.
+async function runExtraction(
+  messages: ChatMessage[],
+  modelOverride?: string,
+): Promise<RecipeDraft> {
   const primary = process.env.OPENROUTER_MODEL ?? "google/gemma-4-31b-it:free";
   const fallback = process.env.OPENROUTER_MODEL_FALLBACK;
-  const models = [primary, fallback].filter(Boolean) as string[];
+  const models = [
+    ...new Set(
+      [modelOverride, primary, fallback].filter(Boolean) as string[],
+    ),
+  ];
 
   let lastError: unknown;
   for (const model of models) {
@@ -189,20 +198,24 @@ export function extractRecipeFromText(
 export function extractRecipeFromImage(
   imageDataUrl: string,
   languageHint?: string,
+  modelOverride?: string,
 ): Promise<RecipeDraft> {
-  return runExtraction([
-    { role: "system", content: SYSTEM_PROMPT },
-    {
-      role: "user",
-      content: [
-        {
-          type: "text",
-          text: `Extract the recipe shown in this image.${languageLine(
-            languageHint,
-          )} Transcribe printed or handwritten text as accurately as you can.`,
-        },
-        { type: "image_url", image_url: { url: imageDataUrl } },
-      ],
-    },
-  ]);
+  return runExtraction(
+    [
+      { role: "system", content: SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `Extract the recipe shown in this image.${languageLine(
+              languageHint,
+            )} Transcribe printed or handwritten text as accurately as you can.`,
+          },
+          { type: "image_url", image_url: { url: imageDataUrl } },
+        ],
+      },
+    ],
+    modelOverride,
+  );
 }

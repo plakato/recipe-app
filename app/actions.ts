@@ -93,6 +93,10 @@ export async function importRecipeFromPhoto(
     return { ok: false, error: "Please choose a photo first." };
   }
   const language = String(formData.get("language") ?? "").trim() || undefined;
+  // Opt-in paid model for better reading (e.g. handwriting). Falls back to the
+  // free models if the paid one is unavailable.
+  const highQuality = formData.get("quality") === "high";
+  const modelOverride = highQuality ? process.env.OPENROUTER_MODEL_HQ : undefined;
   try {
     const saved = await saveUploadedImage(file);
     if (!saved) {
@@ -101,7 +105,11 @@ export async function importRecipeFromPhoto(
         error: "That image type isn't supported, or it's too large (max 8 MB).",
       };
     }
-    const draft = await extractRecipeFromImage(saved.dataUrl, language);
+    const draft = await extractRecipeFromImage(
+      saved.dataUrl,
+      language,
+      modelOverride,
+    );
     return {
       ok: true,
       draft: { ...draft, imagePath: saved.imagePath },

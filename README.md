@@ -30,6 +30,7 @@ DATABASE_URL="file:./dev.db"                              # already set
 OPENROUTER_API_KEY="sk-or-v1-..."                         # your OpenRouter key
 OPENROUTER_MODEL="google/gemma-4-31b-it:free"             # free, vision-capable
 OPENROUTER_MODEL_FALLBACK="nvidia/nemotron-nano-12b-v2-vl:free"  # used if primary is busy
+OPENROUTER_MODEL_HQ="google/gemini-2.5-flash"            # paid, opt-in for handwriting (~$0.0015/photo)
 ```
 
 **Free models only** (project rule). They are rate-limited (a few requests/min),

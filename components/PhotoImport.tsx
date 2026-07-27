@@ -20,6 +20,7 @@ export default function PhotoImport() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [language, setLanguage] = useState("Slovak");
+  const [highQuality, setHighQuality] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<RecipeDraft | null>(null);
@@ -42,6 +43,7 @@ export default function PhotoImport() {
     const formData = new FormData();
     formData.append("photo", file);
     formData.append("language", language);
+    if (highQuality) formData.append("quality", "high");
     const result = await importRecipeFromPhoto(formData);
     setLoading(false);
     if (result.ok) {
@@ -101,20 +103,33 @@ export default function PhotoImport() {
         </button>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400">
-        Recipe language:
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className={selectClass}
-        >
-          {LANGS.map((l) => (
-            <option key={l.code} value={l.code}>
-              {l.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400">
+          Recipe language:
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className={selectClass}
+          >
+            {LANGS.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400">
+          <input
+            type="checkbox"
+            checked={highQuality}
+            onChange={(e) => setHighQuality(e.target.checked)}
+            className="h-4 w-4 accent-amber-600"
+          />
+          Better reading for handwriting{" "}
+          <span className="text-stone-400">(paid, ~1¢)</span>
+        </label>
+      </div>
 
       {previewUrl && !isHeic && (
         // eslint-disable-next-line @next/next/no-img-element
