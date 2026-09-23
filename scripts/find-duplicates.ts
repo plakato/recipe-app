@@ -19,7 +19,7 @@ import { stripUserArg, userIdForScript } from "@/lib/script-user";
   for (let i = 0; i < recipes.length; i++) {
     for (let j = i + 1; j < recipes.length; j++) {
       const s = compareRecipes(recipes[i], recipes[j]);
-      if (s.score >= min || s.sameTitle) pairs.push({ a: recipes[i].title, b: recipes[j].title, s });
+      if (s.score >= min) pairs.push({ a: recipes[i].title, b: recipes[j].title, s });
     }
   }
   pairs.sort((x, y) => y.s.score - x.s.score);

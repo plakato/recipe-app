@@ -74,27 +74,25 @@ export default function RecipeForm({
           role="alert"
           className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
         >
-          {dup.kind === "same-title" ? (
-            <>
-              <p className="font-medium">You already have a recipe called “{dup.match.title}”.</p>
-              <p>
-                Please give this one a different name so you can tell them apart, e.g. “{title} (version 2)”.{" "}
-                <Link href={`/recipes/${dup.match.id}`} target="_blank" className="underline">
-                  Open the existing recipe
-                </Link>
-              </p>
-            </>
+          <p className="font-medium">
+            This looks very similar to “{dup.match.title}” ({Math.round(dup.score * 100)}% match).
+          </p>
+          {dup.sameTitle ? (
+            <p>
+              It also has the same name. Please{" "}
+              <Link href={`/recipes/${dup.match.id}`} target="_blank" className="underline">
+                check the existing recipe
+              </Link>{" "}
+              and, if this really is a different version, give it a name that tells them apart
+              (e.g. “{title} bez čierneho korenia”), then save again.
+            </p>
           ) : (
             <>
-              <p className="font-medium">
-                This looks very similar to “{dup.match.title}” ({Math.round(dup.score * 100)}% match).
-              </p>
               <p>
                 <Link href={`/recipes/${dup.match.id}`} target="_blank" className="underline">
                   Open it to check
                 </Link>
-                . If it really is a different version, give this one a name that tells them apart
-                (e.g. “{title} bez čierneho korenia”), then save — or save anyway.
+                . If it really is a different version, make sure the name tells them apart, then save anyway.
               </p>
               <button
                 type="submit"

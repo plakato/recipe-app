@@ -100,14 +100,17 @@ export function compareRecipes(a: Comparable, b: Comparable): Similarity {
 // copy of the same recipe with slightly different wording scores ~0.7+.
 export const DUPLICATE_THRESHOLD = 0.6;
 
-export type DuplicateVerdict =
-  | { kind: "same-title"; match: { id: string; title: string }; score: number }
-  | { kind: "near-duplicate"; match: { id: string; title: string }; score: number }
-  | null;
+export type DuplicateVerdict = {
+  match: { id: string; title: string };
+  score: number;
+  // The candidate also has the same name as the match. Two versions of a
+  // dish are fine, but not under one name — the user must rename.
+  sameTitle: boolean;
+} | null;
 
-// Check a candidate against the user's other recipes. Returns the strongest
-// problem found: an identical title (must be renamed) beats a near-duplicate
-// (warn, let the user decide).
+// Check a candidate against the user's other recipes by CONTENT (ingredients
+// and steps). Same-name recipes with different content are allowed — e.g. a
+// Slovak "Sloppy Joes" from a photo next to an English one from a website.
 export function findDuplicate(
   candidate: Comparable,
   others: (Comparable & { id: string })[],
@@ -115,11 +118,12 @@ export function findDuplicate(
   let best: DuplicateVerdict = null;
   for (const other of others) {
     const s = compareRecipes(candidate, other);
-    if (s.sameTitle) {
-      return { kind: "same-title", match: { id: other.id, title: other.title }, score: s.score };
-    }
     if (s.score >= DUPLICATE_THRESHOLD && (!best || s.score > best.score)) {
-      best = { kind: "near-duplicate", match: { id: other.id, title: other.title }, score: s.score };
+      best = {
+        match: { id: other.id, title: other.title },
+        score: s.score,
+        sameTitle: s.sameTitle,
+      };
     }
   }
   return best;

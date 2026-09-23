@@ -86,7 +86,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       if (dup) {
         skipped.push(name);
         await unlink(path.join("public", saved.imagePath)).catch(() => {});
-        console.log(`SKIPPED: ${dup.kind} of "${dup.match.title}" (${Math.round(dup.score * 100)}%)`);
+        console.log(`SKIPPED: near-duplicate of "${dup.match.title}" (${Math.round(dup.score * 100)}%${dup.sameTitle ? ", same name" : ""})`);
         continue;
       }
       const recipe = await prisma.recipe.create({

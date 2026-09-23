@@ -133,7 +133,8 @@ export type SaveState = {
 // Compare the submitted recipe with the user's other recipes. Returns a
 // SaveState to show instead of saving, or null when saving may proceed.
 // A near-duplicate can be overridden by resubmitting with confirmDuplicate=1
-// (the "Save anyway" button); an identical title never can — rename it.
+// (the "Save anyway" button) unless it also has the same name — then it must
+// be renamed so the two versions can be told apart.
 async function duplicateCheck(
   userId: string,
   fields: ReturnType<typeof readRecipeFields>,
@@ -158,7 +159,7 @@ async function duplicateCheck(
     })),
   );
   if (!verdict) return null;
-  if (verdict.kind === "near-duplicate" && formData.get("confirmDuplicate") === "1") {
+  if (!verdict.sameTitle && formData.get("confirmDuplicate") === "1") {
     return null;
   }
   return { duplicate: verdict };

@@ -68,7 +68,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       const dup = findDuplicate(draft, known);
       if (dup) {
         skipped.push(url);
-        console.log(`SKIPPED: ${dup.kind} of "${dup.match.title}" (${Math.round(dup.score * 100)}%)`);
+        console.log(`SKIPPED: near-duplicate of "${dup.match.title}" (${Math.round(dup.score * 100)}%${dup.sameTitle ? ", same name" : ""})`);
         continue;
       }
       const imagePath = imageUrl

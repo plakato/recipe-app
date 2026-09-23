@@ -52,15 +52,18 @@ describe("findDuplicate", () => {
     { id: "k", ...kapustnica },
     { id: "t", ...tomatoA },
   ];
-  it("flags an identical title first", () => {
-    const v = findDuplicate({ ...tomatoB, title: "kapustnica" }, others);
-    expect(v?.kind).toBe("same-title");
-    expect(v?.match.id).toBe("k");
+  it("allows the same name when the content is different", () => {
+    expect(findDuplicate({ ...tomatoB, title: "kapustnica" }, others)).toBeNull();
   });
   it("flags a near-duplicate with a different title", () => {
     const v = findDuplicate(kapustnicaAgain, others);
-    expect(v?.kind).toBe("near-duplicate");
     expect(v?.match.id).toBe("k");
+    expect(v?.sameTitle).toBe(false);
+  });
+  it("marks sameTitle when a near-duplicate also shares the name", () => {
+    const v = findDuplicate({ ...kapustnicaAgain, title: "KAPUSTNICA" }, others);
+    expect(v?.match.id).toBe("k");
+    expect(v?.sameTitle).toBe(true);
   });
   it("returns null for a genuinely different recipe", () => {
     expect(findDuplicate(tomatoB, others)).toBeNull();
