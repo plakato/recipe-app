@@ -8,7 +8,7 @@
 #   export/                recipes.json + markdown/*.md (human-readable)
 #
 # Run by hand:  scripts/backup.sh
-# Scheduled by: ~/Library/LaunchAgents/com.recipe-app.backup.plist (nightly)
+# Scheduled by: scripts/install-backup-schedule.sh (launchd, nightly 02:30)
 # Needs: sqlite3, rclone remote "gdrive" (rclone config), Node via nvm.
 set -euo pipefail
 

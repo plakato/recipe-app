@@ -29,7 +29,7 @@ npm run dev           # http://localhost:3000
 DATABASE_URL="file:./dev.db"                              # already set
 OPENROUTER_API_KEY="sk-or-v1-..."                         # your OpenRouter key
 OPENROUTER_MODEL="google/gemma-4-31b-it:free"             # free, vision-capable
-OPENROUTER_MODEL_FALLBACK="nvidia/nemotron-nano-12b-v2-vl:free"  # used if primary is busy
+OPENROUTER_MODEL_FALLBACK="google/gemma-4-26b-a4b-it:free"  # used if primary is busy
 OPENROUTER_MODEL_HQ="google/gemini-2.5-flash"            # paid, opt-in for handwriting (~$0.0015/photo)
 ```
 
@@ -55,6 +55,20 @@ so the extractor retries on 429 and falls back to the second model.
 - ⬜ **Later** — AI-generated image to replace the placeholder; deploy + backups
   + single-password site gate (Phase 5)
 - ⬜ **Phase 5** — deploy, backups, single-password site gate
+
+## Bulk import & backups (scripts/)
+
+```bash
+npx tsx --env-file=.env scripts/import-photos.ts <folder> [language] [model]  # every photo -> one recipe
+npx tsx --env-file=.env scripts/import-urls.ts <urls.txt> [model]            # every URL -> one recipe
+scripts/backup.sh                    # snapshot DB + photos + JSON/Markdown export to Google Drive (rclone)
+scripts/install-backup-schedule.sh   # run once per Mac: nightly backup at 02:30 via launchd
+```
+
+Both importers are idempotent (photos via `<folder>/.imported.json`, URLs via the
+recipe's `sourceUrl`), so re-running only retries failures. Pass
+`google/gemini-2.5-flash` as the model when the free models are rate-limited —
+it costs well under a cent per recipe.
 
 ## Notes
 

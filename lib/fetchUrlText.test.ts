@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   stripTags,
+  extractVideoDescription,
   extractImageUrl,
   extractJsonLd,
 } from "@/lib/fetchUrlText";
@@ -60,5 +61,18 @@ describe("extractJsonLd", () => {
     const out = extractJsonLd(html);
     expect(out).toContain("Recipe");
     expect(out).not.toContain("BreadcrumbList");
+  });
+});
+
+describe("extractVideoDescription", () => {
+  it("decodes the embedded YouTube description", () => {
+    const html =
+      'var x = {"videoDetails":{"shortDescription":"Mousse au chocolat\\n\\n200 g chocolate\\n4 eggs \\u2013 separated","title":"t"}};';
+    expect(extractVideoDescription(html)).toBe(
+      "Mousse au chocolat\n\n200 g chocolate\n4 eggs – separated",
+    );
+  });
+  it("returns empty when absent", () => {
+    expect(extractVideoDescription("<html>no video</html>")).toBe("");
   });
 });

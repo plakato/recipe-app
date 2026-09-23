@@ -150,7 +150,7 @@ async function runExtraction(
     ),
   ];
 
-  let lastError: unknown;
+  const errors: unknown[] = [];
   for (const model of models) {
     try {
       const content = await callModel(model, messages);
@@ -160,13 +160,16 @@ async function runExtraction(
       }
       return draft;
     } catch (err) {
-      lastError = err;
+      errors.push(err);
       // Try the next model in the list.
     }
   }
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Recipe extraction failed.");
+  // Prefer a substantive error (e.g. "no recipe found") over a later model's
+  // rate-limit noise, so the user sees why the material was rejected.
+  const isBusy = (e: unknown) =>
+    e instanceof Error && /OpenRouter (429|503|404)|rate-limit/i.test(e.message);
+  const best = errors.find((e) => !isBusy(e)) ?? errors[errors.length - 1];
+  throw best instanceof Error ? best : new Error("Recipe extraction failed.");
 }
 
 // A hint telling the model what language the recipe is in improves accuracy,
@@ -181,16 +184,20 @@ function languageLine(languageHint?: string): string {
 export function extractRecipeFromText(
   source: string,
   languageHint?: string,
+  modelOverride?: string,
 ): Promise<RecipeDraft> {
-  return runExtraction([
-    { role: "system", content: SYSTEM_PROMPT },
-    {
-      role: "user",
-      content: `Extract the recipe from the following material.${languageLine(
-        languageHint,
-      )}\n\n${source}`,
-    },
-  ]);
+  return runExtraction(
+    [
+      { role: "system", content: SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: `Extract the recipe from the following material.${languageLine(
+          languageHint,
+        )}\n\n${source}`,
+      },
+    ],
+    modelOverride,
+  );
 }
 
 // Extract a recipe from an image (used by photo import in Phase 3).

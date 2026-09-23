@@ -26,7 +26,7 @@ Running list of things we've decided to do later, so they don't get lost.
 - **Database backups** — DONE on this Mac (2026-09-23): `scripts/backup.sh`
   copies a SQLite snapshot, the photos and a JSON/Markdown export
   (`scripts/export-recipes.ts`) to Google Drive via rclone, nightly at 02:30
-  (`scripts/com.recipe-app.backup.plist`, installed into `~/Library/LaunchAgents`). Log: `backups/backup.log`.
+  (installed with `scripts/install-backup-schedule.sh`). Log: `backups/backup.log`.
   Still to do: re-create the schedule on the Hermes server after deploying, and
   **create our own Google client ID for rclone** — rclone's shared one is being
   retired during 2026 (https://rclone.org/drive/#making-your-own-client-id).

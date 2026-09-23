@@ -75,6 +75,19 @@ export function extractJsonLd(html: string): string {
   return blocks.join("\n\n");
 }
 
+// Video pages (YouTube) render almost no visible text server-side, but the
+// recipe is usually in the description, which the page embeds as JSON
+// ("shortDescription"). Pull it out so the extractor sees it first.
+export function extractVideoDescription(html: string): string {
+  const m = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
+  if (!m) return "";
+  try {
+    return String(JSON.parse(`"${m[1]}"`)).trim();
+  } catch {
+    return "";
+  }
+}
+
 export type FetchedPage = { text: string; imageUrl: string | null };
 
 export async function fetchUrlText(url: string): Promise<FetchedPage> {
@@ -112,8 +125,11 @@ export async function fetchUrlText(url: string): Promise<FetchedPage> {
   const visible = stripTags(html);
   const imageUrl = extractImageUrl(html, res.url || parsed.href);
 
+  const videoDescription = extractVideoDescription(html);
+
   const parts = [
     title && `Page title: ${title}`,
+    videoDescription && `Video description:\n${videoDescription}`,
     jsonLd && `Structured recipe data (JSON-LD):\n${jsonLd}`,
     `Page text:\n${visible}`,
   ].filter(Boolean);
