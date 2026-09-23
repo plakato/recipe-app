@@ -17,8 +17,23 @@ Running list of things we've decided to do later, so they don't get lost.
 - **Duplicate recipe check.**
   Detect when a recipe being added (from photo, URL, voice, or by hand) already
   exists in the database — e.g. same or very similar title — and warn before
-  saving, or offer to open the existing one. Needed before bulk-importing the
-  family recipe photos. (Requested 2026-09-23.)
+  saving, or offer to open the existing one. (Requested 2026-09-23.)
+
+- **Multi-recipe import review ("1 of N" walk-through).**
+  The extractor can return several recipes from one source
+  (`extractRecipesFromText/Image`); the bulk scripts use it. The import pages
+  still assume one draft. Plan: keep the existing form and add a "Recipe 2 of
+  5" strip with Save & next / Skip. (Discussed 2026-09-23.)
+
+- **Social sign-in (Google / Facebook).** Deferred; email + password only for
+  now. Would need OAuth callback routes and developer-console setup.
+
+- **Review the 2026-09-23 bulk import.** 86 recipes came in from photos and
+  Chrome bookmarks. Known gaps: chocolate-mousse video has ingredients but no
+  steps; "Ovocné kože" article has steps but no ingredients; red-lentil soup
+  and živánska photos have little/no method on the page. Bookmarks that could
+  not be imported: soufflebombay brownie cookies (403), daybyme apple cake
+  (404), Taste of Home AMP link, and five index/article pages.
 
 ## Phase 5 (going live) — still to do
 
@@ -33,17 +48,20 @@ Running list of things we've decided to do later, so they don't get lost.
 - ~~Single shared site password~~ → replaced by per-user accounts (email +
   password, invite-only sign-up) on 2026-09-23. Social logins (Google/Facebook)
   deliberately deferred.
-- Push the git repo to a private GitHub remote (also acts as off-machine
-  backup of the code — not the database).
+- ~~Push to GitHub~~ — DONE 2026-09-23: public repo
+  https://github.com/plakato/recipe-app (history scrubbed of machine name /
+  home path). Rule: commit locally, push only when asked.
 
 ## Known limitations
 
-- **Handwriting OCR is weak** on the free vision models. Printed/clear photos
-  work well; messy handwriting often misreads. Better quality would need a
-  stronger (paid) vision model — deferred by the "free models only" rule.
+- **Free vision models are unreliable for batches**: Google's free pool is
+  often rate-limited upstream, and free models come and go on OpenRouter (the
+  old fallback vanished). `google/gemini-2.5-flash` (opt-in, ~0.1¢ per photo)
+  read all handwritten photos cleanly on 2026-09-23. Free-only remains the
+  default for the app; use the paid model for bulk work.
 - Some big recipe sites (AllRecipes, Sally's Baking) block server-side URL
   fetches with a 403 — use photo import for those.
-- **Photo uploads** are downscaled to 2000px JPEG (`lib/saveImage.ts`) to avoid
+- **Photo uploads** are downscaled to 3000px JPEG (`lib/saveImage.ts`) to avoid
   out-of-memory errors and huge payloads; the Server Action body limit is
   raised to 12mb (`next.config.ts`). HEIC is decoded by `heic-convert` (WASM),
   which still loads the full image — extremely large HEICs (e.g. 48MP) could in
