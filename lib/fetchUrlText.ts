@@ -70,9 +70,40 @@ export function extractJsonLd(html: string): string {
   let m: RegExpExecArray | null;
   while ((m = re.exec(html)) !== null) {
     const body = m[1].trim();
-    if (body.toLowerCase().includes("recipe")) blocks.push(body);
+    if (body.toLowerCase().includes("recipe")) blocks.push(compactJsonLd(body));
   }
   return blocks.join("\n\n");
+}
+
+// Keys that never carry recipe content but can be enormous (photo galleries,
+// hundreds of reviews, author bios). Dropping them keeps the recipe itself
+// inside the MAX_CHARS budget sent to the model.
+const NOISY_LD_KEYS = new Set([
+  "image", "thumbnailUrl", "hasPart", "video", "review", "aggregateRating",
+  "comment", "author", "publisher", "mainEntityOfPage", "isPartOf",
+  "potentialAction", "breadcrumb", "sameAs", "logo",
+]);
+
+function stripNoisy(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripNoisy);
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (!NOISY_LD_KEYS.has(k)) out[k] = stripNoisy(v);
+    }
+    return out;
+  }
+  return value;
+}
+
+// Re-serialize a JSON-LD block without its noisy keys. If it doesn't parse,
+// return it unchanged.
+export function compactJsonLd(body: string): string {
+  try {
+    return JSON.stringify(stripNoisy(JSON.parse(body)), null, 1);
+  } catch {
+    return body;
+  }
 }
 
 // Video pages (YouTube) render almost no visible text server-side, but the

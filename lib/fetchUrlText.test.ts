@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   stripTags,
   extractVideoDescription,
+  compactJsonLd,
   extractImageUrl,
   extractJsonLd,
 } from "@/lib/fetchUrlText";
@@ -74,5 +75,30 @@ describe("extractVideoDescription", () => {
   });
   it("returns empty when absent", () => {
     expect(extractVideoDescription("<html>no video</html>")).toBe("");
+  });
+});
+
+describe("compactJsonLd", () => {
+  it("drops galleries/reviews/authors but keeps recipe fields", () => {
+    const out = compactJsonLd(
+      JSON.stringify({
+        "@type": "Recipe",
+        name: "Cake",
+        image: { url: "x.jpg" },
+        hasPart: { "@type": "ImageGallery", image: ["a", "b", "c"] },
+        review: [{ reviewBody: "great" }],
+        author: { name: "Someone" },
+        recipeIngredient: ["1 egg"],
+        recipeInstructions: [{ text: "Bake." }],
+      }),
+    );
+    expect(out).toContain('"recipeIngredient"');
+    expect(out).toContain("Bake.");
+    expect(out).not.toContain("ImageGallery");
+    expect(out).not.toContain("Someone");
+    expect(out).not.toContain("great");
+  });
+  it("leaves unparseable input alone", () => {
+    expect(compactJsonLd("{not json")).toBe("{not json");
   });
 });
