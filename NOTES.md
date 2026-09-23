@@ -14,12 +14,22 @@ Running list of things we've decided to do later, so they don't get lost.
   Replace the 🍽️ placeholder (`components/RecipeImage.tsx`) with an image
   generated from the recipe when no photo is available.
 
+- **Duplicate recipe check.**
+  Detect when a recipe being added (from photo, URL, voice, or by hand) already
+  exists in the database — e.g. same or very similar title — and warn before
+  saving, or offer to open the existing one. Needed before bulk-importing the
+  family recipe photos. (Requested 2026-09-23.)
+
 ## Phase 5 (going live) — still to do
 
 - Deploy to the Hermes server.
-- **Database backups** (critical — "precious family recipes"). See the backup
-  plan: soft-delete (done), automated off-site copy of `prisma/dev.db`,
-  periodic human-readable JSON/Markdown export.
+- **Database backups** — DONE on this Mac (2026-09-23): `scripts/backup.sh`
+  copies a SQLite snapshot, the photos and a JSON/Markdown export
+  (`scripts/export-recipes.ts`) to Google Drive via rclone, nightly at 02:30
+  (`scripts/com.recipe-app.backup.plist`, installed into `~/Library/LaunchAgents`). Log: `backups/backup.log`.
+  Still to do: re-create the schedule on the Hermes server after deploying, and
+  **create our own Google client ID for rclone** — rclone's shared one is being
+  retired during 2026 (https://rclone.org/drive/#making-your-own-client-id).
 - Single shared site password at the reverse proxy while single-user.
 - Push the git repo to a private GitHub remote (also acts as off-machine
   backup of the code — not the database).

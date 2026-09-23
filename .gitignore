@@ -50,3 +50,7 @@ next-env.d.ts
 
 # uploaded recipe photos
 /public/uploads
+/backups
+
+# source photos waiting to be imported (family photos — never commit)
+/recipe_photos
