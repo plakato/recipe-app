@@ -39,6 +39,21 @@ Rules:
 - If a field is unknown, use "" (or [] for the arrays). Never invent quantities.
 - If the material is clearly NOT a recipe, return {"title":"","ingredients":[],"instructions":[]}.`;
 
+// Variant used when a source (a photo page, a "5 desserts" article, a video
+// description) may hold several recipes. Each recipe uses the same shape.
+const MULTI_SYSTEM_PROMPT = SYSTEM_PROMPT.replace(
+  "You extract a single cooking recipe from the material the user provides and return it as JSON.",
+  "You extract every complete cooking recipe from the material the user provides and return them as JSON.",
+)
+  .replace(
+    "Return ONLY a JSON object (no markdown, no commentary) with exactly these keys:\n{",
+    'Return ONLY a JSON object (no markdown, no commentary) of the form {"recipes": [ ... ]}, where each recipe has exactly these keys:\n{',
+  )
+  .replace(
+    "- If the material is clearly NOT a recipe, return {\"title\":\"\",\"ingredients\":[],\"instructions\":[]}.",
+    "- Include a recipe only if the material gives its ingredients or method; skip mere mentions, links or names of dishes.\n- A source with one recipe returns one item. Never split one recipe into several.\n- If the material has no recipe, return {\"recipes\":[]}.",
+  );
+
 // Pull the first balanced JSON object out of a model response that may be
 // wrapped in ```json fences or surrounded by stray prose.
 export function extractJsonObject(raw: string): unknown {
@@ -76,6 +91,15 @@ export function toDraft(parsed: unknown): RecipeDraft {
     prepTime: asString(obj.prepTime) || undefined,
     cookTime: asString(obj.cookTime) || undefined,
   };
+}
+
+// Parse the {"recipes":[...]} shape (tolerating a bare single recipe object).
+export function toDrafts(parsed: unknown): RecipeDraft[] {
+  const obj = (parsed ?? {}) as Record<string, unknown>;
+  const list = Array.isArray(obj.recipes) ? obj.recipes : [parsed];
+  return list
+    .map(toDraft)
+    .filter((d) => d.title || d.ingredients.length > 0);
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -142,6 +166,24 @@ async function runExtraction(
   messages: ChatMessage[],
   modelOverride?: string,
 ): Promise<RecipeDraft> {
+  const [draft] = await runModels(
+    messages,
+    (parsed) => {
+      const d = toDraft(parsed);
+      return d.title || d.ingredients.length > 0 ? [d] : [];
+    },
+    modelOverride,
+  );
+  return draft;
+}
+
+// Shared model loop: try each model in turn, parse its answer with `parse`,
+// and return the first non-empty result.
+async function runModels(
+  messages: ChatMessage[],
+  parse: (parsed: unknown) => RecipeDraft[],
+  modelOverride?: string,
+): Promise<RecipeDraft[]> {
   const primary = process.env.OPENROUTER_MODEL ?? "google/gemma-4-31b-it:free";
   const fallback = process.env.OPENROUTER_MODEL_FALLBACK;
   const models = [
@@ -154,11 +196,11 @@ async function runExtraction(
   for (const model of models) {
     try {
       const content = await callModel(model, messages);
-      const draft = toDraft(extractJsonObject(content));
-      if (!draft.title && draft.ingredients.length === 0) {
+      const drafts = parse(extractJsonObject(content));
+      if (drafts.length === 0) {
         throw new Error("Model did not find a recipe in the material.");
       }
-      return draft;
+      return drafts;
     } catch (err) {
       errors.push(err);
       // Try the next model in the list.
@@ -223,6 +265,56 @@ export function extractRecipeFromImage(
         ],
       },
     ],
+    modelOverride,
+  );
+}
+
+// Same as extractRecipeFromText, but returns every recipe found in the
+// material (bulk import of pages/videos that bundle several recipes).
+export function extractRecipesFromText(
+  source: string,
+  languageHint?: string,
+  modelOverride?: string,
+): Promise<RecipeDraft[]> {
+  return runModels(
+    [
+      { role: "system", content: MULTI_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: `Extract every recipe from the following material.${languageLine(
+          languageHint,
+        )}\n\n${source}`,
+      },
+    ],
+    toDrafts,
+    modelOverride,
+  );
+}
+
+// Same as extractRecipeFromImage, but returns every recipe on the photo
+// (e.g. two recipes written on one notebook page).
+export function extractRecipesFromImage(
+  imageDataUrl: string,
+  languageHint?: string,
+  modelOverride?: string,
+): Promise<RecipeDraft[]> {
+  return runModels(
+    [
+      { role: "system", content: MULTI_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `Extract every recipe shown in this image.${languageLine(
+              languageHint,
+            )} Transcribe printed or handwritten text as accurately as you can.`,
+          },
+          { type: "image_url", image_url: { url: imageDataUrl } },
+        ],
+      },
+    ],
+    toDrafts,
     modelOverride,
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractJsonObject, toDraft } from "@/lib/extractRecipe";
+import { extractJsonObject, toDraft, toDrafts } from "@/lib/extractRecipe";
 
 describe("extractJsonObject", () => {
   it("parses a plain JSON object", () => {
@@ -63,5 +63,25 @@ describe("toDraft", () => {
   it("handles null/garbage input safely", () => {
     expect(toDraft(null).ingredients).toEqual([]);
     expect(toDraft(undefined).title).toBe("");
+  });
+});
+
+describe("toDrafts", () => {
+  it("returns every recipe in a {recipes:[...]} answer, dropping empties", () => {
+    const drafts = toDrafts({
+      recipes: [
+        { title: "A", ingredients: ["x"], instructions: ["y"] },
+        { title: "", ingredients: [], instructions: [] },
+        { title: "B", ingredients: ["z"], instructions: [] },
+      ],
+    });
+    expect(drafts.map((d) => d.title)).toEqual(["A", "B"]);
+  });
+  it("accepts a bare single recipe object", () => {
+    expect(toDrafts({ title: "Solo", ingredients: ["1"], instructions: [] })).toHaveLength(1);
+  });
+  it("returns [] for no recipes", () => {
+    expect(toDrafts({ recipes: [] })).toEqual([]);
+    expect(toDrafts(null)).toEqual([]);
   });
 });
