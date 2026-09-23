@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import RecipeForm from "@/components/RecipeForm";
 import { updateRecipe } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
-import { getDefaultUserId } from "@/lib/user";
+import { requireUserId } from "@/lib/auth";
 import { recipeToDraft } from "@/lib/recipes";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export default async function EditRecipePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const userId = await getDefaultUserId();
+  const userId = await requireUserId();
   const recipe = await prisma.recipe.findFirst({
     where: { id, userId, deletedAt: null },
   });

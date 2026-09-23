@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getDefaultUserId } from "@/lib/user";
+import { requireUserId } from "@/lib/auth";
 import { parseList } from "@/lib/recipes";
 import RecipeImage from "@/components/RecipeImage";
 
@@ -8,7 +8,7 @@ import RecipeImage from "@/components/RecipeImage";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const userId = await getDefaultUserId();
+  const userId = await requireUserId();
   const recipes = await prisma.recipe.findMany({
     where: { userId, deletedAt: null },
     orderBy: { createdAt: "desc" },

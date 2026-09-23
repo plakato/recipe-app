@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getDefaultUserId } from "@/lib/user";
+import { requireUserId } from "@/lib/auth";
 import { parseList } from "@/lib/recipes";
 import { softDeleteRecipe } from "@/app/actions";
 import RecipeImage from "@/components/RecipeImage";
@@ -14,7 +14,7 @@ export default async function RecipeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const userId = await getDefaultUserId();
+  const userId = await requireUserId();
   const recipe = await prisma.recipe.findFirst({
     where: { id, userId, deletedAt: null },
   });

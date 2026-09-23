@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getDefaultUserId } from "@/lib/user";
+import { requireUserId } from "@/lib/auth";
 import { linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { extractRecipeFromText, extractRecipeFromImage } from "@/lib/extractRecipe";
@@ -126,7 +126,7 @@ export async function createRecipe(formData: FormData) {
   if (!fields.title) {
     throw new Error("A title is required.");
   }
-  const userId = await getDefaultUserId();
+  const userId = await requireUserId();
   const recipe = await prisma.recipe.create({
     data: { ...fields, userId },
   });
@@ -141,7 +141,7 @@ export async function updateRecipe(formData: FormData) {
   if (!fields.title) {
     throw new Error("A title is required.");
   }
-  const userId = await getDefaultUserId();
+  const userId = await requireUserId();
   // Scope by userId so only the owner's recipes can be edited.
   await prisma.recipe.updateMany({
     where: { id, userId },
@@ -156,7 +156,7 @@ export async function updateRecipe(formData: FormData) {
 export async function softDeleteRecipe(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing recipe id.");
-  const userId = await getDefaultUserId();
+  const userId = await requireUserId();
   await prisma.recipe.updateMany({
     where: { id, userId },
     data: { deletedAt: new Date() },
@@ -169,7 +169,7 @@ export async function softDeleteRecipe(formData: FormData) {
 export async function restoreRecipe(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing recipe id.");
-  const userId = await getDefaultUserId();
+  const userId = await requireUserId();
   await prisma.recipe.updateMany({
     where: { id, userId },
     data: { deletedAt: null },
@@ -184,7 +184,7 @@ export async function restoreRecipe(formData: FormData) {
 export async function permanentlyDeleteRecipe(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing recipe id.");
-  const userId = await getDefaultUserId();
+  const userId = await requireUserId();
   await prisma.recipe.deleteMany({
     where: { id, userId, deletedAt: { not: null } },
   });

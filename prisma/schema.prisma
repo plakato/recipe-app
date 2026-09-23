@@ -10,16 +10,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// A user owns recipes. Login is deferred: we seed exactly one default user for
-// now and attach every recipe to it. Turning on login later just lets more
-// User rows be created — no migration needed.
+// A user owns recipes. Accounts are email + password (lib/auth.ts); sign-up is
+// gated by an invite code so only family can join. Each user sees only their own
+// recipes.
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  password  String? // bcrypt hash — null until login is enabled
+  password  String? // scrypt hash (lib/password.ts); null only for the legacy placeholder owner
   name      String?
   recipes   Recipe[]
+  sessions  Session[]
   createdAt DateTime @default(now())
+}
+
+// A signed-in browser. The cookie holds a random token; we store only its
+// SHA-256 hash as the id, so a leaked database can't be used to hijack logins.
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Recipe {

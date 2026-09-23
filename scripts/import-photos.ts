@@ -7,24 +7,25 @@
 // Idempotent: a manifest (<folder>/.imported.json) records which files have
 // already been imported, so re-running only processes new or failed ones.
 //
-// Run: npx tsx --env-file=.env scripts/import-photos.ts <folder> [language] [model]
-// e.g. npx tsx --env-file=.env scripts/import-photos.ts recipe_photos Slovak
+// Run: npx tsx --env-file=.env scripts/import-photos.ts --user <email> <folder> [language] [model]
+// e.g. npx tsx --env-file=.env scripts/import-photos.ts --user me@example.com recipe_photos Slovak
 import { readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
-import { getDefaultUserId } from "@/lib/user";
+import { stripUserArg, userIdForScript } from "@/lib/script-user";
 import { saveUploadedImage } from "@/lib/saveImage";
 import { extractRecipeFromImage } from "@/lib/extractRecipe";
 
-const folder = process.argv[2];
+const argv = stripUserArg(process.argv.slice(2));
+const folder = argv[0];
 if (!folder) {
   console.error(
-    "Usage: npx tsx --env-file=.env scripts/import-photos.ts <folder> [language] [model]",
+    "Usage: npx tsx --env-file=.env scripts/import-photos.ts --user <email> <folder> [language] [model]",
   );
   process.exit(1);
 }
-const language = process.argv[3] || undefined;
-const model = process.argv[4] || undefined;
+const language = argv[1] || undefined;
+const model = argv[2] || undefined;
 
 const MANIFEST = path.join(folder, ".imported.json");
 type Manifest = Record<string, { recipeId: string; title: string; at: string }>;
@@ -48,7 +49,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       `(language: ${language ?? "none"}, model: ${model ?? "default free"})`,
   );
 
-  const userId = await getDefaultUserId();
+  const userId = await userIdForScript(process.argv);
   const failed: string[] = [];
 
   for (const [i, name] of todo.entries()) {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { getSessionUser } from "@/lib/auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,11 +19,12 @@ export const metadata: Metadata = {
   description: "Our family recipe collection",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getSessionUser();
   return (
     <html
       lang="en"
@@ -34,20 +36,33 @@ export default function RootLayout({
             <Link href="/" className="text-lg font-semibold tracking-tight">
               🍲 Family Recipes
             </Link>
-            <div className="flex items-center gap-1 text-sm">
-              <Link
-                href="/recipes/new"
-                className="rounded-lg bg-amber-600 px-3 py-1.5 font-medium text-white hover:bg-amber-700"
-              >
-                Add recipe
-              </Link>
-              <Link
-                href="/trash"
-                className="rounded-lg px-3 py-1.5 text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
-              >
-                Trash
-              </Link>
-            </div>
+            {user ? (
+              <div className="flex items-center gap-1 text-sm">
+                <Link
+                  href="/recipes/new"
+                  className="rounded-lg bg-amber-600 px-3 py-1.5 font-medium text-white hover:bg-amber-700"
+                >
+                  Add recipe
+                </Link>
+                <Link
+                  href="/trash"
+                  className="rounded-lg px-3 py-1.5 text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  Trash
+                </Link>
+                <form method="post" action="/api/auth/logout" className="ml-2 flex items-center gap-2">
+                  <span className="hidden max-w-[10rem] truncate text-stone-500 sm:inline" title={user.email}>
+                    {user.name || user.email}
+                  </span>
+                  <button
+                    type="submit"
+                    className="rounded-lg px-3 py-1.5 text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+                  >
+                    Sign out
+                  </button>
+                </form>
+              </div>
+            ) : null}
           </nav>
         </header>
         <main className="mx-auto max-w-3xl px-4 py-8">{children}</main>

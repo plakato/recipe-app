@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getDefaultUserId } from "@/lib/user";
+import { requireUserId } from "@/lib/auth";
 import { restoreRecipe, permanentlyDeleteRecipe } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function TrashPage() {
-  const userId = await getDefaultUserId();
+  const userId = await requireUserId();
   const recipes = await prisma.recipe.findMany({
     where: { userId, deletedAt: { not: null } },
     orderBy: { deletedAt: "desc" },

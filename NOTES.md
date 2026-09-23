@@ -30,7 +30,9 @@ Running list of things we've decided to do later, so they don't get lost.
   Still to do: re-create the schedule on the Hermes server after deploying, and
   **create our own Google client ID for rclone** — rclone's shared one is being
   retired during 2026 (https://rclone.org/drive/#making-your-own-client-id).
-- Single shared site password at the reverse proxy while single-user.
+- ~~Single shared site password~~ → replaced by per-user accounts (email +
+  password, invite-only sign-up) on 2026-09-23. Social logins (Google/Facebook)
+  deliberately deferred.
 - Push the git repo to a private GitHub remote (also acts as off-machine
   backup of the code — not the database).
 

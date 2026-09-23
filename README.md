@@ -31,6 +31,7 @@ OPENROUTER_API_KEY="sk-or-v1-..."                         # your OpenRouter key
 OPENROUTER_MODEL="google/gemma-4-31b-it:free"             # free, vision-capable
 OPENROUTER_MODEL_FALLBACK="google/gemma-4-26b-a4b-it:free"  # used if primary is busy
 OPENROUTER_MODEL_HQ="google/gemini-2.5-flash"            # paid, opt-in for handwriting (~$0.0015/photo)
+INVITE_CODE="something-secret"                            # required to create an account on /signup
 ```
 
 **Free models only** (project rule). They are rate-limited (a few requests/min),
@@ -53,14 +54,27 @@ so the extractor retries on 429 and falls back to the second model.
   browser's Web Speech API (free, Chrome/Safari), edit the transcript, extract.
   Doubles as a paste-text importer. All four add-methods are now done.
 - ⬜ **Later** — AI-generated image to replace the placeholder; deploy + backups
-  + single-password site gate (Phase 5)
-- ⬜ **Phase 5** — deploy, backups, single-password site gate
+  (Phase 5)
+- ⬜ **Phase 5** — deploy (backups ✅, accounts ✅)
+
+## Accounts
+
+Email + password sign-in, one recipe collection per user. Sign-up (`/signup`)
+requires the `INVITE_CODE` from `.env`, so only family can join. The **first**
+account created adopts the recipes that existed before accounts did.
+
+- Passwords are hashed with scrypt (`lib/password.ts`); sessions are database
+  rows referenced by an httpOnly cookie (`lib/auth.ts`), 30 days.
+- `proxy.ts` redirects visitors without a session to `/login`; every page and
+  Server Action then verifies the session (`requireUser`) and scopes queries
+  by user.
+- No password-reset email: use `npx tsx --env-file=.env scripts/set-password.ts <email> <new-password>`.
 
 ## Bulk import & backups (scripts/)
 
 ```bash
-npx tsx --env-file=.env scripts/import-photos.ts <folder> [language] [model]  # every photo -> one recipe
-npx tsx --env-file=.env scripts/import-urls.ts <urls.txt> [model]            # every URL -> one recipe
+npx tsx --env-file=.env scripts/import-photos.ts --user <email> <folder> [language] [model]  # every photo -> one recipe
+npx tsx --env-file=.env scripts/import-urls.ts --user <email> <urls.txt> [model]            # every URL -> one recipe
 scripts/backup.sh                    # snapshot DB + photos + JSON/Markdown export to Google Drive (rclone)
 scripts/install-backup-schedule.sh   # run once per Mac: nightly backup at 02:30 via launchd
 ```
@@ -72,8 +86,5 @@ it costs well under a cent per recipe.
 
 ## Notes
 
-- Login is deferred: there is one seeded owner (`lib/user.ts`) and every recipe is
-  attached to it. The schema is already multi-user (`userId`), so adding logins later
-  needs no data migration.
 - Deleting a recipe is a **soft delete** (`deletedAt`) — it goes to Trash and can be
   restored. "Delete forever" in Trash is the only hard delete.

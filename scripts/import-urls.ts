@@ -6,20 +6,21 @@
 // re-running only retries failures. Non-recipe pages fail extraction and are
 // simply reported.
 //
-// Run: npx tsx --env-file=.env scripts/import-urls.ts <urls.txt> [model]
+// Run: npx tsx --env-file=.env scripts/import-urls.ts --user <email> <urls.txt> [model]
 import { readFile } from "node:fs/promises";
 import { prisma } from "@/lib/prisma";
-import { getDefaultUserId } from "@/lib/user";
+import { stripUserArg, userIdForScript } from "@/lib/script-user";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { extractRecipeFromText } from "@/lib/extractRecipe";
 import { downloadImageToUploads } from "@/lib/saveImage";
 
-const listFile = process.argv[2];
+const argv = stripUserArg(process.argv.slice(2));
+const listFile = argv[0];
 if (!listFile) {
-  console.error("Usage: npx tsx --env-file=.env scripts/import-urls.ts <urls.txt> [model]");
+  console.error("Usage: npx tsx --env-file=.env scripts/import-urls.ts --user <email> <urls.txt> [model]");
   process.exit(1);
 }
-const model = process.argv[3] || undefined;
+const model = argv[1] || undefined;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -43,7 +44,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       `${todo.length} to do (model: ${model ?? "default free"})`,
   );
 
-  const userId = await getDefaultUserId();
+  const userId = await userIdForScript(process.argv);
   const failed: { url: string; reason: string }[] = [];
 
   for (const [i, url] of todo.entries()) {
