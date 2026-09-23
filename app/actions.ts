@@ -8,6 +8,8 @@ import { linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { extractRecipeFromText, extractRecipeFromImage } from "@/lib/extractRecipe";
 import { downloadImageToUploads, saveUploadedImage } from "@/lib/saveImage";
+import { parseList } from "@/lib/recipes";
+import { findDuplicate, type DuplicateVerdict } from "@/lib/similarity";
 
 // Read the recipe fields shared by create and update out of submitted FormData.
 function readRecipeFields(formData: FormData) {
@@ -121,12 +123,56 @@ export async function importRecipeFromPhoto(
   }
 }
 
-export async function createRecipe(formData: FormData) {
-  const fields = readRecipeFields(formData);
-  if (!fields.title) {
-    throw new Error("A title is required.");
+// Result of a save attempt, consumed by RecipeForm via useActionState.
+// On success the action redirects, so a returned value always means "not saved".
+export type SaveState = {
+  error?: string;
+  duplicate?: NonNullable<DuplicateVerdict>;
+} | null;
+
+// Compare the submitted recipe with the user's other recipes. Returns a
+// SaveState to show instead of saving, or null when saving may proceed.
+// A near-duplicate can be overridden by resubmitting with confirmDuplicate=1
+// (the "Save anyway" button); an identical title never can — rename it.
+async function duplicateCheck(
+  userId: string,
+  fields: ReturnType<typeof readRecipeFields>,
+  formData: FormData,
+  excludeId?: string,
+): Promise<SaveState> {
+  const others = await prisma.recipe.findMany({
+    where: { userId, deletedAt: null, ...(excludeId ? { id: { not: excludeId } } : {}) },
+    select: { id: true, title: true, ingredients: true, instructions: true },
+  });
+  const verdict = findDuplicate(
+    {
+      title: fields.title,
+      ingredients: parseList(fields.ingredients),
+      instructions: parseList(fields.instructions),
+    },
+    others.map((r) => ({
+      id: r.id,
+      title: r.title,
+      ingredients: parseList(r.ingredients),
+      instructions: parseList(r.instructions),
+    })),
+  );
+  if (!verdict) return null;
+  if (verdict.kind === "near-duplicate" && formData.get("confirmDuplicate") === "1") {
+    return null;
   }
+  return { duplicate: verdict };
+}
+
+export async function createRecipe(
+  _prev: SaveState,
+  formData: FormData,
+): Promise<SaveState> {
+  const fields = readRecipeFields(formData);
+  if (!fields.title) return { error: "A title is required." };
   const userId = await requireUserId();
+  const blocked = await duplicateCheck(userId, fields, formData);
+  if (blocked) return blocked;
   const recipe = await prisma.recipe.create({
     data: { ...fields, userId },
   });
@@ -134,14 +180,17 @@ export async function createRecipe(formData: FormData) {
   redirect(`/recipes/${recipe.id}`);
 }
 
-export async function updateRecipe(formData: FormData) {
+export async function updateRecipe(
+  _prev: SaveState,
+  formData: FormData,
+): Promise<SaveState> {
   const id = String(formData.get("id") ?? "");
-  if (!id) throw new Error("Missing recipe id.");
+  if (!id) return { error: "Missing recipe id." };
   const fields = readRecipeFields(formData);
-  if (!fields.title) {
-    throw new Error("A title is required.");
-  }
+  if (!fields.title) return { error: "A title is required." };
   const userId = await requireUserId();
+  const blocked = await duplicateCheck(userId, fields, formData, id);
+  if (blocked) return blocked;
   // Scope by userId so only the owner's recipes can be edited.
   await prisma.recipe.updateMany({
     where: { id, userId },

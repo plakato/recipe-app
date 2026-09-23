@@ -10,6 +10,8 @@
 import { readFile } from "node:fs/promises";
 import { prisma } from "@/lib/prisma";
 import { stripUserArg, userIdForScript } from "@/lib/script-user";
+import { parseList } from "@/lib/recipes";
+import { findDuplicate, type Comparable } from "@/lib/similarity";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { extractRecipeFromText } from "@/lib/extractRecipe";
 import { downloadImageToUploads } from "@/lib/saveImage";
@@ -45,6 +47,16 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   );
 
   const userId = await userIdForScript(process.argv);
+  // Existing recipes, for the duplicate check. Grows as we import.
+  const known: (Comparable & { id: string })[] = (
+    await prisma.recipe.findMany({ where: { userId, deletedAt: null } })
+  ).map((r) => ({
+    id: r.id,
+    title: r.title,
+    ingredients: parseList(r.ingredients),
+    instructions: parseList(r.instructions),
+  }));
+  const skipped: string[] = [];
   const failed: { url: string; reason: string }[] = [];
 
   for (const [i, url] of todo.entries()) {
@@ -53,6 +65,12 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     try {
       const { text, imageUrl } = await fetchUrlText(url);
       const draft = await extractRecipeFromText(text, undefined, model);
+      const dup = findDuplicate(draft, known);
+      if (dup) {
+        skipped.push(url);
+        console.log(`SKIPPED: ${dup.kind} of "${dup.match.title}" (${Math.round(dup.score * 100)}%)`);
+        continue;
+      }
       const imagePath = imageUrl
         ? ((await downloadImageToUploads(imageUrl)) ?? null)
         : null;
@@ -71,6 +89,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
           imagePath,
         },
       });
+      known.push({ id: recipe.id, title: recipe.title, ingredients: draft.ingredients, instructions: draft.instructions });
       console.log(
         `"${recipe.title}" (${draft.ingredients.length} ingr, ` +
           `${draft.instructions.length} steps${imagePath ? ", image" : ""}, ` +
@@ -84,7 +103,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     if (i < todo.length - 1) await sleep(2000);
   }
 
-  console.log(`\nDone: ${todo.length - failed.length} imported, ${failed.length} failed`);
+  console.log(`\nDone: ${todo.length - failed.length - skipped.length} imported, ${skipped.length} skipped as duplicates, ${failed.length} failed`);
   for (const f of failed) console.log(`  ${f.url}\n      ${f.reason}`);
   await prisma.$disconnect();
   process.exit(failed.length ? 2 : 0);

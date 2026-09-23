@@ -13,6 +13,8 @@ import { readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import { stripUserArg, userIdForScript } from "@/lib/script-user";
+import { parseList } from "@/lib/recipes";
+import { findDuplicate, type Comparable } from "@/lib/similarity";
 import { saveUploadedImage } from "@/lib/saveImage";
 import { extractRecipeFromImage } from "@/lib/extractRecipe";
 
@@ -50,6 +52,16 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   );
 
   const userId = await userIdForScript(process.argv);
+  // Existing recipes, for the duplicate check. Grows as we import.
+  const existing: (Comparable & { id: string })[] = (
+    await prisma.recipe.findMany({ where: { userId, deletedAt: null } })
+  ).map((r) => ({
+    id: r.id,
+    title: r.title,
+    ingredients: parseList(r.ingredients),
+    instructions: parseList(r.instructions),
+  }));
+  const skipped: string[] = [];
   const failed: string[] = [];
 
   for (const [i, name] of todo.entries()) {
@@ -70,6 +82,13 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       savedPath = saved.imagePath;
 
       const draft = await extractRecipeFromImage(saved.dataUrl, language, model);
+      const dup = findDuplicate({ ...draft, title: draft.title || name }, existing);
+      if (dup) {
+        skipped.push(name);
+        await unlink(path.join("public", saved.imagePath)).catch(() => {});
+        console.log(`SKIPPED: ${dup.kind} of "${dup.match.title}" (${Math.round(dup.score * 100)}%)`);
+        continue;
+      }
       const recipe = await prisma.recipe.create({
         data: {
           userId,
@@ -84,6 +103,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
           imagePath: saved.imagePath,
         },
       });
+      existing.push({ id: recipe.id, title: recipe.title, ingredients: draft.ingredients, instructions: draft.instructions });
       manifest[name] = {
         recipeId: recipe.id,
         title: recipe.title,
@@ -107,7 +127,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   }
 
   console.log(
-    `\nDone: ${todo.length - failed.length} imported, ${failed.length} failed` +
+    `\nDone: ${todo.length - failed.length - skipped.length} imported, ${skipped.length} skipped as duplicates, ${failed.length} failed` +
       (failed.length ? `: ${failed.join(", ")}` : ""),
   );
   await prisma.$disconnect();

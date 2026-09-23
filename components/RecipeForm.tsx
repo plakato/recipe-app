@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import type { RecipeDraft } from "@/lib/recipes";
 import { listToLines } from "@/lib/recipes";
 import RecipeImage from "@/components/RecipeImage";
+import type { SaveState } from "@/app/actions";
 
 type Props = {
-  // A server action (createRecipe or updateRecipe).
-  action: (formData: FormData) => void | Promise<void>;
+  // A server action (createRecipe or updateRecipe). Returns a SaveState when
+  // the recipe was NOT saved (validation error or duplicate), redirects otherwise.
+  action: (prev: SaveState, formData: FormData) => Promise<SaveState>;
   initial?: Partial<RecipeDraft>;
   // For edit: the recipe id (rendered as a hidden field).
   recipeId?: string;
@@ -57,8 +59,55 @@ export default function RecipeForm({
   // future AI-generated images are preserved on save.
   const imagePath = initial?.imagePath ?? "";
 
+  const [state, formAction] = useActionState(action, null);
+  const dup = state?.duplicate;
+
   return (
-    <form action={action} className="space-y-5">
+    <form action={formAction} className="space-y-5">
+      {state?.error && (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          {state.error}
+        </p>
+      )}
+      {dup && (
+        <div
+          role="alert"
+          className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+        >
+          {dup.kind === "same-title" ? (
+            <>
+              <p className="font-medium">You already have a recipe called “{dup.match.title}”.</p>
+              <p>
+                Please give this one a different name so you can tell them apart, e.g. “{title} (version 2)”.{" "}
+                <Link href={`/recipes/${dup.match.id}`} target="_blank" className="underline">
+                  Open the existing recipe
+                </Link>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium">
+                This looks very similar to “{dup.match.title}” ({Math.round(dup.score * 100)}% match).
+              </p>
+              <p>
+                <Link href={`/recipes/${dup.match.id}`} target="_blank" className="underline">
+                  Open it to check
+                </Link>
+                . If it really is a different version, give this one a name that tells them apart
+                (e.g. “{title} bez čierneho korenia”), then save — or save anyway.
+              </p>
+              <button
+                type="submit"
+                name="confirmDuplicate"
+                value="1"
+                className="rounded-lg border border-amber-400 px-3 py-1.5 font-medium hover:bg-amber-100 dark:hover:bg-amber-900"
+              >
+                Save anyway, it&apos;s a different recipe
+              </button>
+            </>
+          )}
+        </div>
+      )}
       {recipeId && <input type="hidden" name="id" value={recipeId} />}
       <input type="hidden" name="sourceType" value={sourceType} />
       {initial?.sourceUrl && (
