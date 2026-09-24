@@ -19,6 +19,11 @@ Running list of things we've decided to do later, so they don't get lost.
   exists in the database — e.g. same or very similar title — and warn before
   saving, or offer to open the existing one. (Requested 2026-09-23.)
 
+- **Test the duplicate warning by hand** (added 2026-09-24): on Add recipe,
+  paste an existing recipe's ingredients + steps under a new title and save;
+  expect the amber "looks very similar" box with Save anyway; same title +
+  same content should demand a rename. Then delete the test recipe from Trash.
+
 - **Multi-recipe import review ("1 of N" walk-through).**
   The extractor can return several recipes from one source
   (`extractRecipesFromText/Image`); the bulk scripts use it. The import pages
