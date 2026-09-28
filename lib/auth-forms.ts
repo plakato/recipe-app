@@ -2,6 +2,19 @@
 // works without JavaScript and is easy to test with curl).
 import { NextResponse } from "next/server";
 
+// Reject cross-site form posts to the auth endpoints. Browsers send an Origin
+// header on POST; when present it must match the host we're serving.
+export function isSameOrigin(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return true; // non-browser client or very old browser
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
 // Only allow same-site relative paths as post-login destinations.
 export function safeNext(value: string | null | undefined): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/";

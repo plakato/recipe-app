@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { hashPassword, isValidEmail, MIN_PASSWORD_LENGTH, normalizeEmail } from "@/lib/password";
-import { redirectWithError } from "@/lib/auth-forms";
+import { redirectWithError, isSameOrigin } from "@/lib/auth-forms";
 
 // The placeholder owner that held every recipe before accounts existed. The
 // first real account adopts it (and therefore all existing recipes).
 const LEGACY_OWNER_EMAIL = "owner@local";
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) {
+    return new NextResponse("Cross-site request refused.", { status: 403 });
+  }
   const form = await request.formData();
   const email = normalizeEmail(String(form.get("email") ?? ""));
   const name = String(form.get("name") ?? "").trim().slice(0, 80);

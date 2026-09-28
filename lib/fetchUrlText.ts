@@ -3,6 +3,8 @@
 // cleanest signal, so we surface it first, then fall back to visible text.
 // Server-only (uses fetch against arbitrary URLs).
 
+import { safeFetch } from "@/lib/safeFetch";
+
 const MAX_CHARS = 12000;
 
 export function stripTags(html: string): string {
@@ -134,8 +136,8 @@ export async function fetchUrlText(url: string): Promise<FetchedPage> {
 
   let res: Response;
   try {
-    res = await fetch(parsed, {
-      redirect: "follow",
+    // safeFetch refuses private/internal addresses and checks each redirect.
+    res = await safeFetch(parsed, {
       headers: {
         // Some sites block requests without a browser-like User-Agent.
         "User-Agent":
@@ -143,7 +145,10 @@ export async function fetchUrlText(url: string): Promise<FetchedPage> {
         Accept: "text/html,application/xhtml+xml",
       },
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && /reachable|resolve|redirects|supported/.test(err.message)) {
+      throw err;
+    }
     throw new Error("Could not reach that URL.");
   }
   if (!res.ok) {

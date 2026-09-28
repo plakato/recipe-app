@@ -6,6 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { safeFetch } from "@/lib/safeFetch";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB cap
@@ -33,8 +34,7 @@ export async function downloadImageToUploads(
   imageUrl: string,
 ): Promise<string | null> {
   try {
-    const res = await fetch(imageUrl, {
-      redirect: "follow",
+    const res = await safeFetch(imageUrl, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; FamilyRecipes/1.0; +http://localhost)",

@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { normalizeEmail, verifyPassword } from "@/lib/password";
-import { clearFailures, isLocked, recordFailure, redirectWithError, safeNext } from "@/lib/auth-forms";
+import { clearFailures, isLocked, recordFailure, redirectWithError, safeNext, isSameOrigin } from "@/lib/auth-forms";
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) {
+    return new NextResponse("Cross-site request refused.", { status: 403 });
+  }
   const form = await request.formData();
   const email = normalizeEmail(String(form.get("email") ?? ""));
   const password = String(form.get("password") ?? "");
