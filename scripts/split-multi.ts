@@ -8,6 +8,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
+import { uploadFilePath } from "@/lib/saveImage";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { extractRecipesFromImage, extractRecipesFromText } from "@/lib/extractRecipe";
 import type { RecipeDraft } from "@/lib/recipes";
@@ -74,7 +75,7 @@ async function split(recipeId: string, drafts: RecipeDraft[]): Promise<string[]>
         continue;
       }
       process.stdout.write(`${name} ("${row.title}") … `);
-      const buf = await readFile(path.join("public", row.imagePath));
+      const buf = await readFile(uploadFilePath(row.imagePath));
       const dataUrl = `data:image/jpeg;base64,${buf.toString("base64")}`;
       const drafts = await extractRecipesFromImage(dataUrl, "Slovak", model);
       if (drafts.length > 1) {

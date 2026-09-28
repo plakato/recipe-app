@@ -15,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { stripUserArg, userIdForScript } from "@/lib/script-user";
 import { parseList } from "@/lib/recipes";
 import { findDuplicate, type Comparable } from "@/lib/similarity";
-import { saveUploadedImage } from "@/lib/saveImage";
+import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
 import { extractRecipeFromImage } from "@/lib/extractRecipe";
 
 const argv = stripUserArg(process.argv.slice(2));
@@ -85,7 +85,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       const dup = findDuplicate({ ...draft, title: draft.title || name }, existing);
       if (dup) {
         skipped.push(name);
-        await unlink(path.join("public", saved.imagePath)).catch(() => {});
+        await unlink(uploadFilePath(saved.imagePath)).catch(() => {});
         console.log(`SKIPPED: near-duplicate of "${dup.match.title}" (${Math.round(dup.score * 100)}%${dup.sameTitle ? ", same name" : ""})`);
         continue;
       }
@@ -119,7 +119,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       console.log(`FAILED: ${err instanceof Error ? err.message.slice(0, 160) : err}`);
       // Don't leave an orphaned copy of the photo in public/uploads.
       if (savedPath) {
-        await unlink(path.join("public", savedPath)).catch(() => {});
+        await unlink(uploadFilePath(savedPath)).catch(() => {});
       }
     }
     // Be gentle with free-tier rate limits.

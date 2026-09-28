@@ -7,7 +7,7 @@
 import { readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
-import { downloadImageToUploads } from "@/lib/saveImage";
+import { downloadImageToUploads, uploadFilePath } from "@/lib/saveImage";
 
 const model = process.argv[2] || process.env.OPENROUTER_MODEL_HQ || "google/gemini-2.5-flash";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -46,7 +46,7 @@ async function showsFood(dataUrl: string): Promise<boolean> {
 }
 
 async function localImageToDataUrl(imagePath: string): Promise<string> {
-  const buf = await readFile(path.join("public", imagePath));
+  const buf = await readFile(uploadFilePath(imagePath));
   const ext = path.extname(imagePath).slice(1).toLowerCase();
   const mime = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
   return `data:${mime};base64,${buf.toString("base64")}`;
@@ -104,10 +104,10 @@ function candidateImages(html: string, base: string): string[] {
             found = saved;
             break;
           }
-          await unlink(path.join("public", saved)).catch(() => {});
+          await unlink(uploadFilePath(saved)).catch(() => {});
         }
       }
-      await unlink(path.join("public", row.imagePath as string)).catch(() => {});
+      await unlink(uploadFilePath(row.imagePath as string)).catch(() => {});
       await prisma.recipe.update({ where: { id: row.id }, data: { imagePath: found } });
       if (found) {
         replaced++;

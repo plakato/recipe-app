@@ -8,7 +8,19 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { safeFetch } from "@/lib/safeFetch";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+// Where photo files live. In development this is public/uploads, which Next
+// serves statically. In production set UPLOAD_DIR to a folder outside the
+// checkout (e.g. /srv/recipes/data/uploads); app/uploads/[name]/route.ts
+// serves the files from there. Either way recipes store "/uploads/<file>".
+export const UPLOAD_DIR = path.resolve(
+  process.cwd(),
+  process.env.UPLOAD_DIR || path.join("public", "uploads"),
+);
+
+// Filesystem path of a stored image path such as "/uploads/abc.jpg".
+export function uploadFilePath(imagePath: string): string {
+  return path.join(UPLOAD_DIR, path.basename(imagePath));
+}
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB cap
 
 const EXT_BY_TYPE: Record<string, string> = {

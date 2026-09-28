@@ -5,6 +5,7 @@
 #   db/dev-YYYY-MM-DD.db   consistent SQLite snapshot (one per day, 90 kept)
 #   db/dev-latest.db       always the newest snapshot
 #   uploads/               recipe photos (copy-only: nothing is ever deleted)
+# Reads DATABASE_URL/UPLOAD_DIR from .env when set (production layout).
 #   export/                recipes.json + markdown/*.md (human-readable)
 #
 # Run by hand:  scripts/backup.sh
@@ -24,9 +25,17 @@ exec >>"$LOG" 2>&1
 echo "=== $(date '+%F %T') backup start"
 
 cd "$PROJECT"
+# Photo folder: UPLOAD_DIR from .env (production) or public/uploads (dev).
+UPLOADS="$(grep -E '^UPLOAD_DIR=' .env 2>/dev/null | cut -d= -f2- | tr -d '"')"
+UPLOADS="${UPLOADS:-public/uploads}"
 
 # 1. Consistent copy of the live SQLite database (safe while the app runs).
-sqlite3 prisma/dev.db ".backup '$LOCAL/db/dev-$DATE.db'"
+# Location comes from DATABASE_URL in .env: "file:./dev.db" (relative to
+# prisma/, the dev default) or "file:/abs/path.db" (production).
+DBURL="$(grep -E '^DATABASE_URL=' .env 2>/dev/null | cut -d= -f2- | tr -d '"' | sed 's|^file:||')"
+DBURL="${DBURL:-./dev.db}"
+case "$DBURL" in /*) DB="$DBURL" ;; *) DB="prisma/${DBURL#./}" ;; esac
+sqlite3 "$DB" ".backup '$LOCAL/db/dev-$DATE.db'"
 cp "$LOCAL/db/dev-$DATE.db" "$LOCAL/db/dev-latest.db"
 # Keep 90 days of local snapshots.
 find "$LOCAL/db" -name 'dev-20*.db' -mtime +90 -delete
@@ -40,7 +49,7 @@ npx tsx --env-file=.env scripts/export-recipes.ts "$LOCAL/export"
 # 3. Ship to Google Drive.
 rclone copy "$LOCAL/db" "$REMOTE/db" --max-age 100d
 rclone delete "$REMOTE/db" --include 'dev-20*.db' --min-age 90d || true
-rclone copy public/uploads "$REMOTE/uploads"          # never deletes remotely
+rclone copy "$UPLOADS" "$REMOTE/uploads"            # never deletes remotely
 rclone sync "$LOCAL/export" "$REMOTE/export"          # mirror of the export
 
 echo "=== $(date '+%F %T') backup done: $(rclone size "$REMOTE" | tr '\n' ' ')"
