@@ -46,8 +46,6 @@ function safeName(title: string, id: string): string {
     const md = [
       `# ${r.title}`,
       "",
-      r.description ?? "",
-      "",
       ...meta,
       "",
       "## Ingredients",

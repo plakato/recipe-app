@@ -40,7 +40,6 @@ model Recipe {
   userId       String
   user         User      @relation(fields: [userId], references: [id])
   title        String
-  description  String?
   ingredients  String // JSON-encoded string[] — e.g. ["2 cups flour","1 tsp salt"]
   instructions String // JSON-encoded string[] — ordered steps
   sourceType   String    @default("manual") // "url" | "photo" | "voice" | "manual"

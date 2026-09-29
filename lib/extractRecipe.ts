@@ -24,7 +24,6 @@ const SYSTEM_PROMPT = `You extract a single cooking recipe from the material the
 Return ONLY a JSON object (no markdown, no commentary) with exactly these keys:
 {
   "title": string,
-  "description": string,        // one short sentence, or ""
   "ingredients": string[],      // each item its own string, e.g. "2 cups flour"
   "instructions": string[]      // each step its own string, in order
 }
@@ -81,7 +80,6 @@ export function toDraft(parsed: unknown): RecipeDraft {
   const obj = (parsed ?? {}) as Record<string, unknown>;
   return {
     title: asString(obj.title),
-    description: asString(obj.description) || undefined,
     ingredients: asStringArray(obj.ingredients),
     instructions: asStringArray(obj.instructions),
   };

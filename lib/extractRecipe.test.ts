@@ -26,13 +26,11 @@ describe("toDraft", () => {
   it("normalizes a full object", () => {
     const draft = toDraft({
       title: "  Cake  ",
-      description: "Tasty",
       ingredients: ["2 eggs", "  flour  "],
       instructions: ["Mix", "Bake"],
     });
     expect(draft).toEqual({
       title: "Cake",
-      description: "Tasty",
       ingredients: ["2 eggs", "flour"],
       instructions: ["Mix", "Bake"],
     });
@@ -47,9 +45,8 @@ describe("toDraft", () => {
     expect(draft.instructions).toEqual([]);
   });
   it("turns empty strings and missing fields into undefined/[]", () => {
-    const draft = toDraft({ title: "", description: "" });
+    const draft = toDraft({ title: "" });
     expect(draft.title).toBe("");
-    expect(draft.description).toBeUndefined();
     expect(draft.ingredients).toEqual([]);
     expect(draft.instructions).toEqual([]);
   });

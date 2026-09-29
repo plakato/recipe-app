@@ -45,7 +45,6 @@ export default function RecipeForm({
 }: Props) {
   // Controlled fields so AI import (later phases) can populate them via setState.
   const [title, setTitle] = useState(initial?.title ?? "");
-  const [description, setDescription] = useState(initial?.description ?? "");
   const [ingredients, setIngredients] = useState(
     listToLines(initial?.ingredients ?? []),
   );
@@ -128,21 +127,6 @@ export default function RecipeForm({
           onChange={(e) => setTitle(e.target.value)}
           className={inputClass}
           placeholder="Grandma's apple pie"
-        />
-      </div>
-
-      <div className="space-y-1">
-        <label className={labelClass} htmlFor="description">
-          Description <span className="text-stone-400">(optional)</span>
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className={inputClass}
-          placeholder="A short note about this recipe"
         />
       </div>
 

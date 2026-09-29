@@ -14,7 +14,6 @@ import { findDuplicate, type DuplicateVerdict } from "@/lib/similarity";
 // Read the recipe fields shared by create and update out of submitted FormData.
 function readRecipeFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
   const ingredients = linesToList(String(formData.get("ingredients") ?? ""));
   const instructions = linesToList(String(formData.get("instructions") ?? ""));
   const sourceType = String(formData.get("sourceType") ?? "manual").trim();
@@ -23,7 +22,6 @@ function readRecipeFields(formData: FormData) {
 
   return {
     title,
-    description: description || null,
     ingredients: JSON.stringify(ingredients),
     instructions: JSON.stringify(instructions),
     sourceType: sourceType || "manual",

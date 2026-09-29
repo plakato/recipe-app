@@ -23,7 +23,6 @@ if (!url) {
   const draft = await extractRecipeFromText(text);
   console.log("\n=== EXTRACTED DRAFT ===");
   console.log("title       :", draft.title);
-  console.log("description :", draft.description ?? "");
   console.log("ingredients :", draft.ingredients.length);
   draft.ingredients.slice(0, 6).forEach((i) => console.log("   -", i));
   if (draft.ingredients.length > 6) console.log("   … +", draft.ingredients.length - 6, "more");

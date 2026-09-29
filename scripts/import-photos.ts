@@ -93,7 +93,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
         data: {
           userId,
           title: draft.title || name,
-          description: draft.description ?? null,
           ingredients: JSON.stringify(draft.ingredients),
           instructions: JSON.stringify(draft.instructions),
           sourceType: "photo",

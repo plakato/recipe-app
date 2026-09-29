@@ -32,7 +32,6 @@ export function listToLines(list: string[]): string {
 // manual path produce this same shape.
 export type RecipeDraft = {
   title: string;
-  description?: string;
   ingredients: string[];
   instructions: string[];
   sourceUrl?: string;
@@ -45,7 +44,6 @@ export type RecipeDraft = {
 export function recipeToDraft(recipe: Recipe): RecipeDraft {
   return {
     title: recipe.title,
-    description: recipe.description ?? undefined,
     ingredients: parseList(recipe.ingredients),
     instructions: parseList(recipe.instructions),
     sourceUrl: recipe.sourceUrl ?? undefined,

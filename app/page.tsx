@@ -50,11 +50,6 @@ export default async function Home() {
                   />
                   <div className="p-4">
                   <h2 className="font-semibold">{recipe.title}</h2>
-                  {recipe.description && (
-                    <p className="mt-1 line-clamp-2 text-sm text-stone-600 dark:text-stone-400">
-                      {recipe.description}
-                    </p>
-                  )}
                   </div>
                 </Link>
               </li>

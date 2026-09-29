@@ -37,11 +37,6 @@ export default async function RecipeDetailPage({
           <h1 className="text-3xl font-bold tracking-tight">{recipe.title}</h1>
           <SourceButton recipe={recipe} />
         </div>
-        {recipe.description && (
-          <p className="mt-2 text-stone-600 dark:text-stone-400">
-            {recipe.description}
-          </p>
-        )}
       </div>
 
       <RecipeImage

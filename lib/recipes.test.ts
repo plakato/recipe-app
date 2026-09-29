@@ -55,7 +55,6 @@ describe("recipeToDraft", () => {
       id: "1",
       userId: "u",
       title: "Cake",
-      description: null,
       ingredients: '["2 eggs","flour"]',
       instructions: '["Mix","Bake"]',
       sourceType: "manual",
@@ -68,7 +67,6 @@ describe("recipeToDraft", () => {
     // recipeToDraft only uses a type import, so a plain object is fine.
     expect(recipeToDraft(row as never)).toEqual({
       title: "Cake",
-      description: undefined,
       ingredients: ["2 eggs", "flour"],
       instructions: ["Mix", "Bake"],
       sourceUrl: undefined,

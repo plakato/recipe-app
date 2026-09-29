@@ -26,7 +26,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function fields(d: RecipeDraft) {
   return {
     title: d.title,
-    description: d.description ?? null,
     ingredients: JSON.stringify(d.ingredients),
     instructions: JSON.stringify(d.instructions),
   };
