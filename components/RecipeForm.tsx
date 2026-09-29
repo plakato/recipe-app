@@ -51,9 +51,18 @@ export default function RecipeForm({
   const [instructions, setInstructions] = useState(
     listToLines(initial?.instructions ?? []),
   );
-  // Image is carried through the form (not edited here yet), so imports and
-  // future AI-generated images are preserved on save.
+  // The stored image travels as a hidden field. The user can pick a new file
+  // (previewed locally, uploaded on save) or remove the current one.
   const imagePath = initial?.imagePath ?? "";
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  function chooseFile(file: File | null) {
+    if (preview) URL.revokeObjectURL(preview);
+    setNewFile(file);
+    setPreview(file ? URL.createObjectURL(file) : null);
+  }
+  const shownImage = preview ?? (removeImage ? null : imagePath || null);
 
   const [state, formAction] = useActionState(action, null);
   const dup = state?.duplicate;
@@ -109,11 +118,49 @@ export default function RecipeForm({
       )}
       <input type="hidden" name="imagePath" value={imagePath} />
 
-      <RecipeImage
-        src={imagePath || null}
-        alt={title || "Recipe image"}
-        className="aspect-video w-full rounded-xl"
-      />
+      <div className="space-y-2">
+        <RecipeImage
+          src={shownImage}
+          alt={title || "Recipe image"}
+          className="aspect-video w-full rounded-xl"
+        />
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <label className="cursor-pointer rounded-lg border border-stone-300 px-3 py-1.5 font-medium hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800">
+            {shownImage ? "Change photo" : "Add photo"}
+            <input
+              type="file"
+              name="photo"
+              accept="image/*,.heic,.heif"
+              className="sr-only"
+              onChange={(e) => {
+                chooseFile(e.target.files?.[0] ?? null);
+                setRemoveImage(false);
+              }}
+            />
+          </label>
+          {newFile && (
+            <button
+              type="button"
+              onClick={() => chooseFile(null)}
+              className="text-stone-500 hover:underline"
+            >
+              Keep the current photo instead
+            </button>
+          )}
+          {!newFile && imagePath && (
+            <label className="flex items-center gap-1.5 text-stone-600 dark:text-stone-400">
+              <input
+                type="checkbox"
+                name="removeImage"
+                value="1"
+                checked={removeImage}
+                onChange={(e) => setRemoveImage(e.target.checked)}
+              />
+              Remove photo
+            </label>
+          )}
+        </div>
+      </div>
 
       <div className="space-y-1">
         <label className={labelClass} htmlFor="title">

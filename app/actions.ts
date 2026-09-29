@@ -7,7 +7,8 @@ import { requireUserId } from "@/lib/auth";
 import { linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { extractRecipeFromText, extractRecipeFromImage } from "@/lib/extractRecipe";
-import { downloadImageToUploads, saveUploadedImage } from "@/lib/saveImage";
+import { downloadImageToUploads, saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
+import { unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
 import { findDuplicate, type DuplicateVerdict } from "@/lib/similarity";
 
@@ -137,6 +138,33 @@ async function duplicateCheck(
   return { duplicate: verdict };
 }
 
+// Apply the form's photo controls: a new file replaces the image (uploaded
+// and downscaled like a photo import); the "Remove photo" box clears it.
+// Returns the image path to store, or an error message.
+async function resolveImage(
+  formData: FormData,
+  current: string | null,
+): Promise<{ imagePath: string | null } | { error: string }> {
+  const file = formData.get("photo");
+  if (file instanceof File && file.size > 0) {
+    const saved = await saveUploadedImage(file);
+    if (!saved) {
+      return { error: "That image type isn't supported, or it's too large (max 8 MB)." };
+    }
+    return { imagePath: saved.imagePath };
+  }
+  if (formData.get("removeImage") === "1") return { imagePath: null };
+  return { imagePath: current };
+}
+
+// Delete an image file once no recipe (including Trash) references it.
+// Split imports share one photo between several recipes, hence the check.
+async function deleteImageIfUnused(imagePath: string | null) {
+  if (!imagePath) return;
+  const stillUsed = await prisma.recipe.count({ where: { imagePath } });
+  if (stillUsed === 0) await unlink(uploadFilePath(imagePath)).catch(() => {});
+}
+
 export async function createRecipe(
   _prev: SaveState,
   formData: FormData,
@@ -146,8 +174,10 @@ export async function createRecipe(
   const userId = await requireUserId();
   const blocked = await duplicateCheck(userId, fields, formData);
   if (blocked) return blocked;
+  const image = await resolveImage(formData, fields.imagePath);
+  if ("error" in image) return { error: image.error };
   const recipe = await prisma.recipe.create({
-    data: { ...fields, userId },
+    data: { ...fields, imagePath: image.imagePath, userId },
   });
   revalidatePath("/");
   redirect(`/recipes/${recipe.id}`);
@@ -164,11 +194,21 @@ export async function updateRecipe(
   const userId = await requireUserId();
   const blocked = await duplicateCheck(userId, fields, formData, id);
   if (blocked) return blocked;
+  const existing = await prisma.recipe.findFirst({
+    where: { id, userId },
+    select: { imagePath: true },
+  });
+  if (!existing) return { error: "Recipe not found." };
+  const image = await resolveImage(formData, existing.imagePath);
+  if ("error" in image) return { error: image.error };
   // Scope by userId so only the owner's recipes can be edited.
   await prisma.recipe.updateMany({
     where: { id, userId },
-    data: fields,
+    data: { ...fields, imagePath: image.imagePath },
   });
+  if (existing.imagePath && existing.imagePath !== image.imagePath) {
+    await deleteImageIfUnused(existing.imagePath);
+  }
   revalidatePath("/");
   revalidatePath(`/recipes/${id}`);
   redirect(`/recipes/${id}`);
