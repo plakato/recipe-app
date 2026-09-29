@@ -33,23 +33,14 @@ export default async function RecipeDetailPage({
         >
           ← All recipes
         </Link>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">
-          {recipe.title}
-        </h1>
+        <div className="mt-2 flex items-start justify-between gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">{recipe.title}</h1>
+          <SourceButton recipe={recipe} />
+        </div>
         {recipe.description && (
           <p className="mt-2 text-stone-600 dark:text-stone-400">
             {recipe.description}
           </p>
-        )}
-        {recipe.sourceUrl && (
-          <a
-            href={recipe.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-block text-sm text-amber-700 hover:underline dark:text-amber-500"
-          >
-            Original source ↗
-          </a>
         )}
       </div>
 
@@ -113,5 +104,43 @@ export default async function RecipeDetailPage({
         </form>
       </div>
     </article>
+  );
+}
+
+// Small icon-only button that opens where the recipe came from: the web page
+// for URL imports, the original photo (full size) for photo imports.
+function SourceButton({
+  recipe,
+}: {
+  recipe: { sourceType: string; sourceUrl: string | null; imagePath: string | null };
+}) {
+  const isPhoto = recipe.sourceType === "photo" && !!recipe.imagePath;
+  const href = recipe.sourceUrl ?? (isPhoto ? recipe.imagePath : null);
+  if (!href) return null;
+  const label = recipe.sourceUrl ? "Open the original page" : "Open the original photo";
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={label}
+      aria-label={label}
+      className="mt-1 shrink-0 rounded-full border border-stone-300 p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-800 dark:border-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+    >
+      {recipe.sourceUrl ? (
+        // link / external icon
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+      ) : (
+        // photo icon
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path d="m21 15-5-5L5 21" />
+        </svg>
+      )}
+    </a>
   );
 }
