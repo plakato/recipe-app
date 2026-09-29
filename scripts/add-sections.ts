@@ -5,7 +5,7 @@
 // imports). A result is applied only if its non-heading lines are identical
 // to the stored ones, in the same order.
 //
-// Run: npx tsx --env-file=.env scripts/add-sections.ts --user <email> [model] [--dry-run]
+// Run: npx tsx --env-file=.env scripts/add-sections.ts --user <email> [model] [--dry-run] [--only <title substring>]
 import { readFile } from "node:fs/promises";
 import { prisma } from "@/lib/prisma";
 import { fetchUrlText } from "@/lib/fetchUrlText";
@@ -15,7 +15,9 @@ import { stripUserArg, userIdForScript } from "@/lib/script-user";
 
 const argv = stripUserArg(process.argv.slice(2));
 const dryRun = argv.includes("--dry-run");
-const model = argv.filter((a) => !a.startsWith("--"))[0] || "google/gemini-2.5-flash";
+const onlyIdx = argv.indexOf("--only");
+const only = onlyIdx >= 0 ? (argv[onlyIdx + 1] ?? "").toLowerCase() : "";
+const model = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--only")[0] || "google/gemini-2.5-flash";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const PROMPT = `You are given a recipe's ingredient lines and instruction lines exactly as stored, plus the original source material.
@@ -68,12 +70,22 @@ function onlyAddsHeadings(stored: string[], proposed: string[]): boolean {
   return kept.length === stored.length && kept.every((l, i) => l === stored[i].trim());
 }
 
+// A single heading as the very first line labels the whole list and adds
+// nothing (often it's just the recipe name) — treat that as "no components".
+function meaningful(proposed: string[]): string[] {
+  const headings = proposed.filter(isSectionHeading);
+  if (headings.length === 1 && isSectionHeading(proposed[0] ?? "")) return proposed.slice(1);
+  return proposed;
+}
+
 (async () => {
   const userId = await userIdForScript(process.argv);
-  const rows = await prisma.recipe.findMany({
-    where: { userId, deletedAt: null, sourceType: { in: ["url", "photo"] } },
-    orderBy: { createdAt: "asc" },
-  });
+  const rows = (
+    await prisma.recipe.findMany({
+      where: { userId, deletedAt: null, sourceType: { in: ["url", "photo"] } },
+      orderBy: { createdAt: "asc" },
+    })
+  ).filter((r) => !only || r.title.toLowerCase().includes(only));
   let changed = 0, skipped = 0, failed = 0;
   for (const [i, r] of rows.entries()) {
     const stored = { ingredients: parseList(r.ingredients), instructions: parseList(r.instructions) };
@@ -99,8 +111,8 @@ function onlyAddsHeadings(stored: string[], proposed: string[]): boolean {
       if (!proposed) throw new Error("no JSON in answer");
       const ingOk = onlyAddsHeadings(stored.ingredients, proposed.ingredients);
       const insOk = onlyAddsHeadings(stored.instructions, proposed.instructions);
-      const newIng = ingOk ? proposed.ingredients : stored.ingredients;
-      const newIns = insOk ? proposed.instructions : stored.instructions;
+      const newIng = ingOk ? meaningful(proposed.ingredients) : stored.ingredients;
+      const newIns = insOk ? meaningful(proposed.instructions) : stored.instructions;
       const headings = [...newIng, ...newIns].filter(isSectionHeading);
       if (headings.length === 0) {
         console.log(ingOk && insOk ? "no components" : "no components (answer altered lines, ignored)");
