@@ -41,11 +41,6 @@ export default async function RecipeDetailPage({
             {recipe.description}
           </p>
         )}
-        <div className="mt-3 flex flex-wrap gap-4 text-sm text-stone-500">
-          {recipe.servings && <span>Serves {recipe.servings}</span>}
-          {recipe.prepTime && <span>Prep {recipe.prepTime}</span>}
-          {recipe.cookTime && <span>Cook {recipe.cookTime}</span>}
-        </div>
         {recipe.sourceUrl && (
           <a
             href={recipe.sourceUrl}

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
-import { parseList } from "@/lib/recipes";
 import RecipeImage from "@/components/RecipeImage";
 
 // Always render fresh from the database.
@@ -38,7 +37,6 @@ export default async function Home() {
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {recipes.map((recipe) => {
-            const ingredientCount = parseList(recipe.ingredients).length;
             return (
               <li key={recipe.id}>
                 <Link
@@ -57,11 +55,6 @@ export default async function Home() {
                       {recipe.description}
                     </p>
                   )}
-                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-stone-500">
-                    <span>{ingredientCount} ingredients</span>
-                    {recipe.cookTime && <span>· {recipe.cookTime}</span>}
-                    {recipe.servings && <span>· serves {recipe.servings}</span>}
-                  </div>
                   </div>
                 </Link>
               </li>
