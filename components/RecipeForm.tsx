@@ -179,7 +179,8 @@ export default function RecipeForm({
 
       <div className="space-y-1">
         <label className={labelClass} htmlFor="ingredients">
-          Ingredients <span className="text-stone-400">(one per line)</span>
+          Ingredients{" "}
+          <span className="text-stone-400">(one per line; a line ending with “:” like “Cesto:” starts a section)</span>
         </label>
         <textarea
           id="ingredients"
@@ -188,7 +189,7 @@ export default function RecipeForm({
           onChange={(e) => setIngredients(e.target.value)}
           rows={8}
           className={`${inputClass} font-mono text-sm`}
-          placeholder={"2 cups flour\n1 tsp salt\n3 apples, peeled and sliced"}
+          placeholder={"Cesto:\n2 cups flour\n1 tsp salt\nPlnka:\n3 apples, peeled and sliced"}
         />
       </div>
 

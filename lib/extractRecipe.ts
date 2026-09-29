@@ -31,6 +31,7 @@ Return ONLY a JSON object (no markdown, no commentary) with exactly these keys:
 Rules:
 - Keep the recipe in its ORIGINAL language (do not translate).
 - ingredients and instructions must be arrays of strings, never one big block.
+- If the recipe has separate components (e.g. dough, filling, glaze, sauce), keep ONE list but put a heading line ending in a colon before each component's items, in the recipe's language, e.g. "Cesto:", "Plnka:", "Poleva:". Do the same in instructions when the steps are grouped by component. Never invent components that the source doesn't have.
 - Keep instruction steps concise but complete.
 - If a field is unknown, use "" (or [] for the arrays). Never invent quantities.
 - If the material is clearly NOT a recipe, return {"title":"","ingredients":[],"instructions":[]}.`;

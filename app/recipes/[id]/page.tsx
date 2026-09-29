@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
-import { parseList } from "@/lib/recipes";
+import { groupSections, parseList } from "@/lib/recipes";
 import { softDeleteRecipe } from "@/app/actions";
 import RecipeImage from "@/components/RecipeImage";
 
@@ -49,14 +49,25 @@ export default async function RecipeDetailPage({
         <div>
           <h2 className="mb-3 text-lg font-semibold">Ingredients</h2>
           {ingredients.length ? (
-            <ul className="space-y-1.5 text-stone-800 dark:text-stone-200">
-              {ingredients.map((item, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-amber-600">•</span>
-                  <span>{item}</span>
-                </li>
+            <div className="space-y-4">
+              {groupSections(ingredients).map((section, si) => (
+                <div key={si}>
+                  {section.heading && (
+                    <h3 className="mb-1.5 font-semibold text-stone-700 dark:text-stone-300">
+                      {section.heading}
+                    </h3>
+                  )}
+                  <ul className="space-y-1.5 text-stone-800 dark:text-stone-200">
+                    {section.items.map((item, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-amber-600">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
             <p className="text-sm text-stone-500">None listed.</p>
           )}
@@ -65,16 +76,27 @@ export default async function RecipeDetailPage({
         <div>
           <h2 className="mb-3 text-lg font-semibold">Instructions</h2>
           {instructions.length ? (
-            <ol className="space-y-3 text-stone-800 dark:text-stone-200">
-              {instructions.map((step, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-amber-100 text-sm font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                    {i + 1}
-                  </span>
-                  <span className="pt-0.5">{step}</span>
-                </li>
+            <div className="space-y-5">
+              {groupSections(instructions).map((section, si) => (
+                <div key={si}>
+                  {section.heading && (
+                    <h3 className="mb-2 font-semibold text-stone-700 dark:text-stone-300">
+                      {section.heading}
+                    </h3>
+                  )}
+                  <ol className="space-y-3 text-stone-800 dark:text-stone-200">
+                    {section.items.map((step, i) => (
+                      <li key={i} className="flex gap-3">
+                        <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-amber-100 text-sm font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                          {i + 1}
+                        </span>
+                        <span className="pt-0.5">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               ))}
-            </ol>
+            </div>
           ) : (
             <p className="text-sm text-stone-500">None listed.</p>
           )}

@@ -50,3 +50,31 @@ export function recipeToDraft(recipe: Recipe): RecipeDraft {
     imagePath: recipe.imagePath ?? undefined,
   };
 }
+
+// Recipes with several components (dough, filling, glaze…) keep one flat list
+// but mark each component with a heading line that ends in a colon, e.g.
+// "Cesto:". Works for ingredients and for instructions, in the textarea, in
+// the AI output and in exports alike.
+export function isSectionHeading(line: string): boolean {
+  const t = line.trim();
+  return /^[^:]{1,60}:$/.test(t) && !/\d/.test(t);
+}
+
+export type Section = { heading: string | null; items: string[] };
+
+// Split a list into sections at heading lines. A list without headings is
+// one section with heading null.
+export function groupSections(lines: string[]): Section[] {
+  const sections: Section[] = [];
+  let current: Section = { heading: null, items: [] };
+  for (const line of lines) {
+    if (isSectionHeading(line)) {
+      if (current.items.length || current.heading) sections.push(current);
+      current = { heading: line.trim().replace(/:$/, ""), items: [] };
+    } else {
+      current.items.push(line);
+    }
+  }
+  if (current.items.length || current.heading) sections.push(current);
+  return sections;
+}

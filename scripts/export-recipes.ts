@@ -5,7 +5,7 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
-import { parseList } from "@/lib/recipes";
+import { isSectionHeading, parseList } from "@/lib/recipes";
 
 const outDir = path.resolve(process.argv[2] ?? "backups/export");
 
@@ -50,11 +50,11 @@ function safeName(title: string, id: string): string {
       "",
       "## Ingredients",
       "",
-      ...r.ingredients.map((i) => `- ${i}`),
+      ...r.ingredients.map((i) => (isSectionHeading(i) ? `\n**${i}**` : `- ${i}`)),
       "",
       "## Instructions",
       "",
-      ...r.instructions.map((s, n) => `${n + 1}. ${s}`),
+      ...r.instructions.map((s, n) => (isSectionHeading(s) ? `\n**${s}**` : `${n + 1}. ${s}`)),
       "",
     ].join("\n");
     await writeFile(path.join(mdDir, safeName(r.title, r.id)), md);

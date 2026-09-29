@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  isSectionHeading,
+  groupSections,
   parseList,
   linesToList,
   listToLines,
@@ -72,5 +74,25 @@ describe("recipeToDraft", () => {
       sourceUrl: undefined,
       imagePath: "/uploads/x.jpg",
     });
+  });
+});
+
+describe("section headings", () => {
+  it("recognises short colon-terminated lines and nothing else", () => {
+    expect(isSectionHeading("Cesto:")).toBe(true);
+    expect(isSectionHeading("Na plnku:")).toBe(true);
+    expect(isSectionHeading("2 vajcia")).toBe(false);
+    expect(isSectionHeading("soľ: štipka")).toBe(false);
+    expect(isSectionHeading("Pečieme 20 min pri 180:")).toBe(false);
+  });
+  it("groups a list at its headings", () => {
+    expect(groupSections(["Cesto:", "múka", "maslo", "Plnka:", "tvaroh"])).toEqual([
+      { heading: "Cesto", items: ["múka", "maslo"] },
+      { heading: "Plnka", items: ["tvaroh"] },
+    ]);
+  });
+  it("returns one unnamed section for a flat list", () => {
+    expect(groupSections(["múka", "maslo"])).toEqual([{ heading: null, items: ["múka", "maslo"] }]);
+    expect(groupSections([])).toEqual([]);
   });
 });
