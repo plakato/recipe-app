@@ -14,7 +14,10 @@
 set -euo pipefail
 
 PROJECT="$(cd "$(dirname "$0")/.." && pwd)"
-REMOTE="gdrive:RecipeAppBackup"
+# Drive folder; override with BACKUP_REMOTE in .env (e.g. a dev machine uses
+# its own folder so it never overwrites the production backups).
+REMOTE="$(grep -E '^BACKUP_REMOTE=' .env 2>/dev/null | cut -d= -f2- | tr -d '"')"
+REMOTE="${REMOTE:-gdrive:RecipeAppBackup}"
 LOCAL="$PROJECT/backups"
 LOG="$LOCAL/backup.log"
 DATE="$(date +%Y-%m-%d)"

@@ -32,6 +32,7 @@ OPENROUTER_MODEL="google/gemma-4-31b-it:free"             # free, vision-capable
 OPENROUTER_MODEL_FALLBACK="google/gemma-4-26b-a4b-it:free"  # used if primary is busy
 OPENROUTER_MODEL_HQ="google/gemini-2.5-flash"            # paid, opt-in for handwriting (~$0.0015/photo)
 INVITE_CODE="something-secret"                            # required to create an account on /signup
+BACKUP_REMOTE="gdrive:RecipeAppBackup"                    # optional; rclone remote:folder for scripts/backup.sh
 UPLOAD_DIR="/srv/recipes/data/uploads"                    # production only; defaults to public/uploads
 ```
 
