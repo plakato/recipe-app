@@ -24,8 +24,6 @@ if (!url) {
   console.log("\n=== EXTRACTED DRAFT ===");
   console.log("title       :", draft.title);
   console.log("description :", draft.description ?? "");
-  console.log("servings    :", draft.servings ?? "");
-  console.log("prep / cook :", draft.prepTime ?? "", "/", draft.cookTime ?? "");
   console.log("ingredients :", draft.ingredients.length);
   draft.ingredients.slice(0, 6).forEach((i) => console.log("   -", i));
   if (draft.ingredients.length > 6) console.log("   … +", draft.ingredients.length - 6, "more");

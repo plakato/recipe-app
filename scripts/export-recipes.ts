@@ -39,9 +39,6 @@ function safeName(title: string, id: string): string {
 
   for (const r of json) {
     const meta = [
-      r.servings && `- Servings: ${r.servings}`,
-      r.prepTime && `- Prep: ${r.prepTime}`,
-      r.cookTime && `- Cook: ${r.cookTime}`,
       r.sourceUrl && `- Source: ${r.sourceUrl}`,
       r.imagePath && `- Photo: ${r.imagePath}`,
       r.deletedAt && `- IN TRASH since ${r.deletedAt.toISOString()}`,

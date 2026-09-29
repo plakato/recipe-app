@@ -26,10 +26,7 @@ Return ONLY a JSON object (no markdown, no commentary) with exactly these keys:
   "title": string,
   "description": string,        // one short sentence, or ""
   "ingredients": string[],      // each item its own string, e.g. "2 cups flour"
-  "instructions": string[],     // each step its own string, in order
-  "servings": string,           // e.g. "4" or "4 servings", or ""
-  "prepTime": string,           // e.g. "20 min", or ""
-  "cookTime": string            // e.g. "45 min", or ""
+  "instructions": string[]      // each step its own string, in order
 }
 
 Rules:
@@ -87,9 +84,6 @@ export function toDraft(parsed: unknown): RecipeDraft {
     description: asString(obj.description) || undefined,
     ingredients: asStringArray(obj.ingredients),
     instructions: asStringArray(obj.instructions),
-    servings: asString(obj.servings) || undefined,
-    prepTime: asString(obj.prepTime) || undefined,
-    cookTime: asString(obj.cookTime) || undefined,
   };
 }
 

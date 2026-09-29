@@ -28,8 +28,6 @@ if (!path) {
   const draft = await extractRecipeFromImage(dataUrl, language, model);
   console.log("\n=== EXTRACTED DRAFT ===");
   console.log("title       :", draft.title);
-  console.log("servings    :", draft.servings ?? "");
-  console.log("prep / bake :", draft.prepTime ?? "", "/", draft.cookTime ?? "");
   console.log("ingredients :", draft.ingredients.length);
   draft.ingredients.forEach((i) => console.log("   -", i));
   console.log("instructions:", draft.instructions.length);

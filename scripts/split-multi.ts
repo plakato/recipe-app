@@ -29,9 +29,6 @@ function fields(d: RecipeDraft) {
     description: d.description ?? null,
     ingredients: JSON.stringify(d.ingredients),
     instructions: JSON.stringify(d.instructions),
-    servings: d.servings ?? null,
-    prepTime: d.prepTime ?? null,
-    cookTime: d.cookTime ?? null,
   };
 }
 

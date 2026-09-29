@@ -43,9 +43,6 @@ model Recipe {
   description  String?
   ingredients  String // JSON-encoded string[] — e.g. ["2 cups flour","1 tsp salt"]
   instructions String // JSON-encoded string[] — ordered steps
-  servings     String?
-  prepTime     String?
-  cookTime     String?
   sourceType   String    @default("manual") // "url" | "photo" | "voice" | "manual"
   sourceUrl    String?
   imagePath    String? // stored photo path, if any

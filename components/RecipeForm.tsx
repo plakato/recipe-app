@@ -52,9 +52,6 @@ export default function RecipeForm({
   const [instructions, setInstructions] = useState(
     listToLines(initial?.instructions ?? []),
   );
-  const [servings, setServings] = useState(initial?.servings ?? "");
-  const [prepTime, setPrepTime] = useState(initial?.prepTime ?? "");
-  const [cookTime, setCookTime] = useState(initial?.cookTime ?? "");
   // Image is carried through the form (not edited here yet), so imports and
   // future AI-generated images are preserved on save.
   const imagePath = initial?.imagePath ?? "";
@@ -147,48 +144,6 @@ export default function RecipeForm({
           className={inputClass}
           placeholder="A short note about this recipe"
         />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="space-y-1">
-          <label className={labelClass} htmlFor="servings">
-            Servings
-          </label>
-          <input
-            id="servings"
-            name="servings"
-            value={servings}
-            onChange={(e) => setServings(e.target.value)}
-            className={inputClass}
-            placeholder="4"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className={labelClass} htmlFor="prepTime">
-            Prep time
-          </label>
-          <input
-            id="prepTime"
-            name="prepTime"
-            value={prepTime}
-            onChange={(e) => setPrepTime(e.target.value)}
-            className={inputClass}
-            placeholder="20 min"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className={labelClass} htmlFor="cookTime">
-            Cook time
-          </label>
-          <input
-            id="cookTime"
-            name="cookTime"
-            value={cookTime}
-            onChange={(e) => setCookTime(e.target.value)}
-            className={inputClass}
-            placeholder="45 min"
-          />
-        </div>
       </div>
 
       <div className="space-y-1">

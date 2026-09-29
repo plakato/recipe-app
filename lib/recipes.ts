@@ -35,9 +35,6 @@ export type RecipeDraft = {
   description?: string;
   ingredients: string[];
   instructions: string[];
-  servings?: string;
-  prepTime?: string;
-  cookTime?: string;
   sourceUrl?: string;
   // Local path under /public (e.g. "/uploads/abc.jpg"), or a placeholder shown
   // when empty. Populated by URL import (downloaded) or later by AI generation.
@@ -51,9 +48,6 @@ export function recipeToDraft(recipe: Recipe): RecipeDraft {
     description: recipe.description ?? undefined,
     ingredients: parseList(recipe.ingredients),
     instructions: parseList(recipe.instructions),
-    servings: recipe.servings ?? undefined,
-    prepTime: recipe.prepTime ?? undefined,
-    cookTime: recipe.cookTime ?? undefined,
     sourceUrl: recipe.sourceUrl ?? undefined,
     imagePath: recipe.imagePath ?? undefined,
   };

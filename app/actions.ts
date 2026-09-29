@@ -17,9 +17,6 @@ function readRecipeFields(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const ingredients = linesToList(String(formData.get("ingredients") ?? ""));
   const instructions = linesToList(String(formData.get("instructions") ?? ""));
-  const servings = String(formData.get("servings") ?? "").trim();
-  const prepTime = String(formData.get("prepTime") ?? "").trim();
-  const cookTime = String(formData.get("cookTime") ?? "").trim();
   const sourceType = String(formData.get("sourceType") ?? "manual").trim();
   const sourceUrl = String(formData.get("sourceUrl") ?? "").trim();
   const imagePath = String(formData.get("imagePath") ?? "").trim();
@@ -29,9 +26,6 @@ function readRecipeFields(formData: FormData) {
     description: description || null,
     ingredients: JSON.stringify(ingredients),
     instructions: JSON.stringify(instructions),
-    servings: servings || null,
-    prepTime: prepTime || null,
-    cookTime: cookTime || null,
     sourceType: sourceType || "manual",
     sourceUrl: sourceUrl || null,
     imagePath: imagePath || null,

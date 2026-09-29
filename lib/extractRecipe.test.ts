@@ -29,18 +29,12 @@ describe("toDraft", () => {
       description: "Tasty",
       ingredients: ["2 eggs", "  flour  "],
       instructions: ["Mix", "Bake"],
-      servings: "4",
-      prepTime: "10 min",
-      cookTime: "45 min",
     });
     expect(draft).toEqual({
       title: "Cake",
       description: "Tasty",
       ingredients: ["2 eggs", "flour"],
       instructions: ["Mix", "Bake"],
-      servings: "4",
-      prepTime: "10 min",
-      cookTime: "45 min",
     });
   });
   it("filters non-string / empty array entries", () => {
@@ -56,7 +50,6 @@ describe("toDraft", () => {
     const draft = toDraft({ title: "", description: "" });
     expect(draft.title).toBe("");
     expect(draft.description).toBeUndefined();
-    expect(draft.servings).toBeUndefined();
     expect(draft.ingredients).toEqual([]);
     expect(draft.instructions).toEqual([]);
   });
