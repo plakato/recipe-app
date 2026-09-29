@@ -51,10 +51,11 @@ Running list of things we've decided to do later, so they don't get lost.
   - Public: Cloudflare Tunnel "recipes" (`systemctl status cloudflared`,
     config `/etc/cloudflared/config.yml`); no inbound ports used.
   - Update: push to GitHub, then `ssh root@hermes /srv/recipes/deploy.sh`.
-  - Still to do there: nightly Google Drive backup (rclone installed, needs
-    Google sign-in + timer), Cloudflare Access in front of the login page,
-    OpenRouter monthly spend limit, firewall (ufw) once SSH-over-Tailscale is
-    confirmed as the only SSH path.
+  - Backups: `recipes-backup.timer` nightly 02:30 → gdrive:RecipeAppBackup
+    (this Mac's dev copy backs up to gdrive:RecipeAppBackup-mac instead).
+  - Still to do: Cloudflare Access in front of the login page, OpenRouter
+    monthly spend limit (both dashboard settings), firewall (ufw) once
+    SSH-over-Tailscale is confirmed as the only SSH path, own rclone client ID.
 - **Database backups** — DONE on this Mac (2026-09-23): `scripts/backup.sh`
   copies a SQLite snapshot, the photos and a JSON/Markdown export
   (`scripts/export-recipes.ts`) to Google Drive via rclone, nightly at 02:30
