@@ -1,9 +1,13 @@
 // Add component section headings ("Cesto:", "Plnka:" …) to recipes that were
-// imported before sections existed — WITHOUT re-importing. The stored
-// ingredient/instruction lines stay exactly as they are; the model only says
-// where headings go, using the original page (URL imports) or photo (photo
-// imports). A result is applied only if its non-heading lines are identical
-// to the stored ones, in the same order.
+// imported before sections existed — WITHOUT re-importing. The model sees the
+// stored lines plus the original page (URL imports) or photo (photo imports)
+// and returns the lines with headings inserted.
+//   URL recipes:   accepted only if the non-heading lines are identical.
+//   Photo recipes: additionally, words that are crossed out on the page may be
+//                  removed (the first OCR pass sometimes read them as if they
+//                  were valid). Accepted only if every returned line is the
+//                  stored line with zero or more words removed — nothing may be
+//                  added or reworded.
 //
 // Run: npx tsx --env-file=.env scripts/add-sections.ts --user <email> [model] [--dry-run] [--only <title substring>]
 import { readFile } from "node:fs/promises";
@@ -25,7 +29,11 @@ If the source organises the recipe into separate components (e.g. dough, filling
 Rules:
 - Do NOT change, reorder, merge, split, translate or drop any existing line. Copy them verbatim.
 - Only insert heading lines. If the source has no separate components, insert nothing.
+- If the source labels one group and leaves the remaining lines unlabeled (e.g. a blank gap), give the remainder a neutral heading in the recipe's language, e.g. "Ostatné:" (Slovak), "Dále:" (Czech), "Other:" (English).
 - Return ONLY JSON: {"ingredients": string[], "instructions": string[]}`;
+
+const PHOTO_EXTRA = `
+The source is a handwritten/printed page. Exception to the verbatim rule: if a word in a stored line corresponds to text that is CROSSED OUT (struck through) on the page, remove that word (the author deleted it). Remove only crossed-out words; never add, replace or reorder words. If an entire line is crossed out, drop it.`;
 
 type Lines = { ingredients: string[]; instructions: string[] };
 
@@ -48,7 +56,7 @@ async function askModel(stored: Lines, source: { text?: string; imageDataUrl?: s
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: PROMPT },
+        { role: "system", content: PROMPT + (source.imageDataUrl ? PHOTO_EXTRA : "") },
         { role: "user", content },
       ],
     }),
@@ -70,11 +78,40 @@ function onlyAddsHeadings(stored: string[], proposed: string[]): boolean {
   return kept.length === stored.length && kept.every((l, i) => l === stored[i].trim());
 }
 
-// A single heading as the very first line labels the whole list and adds
-// nothing (often it's just the recipe name) — treat that as "no components".
-function meaningful(proposed: string[]): string[] {
-  const headings = proposed.filter(isSectionHeading);
-  if (headings.length === 1 && isSectionHeading(proposed[0] ?? "")) return proposed.slice(1);
+const words = (l: string) => l.trim().split(/\s+/).filter(Boolean);
+
+// True if `line` is `original` with zero or more words removed (order kept).
+function isReduction(original: string, line: string): boolean {
+  const o = words(original);
+  const w = words(line);
+  let i = 0;
+  for (const x of w) {
+    while (i < o.length && o[i] !== x) i++;
+    if (i === o.length) return false;
+    i++;
+  }
+  return true;
+}
+
+// Photo mode: every non-heading returned line must be a reduction of the next
+// unmatched stored line (lines may be dropped, never added or reworded).
+function onlyRemovesWords(stored: string[], proposed: string[]): boolean {
+  let i = 0;
+  for (const line of proposed) {
+    if (isSectionHeading(line)) continue;
+    while (i < stored.length && !isReduction(stored[i], line)) i++;
+    if (i === stored.length) return false;
+    i++;
+  }
+  return true;
+}
+
+// A single heading as the very first line that just repeats the recipe name
+// labels the whole list and adds nothing — drop it.
+function meaningful(proposed: string[], title: string): string[] {
+  const norm = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const first = proposed[0] ?? "";
+  if (isSectionHeading(first) && norm(first.replace(/:$/, "")) === norm(title)) return proposed.slice(1);
   return proposed;
 }
 
@@ -90,7 +127,7 @@ function meaningful(proposed: string[]): string[] {
   for (const [i, r] of rows.entries()) {
     const stored = { ingredients: parseList(r.ingredients), instructions: parseList(r.instructions) };
     process.stdout.write(`[${i + 1}/${rows.length}] ${r.title} … `);
-    if (stored.ingredients.some(isSectionHeading)) {
+    if (r.sourceType === "url" && stored.ingredients.some(isSectionHeading)) {
       console.log("already sectioned");
       skipped++;
       continue;
@@ -109,17 +146,27 @@ function meaningful(proposed: string[]): string[] {
       }
       const proposed = await askModel(stored, source);
       if (!proposed) throw new Error("no JSON in answer");
-      const ingOk = onlyAddsHeadings(stored.ingredients, proposed.ingredients);
-      const insOk = onlyAddsHeadings(stored.instructions, proposed.instructions);
-      const newIng = ingOk ? meaningful(proposed.ingredients) : stored.ingredients;
-      const newIns = insOk ? meaningful(proposed.instructions) : stored.instructions;
+      const check = source.imageDataUrl ? onlyRemovesWords : onlyAddsHeadings;
+      const ingOk = check(stored.ingredients, proposed.ingredients);
+      const insOk = check(stored.instructions, proposed.instructions);
+      const newIng = ingOk ? meaningful(proposed.ingredients, r.title) : stored.ingredients;
+      const newIns = insOk ? meaningful(proposed.instructions, r.title) : stored.instructions;
       const headings = [...newIng, ...newIns].filter(isSectionHeading);
-      if (headings.length === 0) {
-        console.log(ingOk && insOk ? "no components" : "no components (answer altered lines, ignored)");
+      const removed = [
+        ...stored.ingredients.filter((l) => !newIng.includes(l)),
+        ...stored.instructions.filter((l) => !newIns.includes(l)),
+      ];
+      if (headings.length === 0 && removed.length === 0) {
+        console.log(ingOk && insOk ? "no change" : "no change (answer altered lines, ignored)");
         skipped++;
         continue;
       }
-      console.log(`${dryRun ? "would add" : "added"}: ${headings.join(" | ")}${!ingOk || !insOk ? " (part ignored: lines altered)" : ""}`);
+      console.log(
+        `${dryRun ? "would apply" : "applied"}: ` +
+          (headings.length ? `headings ${headings.join(" | ")}` : "") +
+          (removed.length ? ` ; crossed-out edits in ${removed.length} line(s)` : "") +
+          (!ingOk || !insOk ? " (part ignored: lines altered)" : ""),
+      );
       if (!dryRun) {
         await prisma.recipe.update({
           where: { id: r.id },

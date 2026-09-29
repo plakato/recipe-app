@@ -252,7 +252,7 @@ export function extractRecipeFromImage(
             type: "text",
             text: `Extract the recipe shown in this image.${languageLine(
               languageHint,
-            )} Transcribe printed or handwritten text as accurately as you can.`,
+            )} Transcribe printed or handwritten text as accurately as you can. Ignore any crossed-out or struck-through words: the author deleted them, so leave them out and do not guess a replacement.`,
           },
           { type: "image_url", image_url: { url: imageDataUrl } },
         ],
@@ -301,7 +301,7 @@ export function extractRecipesFromImage(
             type: "text",
             text: `Extract every recipe shown in this image.${languageLine(
               languageHint,
-            )} Transcribe printed or handwritten text as accurately as you can.`,
+            )} Transcribe printed or handwritten text as accurately as you can. Ignore any crossed-out or struck-through words: the author deleted them, so leave them out and do not guess a replacement.`,
           },
           { type: "image_url", image_url: { url: imageDataUrl } },
         ],
