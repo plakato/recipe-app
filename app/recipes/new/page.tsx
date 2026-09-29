@@ -1,40 +1,33 @@
 import Link from "next/link";
-import RecipeForm from "@/components/RecipeForm";
-import { createRecipe } from "@/app/actions";
 
+// Recipes are added from a photo or a link; the AI fills the form and the
+// user reviews it before saving. (Manual entry and voice import were
+// removed on 2026-09-29 — editing an existing recipe still works.)
 export default function NewRecipePage() {
+  const card =
+    "flex flex-col items-start gap-2 rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-amber-300 hover:shadow-md dark:border-stone-800 dark:bg-stone-900";
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Add a recipe</h1>
-
-      <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
-        <p className="text-sm font-medium">Let AI do it for you</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Link
-            href="/recipes/import/url"
-            className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm font-medium hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
-          >
-            🔗 Import from a link
-          </Link>
-          <Link
-            href="/recipes/import/photo"
-            className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm font-medium hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
-          >
-            📷 From a photo
-          </Link>
-          <Link
-            href="/recipes/import/voice"
-            className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm font-medium hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
-          >
-            🎤 By voice
-          </Link>
-        </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Link href="/recipes/import/photo" className={card}>
+          <span className="text-2xl">📷</span>
+          <span className="font-semibold">From a photo</span>
+          <span className="text-sm text-stone-600 dark:text-stone-400">
+            A cookbook page, a handwritten card, or a screenshot.
+          </span>
+        </Link>
+        <Link href="/recipes/import/url" className={card}>
+          <span className="text-2xl">🔗</span>
+          <span className="font-semibold">From a link</span>
+          <span className="text-sm text-stone-600 dark:text-stone-400">
+            A recipe website or a video whose description has the recipe.
+          </span>
+        </Link>
       </div>
-
-      <p className="text-sm text-stone-600 dark:text-stone-400">
-        …or enter it by hand below.
+      <p className="text-sm text-stone-500">
+        Either way you get to check and edit the recipe before it is saved.
       </p>
-      <RecipeForm action={createRecipe} submitLabel="Save recipe" />
     </div>
   );
 }

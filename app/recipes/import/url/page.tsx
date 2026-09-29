@@ -18,7 +18,7 @@ export default function ImportFromUrlPage() {
         href="/recipes/new"
         className="inline-block text-sm text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
       >
-        ← Enter by hand instead
+        ← Other ways to add
       </Link>
     </div>
   );

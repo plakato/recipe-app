@@ -65,26 +65,6 @@ export async function importRecipeFromUrl(url: string): Promise<ImportResult> {
   }
 }
 
-// Text import (Phase 4): used by voice (a spoken-then-transcribed recipe) and
-// by pasting plain text. Extracts a draft for review.
-export async function importRecipeFromText(
-  rawText: string,
-  languageHint?: string,
-): Promise<ImportResult> {
-  const text = rawText.trim();
-  if (!text) {
-    return { ok: false, error: "Please record or type the recipe first." };
-  }
-  try {
-    const draft = await extractRecipeFromText(text, languageHint);
-    return { ok: true, draft };
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Import failed. Please try again.";
-    return { ok: false, error: message };
-  }
-}
-
 // Photo import (Phase 3): save the uploaded photo, send it to a vision model,
 // and hand the draft (with the photo as its image) back for review.
 export async function importRecipeFromPhoto(

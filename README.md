@@ -1,7 +1,7 @@
 # Family Recipes
 
-A private recipe app: list recipes and add them four ways — by hand, from a URL,
-from a photo, or by voice (the last three via AI extraction through OpenRouter).
+A private recipe app: list recipes and add them from a URL or a photo (AI
+extraction through OpenRouter), then review and edit before saving.
 
 ## Stack
 
@@ -45,16 +45,15 @@ so the extractor retries on 429 and falls back to the second model.
 ## Status
 
 - ✅ **Phase 0** — project + database
-- ✅ **Phase 1** — manual add, recipe list + detail, edit, soft-delete to Trash + restore
+- ✅ **Phase 1** — recipe list + detail, edit, soft-delete to Trash + restore
 - ✅ **Phase 2** — OpenRouter extraction (`lib/extractRecipe.ts`) + URL import
   (`/recipes/import/url`), including downloading the recipe's image. Note: some
   big sites (AllRecipes, etc.) block server-side fetches with a 403 — photo
   import covers those.
 - ✅ **Phase 3** — photo import (`/recipes/import/photo`): take/upload a photo,
   a vision model reads it, the photo is saved as the recipe's image.
-- ✅ **Phase 4** — voice import (`/recipes/import/voice`): record with the
-  browser's Web Speech API (free, Chrome/Safari), edit the transcript, extract.
-  Doubles as a paste-text importer. All four add-methods are now done.
+- ~~Phase 4 — voice import~~ and the manual "enter by hand" form were removed on
+  2026-09-29 (photo + URL only; the review/edit form remains). Still in git history.
 - ⬜ **Later** — AI-generated image to replace the placeholder; deploy + backups
   (Phase 5)
 - ⬜ **Phase 5** — deploy (backups ✅, accounts ✅)
