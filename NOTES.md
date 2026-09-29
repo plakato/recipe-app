@@ -33,6 +33,15 @@ Running list of things we've decided to do later, so they don't get lost.
 - **Social sign-in (Google / Facebook).** Deferred; email + password only for
   now. Would need OAuth callback routes and developer-console setup.
 
+- **Section headings + crossed-out words pass (2026-09-30)** ran on the live
+  database with `scripts/add-sections.ts`: 31 recipes gained component
+  headings ("Cesto:", "Plnka:" …); two genuinely crossed-out words removed
+  (Knedličková, šošovicová). Two false removals reverted by hand (Kapustnica
+  "(cesnak)", Ázijská chili line — circled/arrowed, not struck). The models
+  cannot see faint strike-throughs (Roláda "zohreje" fixed by hand). Not
+  processed: pages that block server fetches (Allrecipes, Taste of Home,
+  foodiecrush) and two that rate-limited (pradobroty.cz, YouTube mousse).
+
 - **Review the 2026-09-23 bulk import.** 86 recipes came in from photos and
   Chrome bookmarks. Known gaps: chocolate-mousse video has ingredients but no
   steps; "Ovocné kože" article has steps but no ingredients; red-lentil soup
