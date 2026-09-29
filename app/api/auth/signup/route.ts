@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { hashPassword, isValidEmail, MIN_PASSWORD_LENGTH, normalizeEmail } from "@/lib/password";
-import { redirectWithError, isSameOrigin } from "@/lib/auth-forms";
+import { redirectWithError, isSameOrigin, siteUrl } from "@/lib/auth-forms";
 
 // The placeholder owner that held every recipe before accounts existed. The
 // first real account adopts it (and therefore all existing recipes).
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         });
 
   const cookie = await createSession(user.id);
-  const res = NextResponse.redirect(new URL("/", request.url), 303);
+  const res = NextResponse.redirect(siteUrl(request, "/"), 303);
   res.cookies.set(cookie.name, cookie.value, cookie.options);
   return res;
 }

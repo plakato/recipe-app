@@ -21,8 +21,20 @@ export function safeNext(value: string | null | undefined): string {
   return value;
 }
 
+// Absolute URL for a same-site path, built from the Host the browser used.
+// Behind a reverse proxy/tunnel, request.url carries the server's own listen
+// address (e.g. localhost:3100), which must never leak into a redirect.
+export function siteUrl(request: Request, path: string): URL {
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? new URL(request.url).host;
+  const proto =
+    request.headers.get("x-forwarded-proto") ??
+    (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
+  return new URL(path, `${proto}://${host}`);
+}
+
 export function redirectWithError(request: Request, page: string, error: string, extra: Record<string, string> = {}) {
-  const url = new URL(page, request.url);
+  const url = siteUrl(request, page);
   url.searchParams.set("error", error);
   for (const [k, v] of Object.entries(extra)) if (v) url.searchParams.set(k, v);
   return NextResponse.redirect(url, 303);
