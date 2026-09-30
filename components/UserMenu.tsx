@@ -36,7 +36,7 @@ export default function UserMenu({ email }: { email: string }) {
         aria-haspopup="menu"
         aria-label="Account menu"
         title={email}
-        className="font-display flex h-10 w-10 items-center justify-center rounded-full bg-sage-200 text-lg font-semibold text-sage-900 ring-2 ring-white transition hover:scale-105 hover:bg-sage-300 dark:bg-sage-900/60 dark:text-sage-100 dark:ring-stone-900"
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-sage-200 text-base font-semibold text-sage-900 ring-2 ring-white transition hover:scale-105 hover:bg-sage-300 dark:bg-sage-900/60 dark:text-sage-100 dark:ring-stone-900"
       >
         {email.charAt(0).toUpperCase()}
       </button>

@@ -36,12 +36,6 @@
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-fraunces);
 
-  --animate-wiggle: wiggle 0.5s ease-in-out;
-  @keyframes wiggle {
-    0%, 100% { transform: rotate(-6deg); }
-    30% { transform: rotate(8deg) scale(1.08); }
-    60% { transform: rotate(-10deg); }
-  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -62,9 +56,3 @@ body {
   font-variation-settings: "opsz" 72, "SOFT" 50;
 }
 
-/* The wordmark: softest, "wonky" Fraunces for a hand-made feel. */
-.font-logo {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
-  font-style: italic;
-}

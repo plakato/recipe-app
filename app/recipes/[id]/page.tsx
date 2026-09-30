@@ -33,47 +33,49 @@ export default async function RecipeDetailPage({
 
   return (
     <article className="mx-auto max-w-4xl space-y-8">
-      {/* Hero: image with the title over a bottom shadow, controls on top. */}
-      <div className="relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-3xl">
-        <RecipeImage
-          src={recipe.imagePath}
-          seed={recipe.id}
-          alt={recipe.title}
-          className="aspect-[4/3] w-full sm:aspect-[16/9]"
-        />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
-        <h1 className="font-display absolute inset-x-0 bottom-0 p-5 text-3xl font-medium leading-tight text-white drop-shadow sm:p-8 sm:text-5xl">
-          {recipe.title}
-        </h1>
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 sm:p-4">
-          <Link href="/" title="All recipes" aria-label="All recipes" className={heroBtn}>
-            <BackIcon />
-          </Link>
-          <div className="flex items-center gap-2">
-            {sourceHref && (
-              <a
-                href={sourceHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={sourceLabel}
-                aria-label={sourceLabel}
-                className={heroBtn}
-              >
-                {recipe.sourceUrl ? <LinkIcon /> : <PhotoIcon />}
-              </a>
-            )}
-            <Link href={`/recipes/${recipe.id}/edit`} title="Edit" aria-label="Edit" className={heroBtn}>
-              <EditIcon />
+      {/* Hero: clean image with controls on top; the title sits below it. */}
+      <header className="space-y-4">
+        <div className="relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-3xl">
+          <RecipeImage
+            src={recipe.imagePath}
+            seed={recipe.id}
+            alt={recipe.title}
+            className="aspect-[4/3] w-full sm:aspect-[16/9]"
+          />
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 sm:p-4">
+            <Link href="/" title="All recipes" aria-label="All recipes" className={heroBtn}>
+              <BackIcon />
             </Link>
-            <form action={softDeleteRecipe}>
-              <input type="hidden" name="id" value={recipe.id} />
-              <button type="submit" title="Move to Trash" aria-label="Move to Trash" className={heroBtn}>
-                <TrashIcon />
-              </button>
-            </form>
+            <div className="flex items-center gap-2">
+              {sourceHref && (
+                <a
+                  href={sourceHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={sourceLabel}
+                  aria-label={sourceLabel}
+                  className={heroBtn}
+                >
+                  {recipe.sourceUrl ? <LinkIcon /> : <PhotoIcon />}
+                </a>
+              )}
+              <Link href={`/recipes/${recipe.id}/edit`} title="Edit" aria-label="Edit" className={heroBtn}>
+                <EditIcon />
+              </Link>
+              <form action={softDeleteRecipe}>
+                <input type="hidden" name="id" value={recipe.id} />
+                <button type="submit" title="Move to Trash" aria-label="Move to Trash" className={heroBtn}>
+                  <TrashIcon />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
-      </div>
+
+        <h1 className="font-display px-1 text-3xl font-medium leading-tight sm:text-5xl">
+          {recipe.title}
+        </h1>
+      </header>
 
       <section className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="h-fit rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5 dark:bg-stone-900 dark:ring-white/10">

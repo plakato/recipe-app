@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
-import { PlusIcon, ChefHatIcon } from "@/components/Icons";
+import { PlusIcon } from "@/components/Icons";
 import UserMenu from "@/components/UserMenu";
 import "./globals.css";
 
@@ -47,11 +47,9 @@ export default async function RootLayout({
       >
         <header className="sticky top-0 z-20 border-b border-stone-200/60 bg-[var(--background)]/85 backdrop-blur dark:border-stone-800/60">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-            <Link href="/" className="group flex items-center gap-2.5">
-              <span className="flex h-10 w-10 -rotate-6 items-center justify-center rounded-2xl bg-sage-600 text-white shadow-sm transition group-hover:animate-wiggle">
-                <ChefHatIcon className="h-6 w-6" />
-              </span>
-              <span className="font-logo text-2xl font-semibold tracking-tight">Recepty</span>
+            <Link href="/" className="group text-2xl font-semibold lowercase tracking-[-0.04em]">
+              recepty
+              <span className="ml-0.5 inline-block h-2 w-2 rounded-full bg-sage-500 transition group-hover:scale-150" />
             </Link>
             {user ? (
               <div className="flex items-center gap-2">
