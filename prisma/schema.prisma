@@ -53,11 +53,3 @@ model Recipe {
   @@index([deletedAt])
 }
 
-// Cached dominant colour of the bottom part of a stored image, used to tint
-// the shadow under recipe titles. Keyed by image path; stored files never
-// change (random names), so an entry never goes stale.
-model ImageColor {
-  path      String   @id
-  color     String // "#rrggbb"
-  createdAt DateTime @default(now())
-}

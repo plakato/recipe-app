@@ -48,7 +48,7 @@ export default async function RootLayout({
       >
         <header className="sticky top-0 z-20 border-b border-stone-200/60 bg-[var(--background)]/85 backdrop-blur dark:border-stone-800/60">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-            <Link href="/" className="group" aria-label="recepty – all recipes">
+            <Link href="/" className="group text-2xl" aria-label="recepty – all recipes">
               <SaltLogo />
             </Link>
             {user ? (

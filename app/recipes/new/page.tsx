@@ -2,50 +2,50 @@ import Link from "next/link";
 import { CameraIcon, LinkIcon } from "@/components/Icons";
 
 // Recipes are added from a photo or a link; the AI fills the form and the
-// user reviews it before saving. Flat, editorial layout: big type and
-// hairline-separated rows rather than raised cards.
+// user reviews it before saving. Colour-block layout: two flat panels with
+// big type and an oversized line icon, no borders or shadows.
 const options = [
   {
     href: "/recipes/import/photo",
     Icon: CameraIcon,
-    title: "From a photo",
-    hint: "A cookbook page, a handwritten card, a screenshot",
+    title: ["From a", "photo"],
+    hint: "Cookbook page, handwritten card or screenshot",
+    block: "bg-blush-200 hover:bg-blush-300 text-blush-950 dark:bg-blush-900/50 dark:hover:bg-blush-900/70 dark:text-blush-100",
+    icon: "text-blush-300 dark:text-blush-800",
   },
   {
     href: "/recipes/import/url",
     Icon: LinkIcon,
-    title: "From a link",
+    title: ["From a", "link"],
     hint: "Paste the address of any recipe page",
+    block: "bg-stone-200/70 hover:bg-stone-200 text-stone-900 dark:bg-stone-800/70 dark:hover:bg-stone-800 dark:text-stone-100",
+    icon: "text-stone-300 dark:text-stone-700",
   },
 ];
 
 export default function NewRecipePage() {
   return (
-    <div className="mx-auto max-w-2xl py-6 sm:py-12">
-      <h1 className="font-display mb-8 text-4xl leading-tight sm:mb-12 sm:text-6xl">
-        Where&rsquo;s the recipe from?
-      </h1>
-      <ul className="divide-y divide-stone-200 border-y border-stone-200 dark:divide-stone-800 dark:border-stone-800">
-        {options.map(({ href, Icon, title, hint }) => (
-          <li key={href}>
-            <Link href={href} className="group flex items-center gap-5 py-6 sm:gap-6 sm:py-8">
-              <Icon className="h-7 w-7 flex-none text-stone-400 transition group-hover:text-blush-600 dark:text-stone-500" />
-              <span className="min-w-0 flex-1">
-                <span className="font-display block text-2xl transition group-hover:text-blush-700 sm:text-3xl dark:group-hover:text-blush-300">
-                  {title}
-                </span>
-                <span className="mt-1 block text-sm text-stone-500 dark:text-stone-400">{hint}</span>
-              </span>
-              <span
-                aria-hidden
-                className="text-2xl text-blush-400 transition-transform duration-300 group-hover:translate-x-1.5"
-              >
-                &rarr;
-              </span>
-            </Link>
-          </li>
+    <div className="mx-auto max-w-3xl py-2 sm:py-10">
+      <h1 className="font-display mb-6 text-3xl sm:mb-8 sm:text-5xl">Add a recipe</h1>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {options.map(({ href, Icon, title, hint, block, icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`group relative flex aspect-[16/10] flex-col overflow-hidden rounded-3xl p-6 transition-colors sm:aspect-[5/4] sm:p-8 ${block}`}
+          >
+            <Icon
+              className={`absolute -bottom-10 -right-10 h-40 w-40 [stroke-width:0.8] transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-105 sm:h-52 sm:w-52 ${icon}`}
+            />
+            <span className="font-display relative text-4xl leading-none sm:text-5xl">
+              {title[0]}
+              <br />
+              {title[1]}
+            </span>
+            <span className="relative mt-3 max-w-[15rem] text-sm opacity-75">{hint}</span>
+          </Link>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
