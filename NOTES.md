@@ -2,6 +2,45 @@
 
 Running list of things we've decided to do later, so they don't get lost.
 
+## Roadmap to a public app (agreed 2026-09-30)
+
+Focus: photo import that works flawlessly, safely open to everyone. Adding by
+link is paused (`URL_IMPORT_ENABLED` in `lib/features.ts`); the 132 link
+recipes are hidden, not deleted. In order:
+
+1. **Spending caps + friendly errors (first).**
+   - Budget: **$5/month** of paid AI; **10 imports/day per account, 3 per
+     anonymous visitor**; a global daily cap. Paid model only as a hidden,
+     capped fallback — drop the user-facing "better reading" (paid) toggle.
+   - Every failure shows a kind apology ("busy — try again in a few minutes",
+     "today's limit reached — sign up / come back tomorrow"), never provider
+     errors. Add proper not-found/error pages.
+   - Also set the monthly spend limit on the OpenRouter key (dashboard) as the
+     hard stop.
+2. **Public browsing.** Anyone opening the site sees Patricia's **40 photo
+   recipes** read-only, scans available on click as now. No account, nothing
+   stored. **Not indexed by search engines for now** (`noindex`; reconsider
+   later — copyright of cookbook scans, personal notes on cards).
+3. **Trying it without an account.** Photo import allowed within the limits
+   above. The first save/edit/delete warns "your changes are kept only for
+   this visit — sign up to keep them" and creates a temporary private copy
+   (deleted ~a day after last use). Signing up turns it into a real account.
+4. **Open sign-up for everyone.** Bot protection that doesn't bother people:
+   Cloudflare Turnstile in *invisible* mode on sign-up and the first photo
+   import only, per-IP limits, a honeypot field. New accounts start with a
+   copy of the 40 recipes (same copy step as 3). Later: password-reset email
+   (today only `scripts/set-password.ts`).
+5. **Flawless photo import.** One recipe per photo, but **one recipe may span
+   several photos** (e.g. two pages). Score changes against a test set:
+   Patricia's photo recipes plus new photos of different kinds she will add
+   (incl. pages with a dish photo to crop). Also: automatic language
+   detection, progress + "done" feedback (see below).
+6. **Dish pictures, automatically.** Crop the dish photo from the page when
+   there is one, otherwise generate one (once, stored, within the budget).
+   The scan stays attached as the source photo.
+7. **Later.** Link import returns (incl. multi-recipe pages, already built);
+   ChatGPT connection over our database (read-only MCP server with sign-in).
+
 ## Deferred features
 
 - **Photo/voice: "reading finished" notification.**
@@ -10,9 +49,8 @@ Running list of things we've decided to do later, so they don't get lost.
   have to watch the spinner — e.g. a browser notification (Notification API) or
   a clear in-page "done" state with a sound. (Requested 2026-07-20.)
 
-- **AI-generated recipe image.**
-  Replace the 🍽️ placeholder (`components/RecipeImage.tsx`) with an image
-  generated from the recipe when no photo is available.
+- **AI-generated recipe image.** → roadmap step 6 (crop the dish photo from
+  the page, otherwise generate).
 
 - **Duplicate recipe check.**
   Detect when a recipe being added (from photo, URL, voice, or by hand) already
@@ -24,11 +62,9 @@ Running list of things we've decided to do later, so they don't get lost.
   expect the amber "looks very similar" box with Save anyway; same title +
   same content should demand a rename. Then delete the test recipe from Trash.
 
-- **Multi-recipe import review ("1 of N" walk-through).**
-  The extractor can return several recipes from one source
-  (`extractRecipesFromText/Image`); the bulk scripts use it. The import pages
-  still assume one draft. Plan: keep the existing form and add a "Recipe 2 of
-  5" strip with Save & next / Skip. (Discussed 2026-09-23.)
+- ~~**Multi-recipe import review ("1 of N" walk-through).**~~ — DONE
+  2026-09-30 for link import (`components/UrlImport.tsx`); photo import
+  stays one recipe per photo by decision (see roadmap step 5).
 
 - **Social sign-in (Google / Facebook).** Deferred; email + password only for
   now. Would need OAuth callback routes and developer-console setup.
