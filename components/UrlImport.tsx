@@ -87,7 +87,7 @@ export default function UrlImport() {
         type="button"
         onClick={handleImport}
         disabled={loading || !url.trim()}
-        className="rounded-lg bg-blush-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-blush-700 disabled:opacity-60"
+        className="rounded-lg bg-blush-300 px-5 py-2.5 font-medium text-blush-950 shadow-sm transition hover:bg-blush-400 disabled:opacity-60"
       >
         {loading ? "Reading the page…" : "Import recipe"}
       </button>

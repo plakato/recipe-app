@@ -57,7 +57,7 @@ export default async function RootLayout({
                   href="/recipes/new"
                   title="Add a recipe"
                   aria-label="Add a recipe"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-blush-300 text-blush-950 shadow-sm transition hover:rotate-90 hover:bg-blush-400 hover:shadow"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-blush-300 text-blush-950 transition hover:rotate-90 hover:bg-blush-400"
                 >
                   <PlusIcon />
                 </Link>

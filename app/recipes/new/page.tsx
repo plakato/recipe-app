@@ -2,25 +2,50 @@ import Link from "next/link";
 import { CameraIcon, LinkIcon } from "@/components/Icons";
 
 // Recipes are added from a photo or a link; the AI fills the form and the
-// user reviews it before saving.
+// user reviews it before saving. Flat, editorial layout: big type and
+// hairline-separated rows rather than raised cards.
+const options = [
+  {
+    href: "/recipes/import/photo",
+    Icon: CameraIcon,
+    title: "From a photo",
+    hint: "A cookbook page, a handwritten card, a screenshot",
+  },
+  {
+    href: "/recipes/import/url",
+    Icon: LinkIcon,
+    title: "From a link",
+    hint: "Paste the address of any recipe page",
+  },
+];
+
 export default function NewRecipePage() {
-  const card =
-    "group flex flex-col items-center gap-3 rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-lg dark:bg-stone-900 dark:ring-white/10";
-  const icon =
-    "flex h-16 w-16 items-center justify-center rounded-full bg-blush-100 text-blush-700 transition group-hover:bg-blush-600 group-hover:text-white dark:bg-blush-900/40 dark:text-blush-300";
   return (
-    <div className="mx-auto max-w-2xl space-y-8 py-6">
-      <h1 className="font-display text-center text-3xl">New recipe</h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Link href="/recipes/import/photo" className={card}>
-          <span className={icon}><CameraIcon className="h-7 w-7" /></span>
-          <span className="font-display text-xl">From a photo</span>
-        </Link>
-        <Link href="/recipes/import/url" className={card}>
-          <span className={icon}><LinkIcon className="h-7 w-7" /></span>
-          <span className="font-display text-xl">From a link</span>
-        </Link>
-      </div>
+    <div className="mx-auto max-w-2xl py-6 sm:py-12">
+      <h1 className="font-display mb-8 text-4xl leading-tight sm:mb-12 sm:text-6xl">
+        Where&rsquo;s the recipe from?
+      </h1>
+      <ul className="divide-y divide-stone-200 border-y border-stone-200 dark:divide-stone-800 dark:border-stone-800">
+        {options.map(({ href, Icon, title, hint }) => (
+          <li key={href}>
+            <Link href={href} className="group flex items-center gap-5 py-6 sm:gap-6 sm:py-8">
+              <Icon className="h-7 w-7 flex-none text-stone-400 transition group-hover:text-blush-600 dark:text-stone-500" />
+              <span className="min-w-0 flex-1">
+                <span className="font-display block text-2xl transition group-hover:text-blush-700 sm:text-3xl dark:group-hover:text-blush-300">
+                  {title}
+                </span>
+                <span className="mt-1 block text-sm text-stone-500 dark:text-stone-400">{hint}</span>
+              </span>
+              <span
+                aria-hidden
+                className="text-2xl text-blush-400 transition-transform duration-300 group-hover:translate-x-1.5"
+              >
+                &rarr;
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

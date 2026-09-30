@@ -1,0 +1,6 @@
+-- CreateTable
+CREATE TABLE "ImageColor" (
+    "path" TEXT NOT NULL PRIMARY KEY,
+    "color" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

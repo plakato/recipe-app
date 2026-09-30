@@ -5,6 +5,7 @@ import { requireUserId } from "@/lib/auth";
 import { groupSections, parseList } from "@/lib/recipes";
 import { softDeleteRecipe } from "@/app/actions";
 import RecipeImage from "@/components/RecipeImage";
+import { getShadowColors, titleShade } from "@/lib/imageColor";
 import { BackIcon, EditIcon, LinkIcon, PhotoIcon, TrashIcon } from "@/components/Icons";
 
 export const dynamic = "force-dynamic";
@@ -29,11 +30,15 @@ export default async function RecipeDetailPage({
   const instructions = groupSections(parseList(recipe.instructions));
   const isPhoto = recipe.sourceType === "photo" && !!recipe.imagePath;
   const sourceHref = recipe.sourceUrl ?? (isPhoto ? recipe.imagePath : null);
+  const shade = titleShade(
+    recipe.imagePath ? (await getShadowColors([recipe.imagePath])).get(recipe.imagePath) : undefined,
+  );
   const sourceLabel = recipe.sourceUrl ? "Open the original page" : "Open the original photo";
 
   return (
     <article className="mx-auto max-w-4xl space-y-8">
-      {/* Hero: image with controls on top and the title on a frosted label. */}
+      {/* Hero: image with the title over a shadow in the photo's own colour,
+          controls on top. */}
       <header>
         <div className="relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-3xl">
           <RecipeImage
@@ -42,7 +47,8 @@ export default async function RecipeDetailPage({
             alt={recipe.title}
             className="aspect-[4/3] w-full sm:aspect-[16/9]"
           />
-          <h1 className="font-display absolute bottom-3 left-3 right-3 w-fit rounded-2xl bg-[var(--background)]/85 px-4 py-2.5 text-2xl font-medium leading-tight text-stone-900 shadow-sm backdrop-blur-md sm:bottom-5 sm:left-5 sm:right-auto sm:max-w-[80%] sm:px-6 sm:py-4 sm:text-4xl dark:text-stone-100">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3" style={{ background: shade }} />
+          <h1 className="font-display absolute inset-x-0 bottom-0 p-5 text-3xl font-medium leading-tight text-white sm:p-8 sm:text-5xl">
             {recipe.title}
           </h1>
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 sm:p-4">

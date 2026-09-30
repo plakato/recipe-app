@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf6f0;
+  --background: #fcf8f8;
   --foreground: #1f1a16;
 }
 
 /* One accent (a light dusty pink, "blush") plus a muted brick for errors/destructive actions, so
-   the whole palette sits together on the warm cream background. */
+   the whole palette sits together on the soft rose-white background. */
 @theme {
-  --color-blush-50: #fdf6f7;
-  --color-blush-100: #fbeaee;
-  --color-blush-200: #f6d3db;
-  --color-blush-300: #efb4c1;
-  --color-blush-400: #e592a5;
-  --color-blush-500: #d5728a;
-  --color-blush-600: #bb5870;
-  --color-blush-700: #9c465b;
-  --color-blush-800: #7f3b4d;
-  --color-blush-900: #693444;
-  --color-blush-950: #3b1922;
+  --color-blush-50: #fef8f9;
+  --color-blush-100: #fdf0f3;
+  --color-blush-200: #fbdfe5;
+  --color-blush-300: #f7c9d3;
+  --color-blush-400: #f1adbc;
+  --color-blush-500: #e690a4;
+  --color-blush-600: #cf7289;
+  --color-blush-700: #ad5a6f;
+  --color-blush-800: #8a4859;
+  --color-blush-900: #6f3c4a;
+  --color-blush-950: #3e1f28;
 
   --color-brick-50: #faf2ef;
   --color-brick-200: #ecc9bd;
@@ -40,7 +40,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #14110f;
+    --background: #161214;
     --foreground: #f1ebe3;
   }
 }
