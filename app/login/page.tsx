@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth";
 import AuthCard, { fieldClass, labelClass } from "@/components/AuthCard";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +16,8 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string; next?: string }>;
 }) {
+  // Already signed in (with a valid session): nothing to do here.
+  if (await getSessionUser()) redirect("/");
   const { error, next } = await searchParams;
   return (
     <AuthCard title="Sign in" error={error ? ERRORS[error] ?? "Sign-in failed." : null}>

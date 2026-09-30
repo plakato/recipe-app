@@ -53,3 +53,19 @@ model Recipe {
   @@index([deletedAt])
 }
 
+// AI usage, for the limits in lib/aiBudget.ts. One "import" row per import a
+// person starts (daily quotas), one "paid" row per paid-model call with its
+// cost in USD (monthly/daily budget).
+model AiUsage {
+  id        String   @id @default(cuid())
+  kind      String // "import" | "paid"
+  userId    String?
+  ip        String?
+  model     String?
+  costUsd   Float    @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([kind, createdAt])
+  @@index([userId, createdAt])
+  @@index([ip, createdAt])
+}

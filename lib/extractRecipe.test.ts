@@ -6,6 +6,13 @@ import {
   toDraft,
   toDrafts,
 } from "@/lib/extractRecipe";
+import { paidBudgetLeft, recordPaidCall } from "@/lib/aiBudget";
+
+// The budget lives in the database; stub it (budget left unless a test says otherwise).
+vi.mock("@/lib/aiBudget", () => ({
+  paidBudgetLeft: vi.fn(async () => true),
+  recordPaidCall: vi.fn(async () => {}),
+}));
 
 describe("extractJsonObject", () => {
   it("parses a plain JSON object", () => {
@@ -114,7 +121,9 @@ describe("paid model fallback", () => {
         calls.push(model);
         const [status, content] = answers[model];
         return new Response(
-          status === 200 ? JSON.stringify({ choices: [{ message: { content } }] }) : "busy",
+          status === 200
+            ? JSON.stringify({ choices: [{ message: { content } }], usage: { cost: 0.002 } })
+            : "busy",
           { status },
         );
       }),
@@ -130,6 +139,8 @@ describe("paid model fallback", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
+    vi.mocked(paidBudgetLeft).mockResolvedValue(true);
+    vi.mocked(recordPaidCall).mockClear();
   });
 
   it("is not used when a free model answers", async () => {
@@ -138,15 +149,30 @@ describe("paid model fallback", () => {
     expect(calls).toEqual(["free-a"]);
   });
 
-  it("is used when every free model is busy", async () => {
+  it("is used when every free model is busy, and its cost is recorded", async () => {
     fakeOpenRouter({ "free-a": [404], "free-b": [404], paid: [200, RECIPE] });
     await expect(extractRecipeFromText("x")).resolves.toMatchObject({ title: "Cake" });
     expect(calls).toEqual(["free-a", "free-b", "paid"]);
+    expect(recordPaidCall).toHaveBeenCalledWith("paid", 0.002);
+  });
+
+  it("is not used once the budget is spent: the person hears it's busy", async () => {
+    vi.mocked(paidBudgetLeft).mockResolvedValue(false);
+    fakeOpenRouter({ "free-a": [404], "free-b": [404], paid: [200, RECIPE] });
+    await expect(extractRecipeFromText("x")).rejects.toMatchObject({ code: "busy" });
+    expect(calls).toEqual(["free-a", "free-b"]);
   });
 
   it("is not asked again when a free model found no recipe", async () => {
     fakeOpenRouter({ "free-a": [200, NONE], "free-b": [404], paid: [200, RECIPE] });
-    await expect(extractRecipeFromText("x")).rejects.toThrow(/did not find a recipe/);
+    await expect(extractRecipeFromText("x")).rejects.toMatchObject({ code: "no-recipe" });
     expect(calls).toEqual(["free-a", "free-b"]);
+  });
+
+  it("never records a cost for free models", async () => {
+    fakeOpenRouter({ "free-a:free": [200, RECIPE] });
+    vi.stubEnv("OPENROUTER_MODEL", "free-a:free");
+    await extractRecipeFromText("x");
+    expect(recordPaidCall).not.toHaveBeenCalled();
   });
 });

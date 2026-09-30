@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth";
 import AuthCard, { fieldClass, labelClass } from "@/components/AuthCard";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password";
 
@@ -18,6 +20,8 @@ export default async function SignupPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  // Already signed in (with a valid session): nothing to do here.
+  if (await getSessionUser()) redirect("/");
   const { error } = await searchParams;
   return (
     <AuthCard title="Create your account" error={error ? ERRORS[error] ?? "Sign-up failed." : null}>

@@ -8,7 +8,12 @@ Focus: photo import that works flawlessly, safely open to everyone. Adding by
 link is paused (`URL_IMPORT_ENABLED` in `lib/features.ts`); the 132 link
 recipes are hidden, not deleted. In order:
 
-1. **Spending caps + friendly errors (first).**
+1. ~~**Spending caps + friendly errors.**~~ — DONE 2026-09-30: `lib/aiBudget.ts`
+   (usage in the `AiUsage` table; limits overridable in .env: `AI_IMPORTS_*`,
+   `AI_PAID_USD_PER_MONTH/DAY`), `lib/userErrors.ts`, `app/error.tsx`,
+   `app/not-found.tsx`. Imports now verify the session (the proxy only checks
+   a cookie exists); an expired cookie no longer loops between / and /login.
+   A paid read of a handwritten card cost ~$0.0014.
    - Budget: **$5/month** of paid AI; **10 imports/day per account, 3 per
      anonymous visitor**; a global daily cap. Paid model only as a hidden,
      capped fallback — drop the user-facing "better reading" (paid) toggle.

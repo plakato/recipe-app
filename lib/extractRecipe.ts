@@ -6,6 +6,8 @@
 // imported into a client component.
 
 import type { RecipeDraft } from "@/lib/recipes";
+import { paidBudgetLeft, recordPaidCall } from "@/lib/aiBudget";
+import { AppError } from "@/lib/userErrors";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -151,7 +153,11 @@ async function callModel(model: string, messages: ChatMessage[]): Promise<string
     if (res.ok) {
       const data = (await res.json()) as {
         choices?: { message?: { content?: string } }[];
+        usage?: { cost?: number };
       };
+      // Free models cost nothing; paid calls count against the budget.
+      // OpenRouter reports the cost in credits (1 credit = $1).
+      if (!model.endsWith(":free")) await recordPaidCall(model, data.usage?.cost ?? 0.01);
       const content = data.choices?.[0]?.message?.content;
       if (content) return content;
       // Free models sometimes return an empty completion — retry before failing.
@@ -205,9 +211,10 @@ async function runModels(
 
   const errors: unknown[] = [];
   for (const model of [...models, ...(paid ? [paid] : [])]) {
-    // The paid model is a last resort: only when every free model was busy,
-    // never to second-guess a free model that found no recipe.
-    if (model === paid && !errors.every(isBusy)) break;
+    // The paid model is a last resort: only when every free model was busy
+    // (never to second-guess a free model that found no recipe), and only
+    // while the monthly/daily budget lasts.
+    if (model === paid && !(errors.every(isBusy) && (await paidBudgetLeft()))) break;
     if (model === paid) console.warn(`Free models busy; reading the recipe with paid ${paid}.`);
     try {
       const content = await callModel(model, messages);
@@ -221,10 +228,15 @@ async function runModels(
       // Try the next model in the list.
     }
   }
-  // Prefer a substantive error (e.g. "no recipe found") over a later model's
-  // rate-limit noise, so the user sees why the material was rejected.
-  const best = errors.find((e) => !isBusy(e)) ?? errors[errors.length - 1];
-  throw best instanceof Error ? best : new Error("Recipe extraction failed.");
+  // Tell the person why, kindly: every model busy, or no recipe in the
+  // material (a substantive answer beats a later model's rate-limit noise).
+  const detail = errors.map((e) => (e instanceof Error ? e.message : String(e))).join(" | ");
+  if (errors.every(isBusy)) throw new AppError("busy", detail);
+  const best = errors.find((e) => !isBusy(e));
+  if (best instanceof Error && /did not find a recipe/i.test(best.message)) {
+    throw new AppError("no-recipe", detail);
+  }
+  throw new AppError("unknown", detail);
 }
 
 // A hint telling the model what language the recipe is in improves accuracy,
@@ -388,7 +400,7 @@ export async function chooseRecipeImages(
   const errors: unknown[] = [];
   for (const model of [...models, ...(paid ? [paid] : [])]) {
     // Paid model only if every free model was busy (not if one just answered badly).
-    if (model === paid && !errors.every(isBusy)) break;
+    if (model === paid && !(errors.every(isBusy) && (await paidBudgetLeft()))) break;
     if (model === paid) console.warn(`Free models busy; choosing photos with paid ${paid}.`);
     try {
       const answer = await callModel(model, [{ role: "user", content }]);

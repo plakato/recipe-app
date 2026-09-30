@@ -9,6 +9,9 @@ import { linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { pickRecipeImages } from "@/lib/pickImage";
 import { sweepUnusedUploads } from "@/lib/cleanUploads";
+import { refundImport, startImport } from "@/lib/aiBudget";
+import { clientIp } from "@/lib/clientIp";
+import { AppError, USER_MESSAGES, toUserMessage } from "@/lib/userErrors";
 import { extractRecipeFromImage, extractRecipesFromText } from "@/lib/extractRecipe";
 import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
 import { access, unlink } from "node:fs/promises";
@@ -41,6 +44,22 @@ export type ImportResult =
   | { ok: true; draft: RecipeDraft }
   | { ok: false; error: string };
 
+// Reserve one AI import for the signed-in person against the daily limits
+// (lib/aiBudget.ts). Checks the session for real — the proxy only checks that
+// a cookie exists. Returns the reservation id or a message to show.
+async function reserveImport(): Promise<{ id: string } | { error: string }> {
+  const userId = await requireUserId();
+  const slot = await startImport({ userId, ip: await clientIp() });
+  return "limit" in slot ? { error: USER_MESSAGES[slot.limit] } : slot;
+}
+
+// After a failed import: give the reservation back when nothing was spent
+// (the models were only busy), and return a kind message.
+async function importFailed(slotId: string, err: unknown): Promise<string> {
+  if (err instanceof AppError && err.code === "busy") await refundImport(slotId);
+  return toUserMessage(err);
+}
+
 // URL import: a page may hold several recipes (e.g. "5 no-bake desserts").
 export type UrlImportResult =
   | { ok: true; drafts: RecipeDraft[] }
@@ -56,10 +75,20 @@ export async function importRecipesFromUrl(url: string): Promise<UrlImportResult
   }
   const trimmed = url.trim();
   if (!trimmed) return { ok: false, error: "Please enter a URL." };
+  const slot = await reserveImport();
+  if ("error" in slot) return { ok: false, error: slot.error };
   // Imports leave photos of skipped drafts behind; tidy up after responding.
   after(sweepUnusedUploads);
+  let page: Awaited<ReturnType<typeof fetchUrlText>>;
   try {
-    const { text, title, imageCandidates } = await fetchUrlText(trimmed);
+    page = await fetchUrlText(trimmed);
+  } catch (err) {
+    // Our own messages ("That doesn't look like a valid URL." …); no AI used.
+    await refundImport(slot.id);
+    return { ok: false, error: err instanceof Error ? err.message : USER_MESSAGES.unknown };
+  }
+  try {
+    const { text, title, imageCandidates } = page;
     const drafts = await extractRecipesFromText(text);
     // Then choose the photos — after extraction, not alongside it, so the two
     // model calls don't compete for the free models' rate limit. Photos are
@@ -77,9 +106,7 @@ export async function importRecipesFromUrl(url: string): Promise<UrlImportResult
       })),
     };
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Import failed. Please try again.";
-    return { ok: false, error: message };
+    return { ok: false, error: await importFailed(slot.id, err) };
   }
 }
 
@@ -92,33 +119,27 @@ export async function importRecipeFromPhoto(
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Please choose a photo first." };
   }
+  const slot = await reserveImport();
+  if ("error" in slot) return { ok: false, error: slot.error };
   after(sweepUnusedUploads);
   const language = String(formData.get("language") ?? "").trim() || undefined;
-  // Opt-in paid model for better reading (e.g. handwriting). Falls back to the
-  // free models if the paid one is unavailable.
-  const highQuality = formData.get("quality") === "high";
-  const modelOverride = highQuality ? process.env.OPENROUTER_MODEL_HQ : undefined;
   try {
     const saved = await saveUploadedImage(file);
     if (!saved) {
+      await refundImport(slot.id);
       return {
         ok: false,
         error: "That image type isn't supported, or it's too large (max 8 MB).",
       };
     }
-    const draft = await extractRecipeFromImage(
-      saved.dataUrl,
-      language,
-      modelOverride,
-    );
+    // Free models first; the paid one only as a budget-capped fallback.
+    const draft = await extractRecipeFromImage(saved.dataUrl, language);
     return {
       ok: true,
       draft: { ...draft, imagePath: saved.imagePath },
     };
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Import failed. Please try again.";
-    return { ok: false, error: message };
+    return { ok: false, error: await importFailed(slot.id, err) };
   }
 }
 
