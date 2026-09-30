@@ -44,8 +44,10 @@ export default async function Home() {
             />
             {/* Shadow rising from the bottom so the title stays readable. */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
-            <h2 className="font-display absolute inset-x-0 bottom-0 line-clamp-2 p-4 text-lg font-medium leading-snug text-white drop-shadow sm:text-xl">
-              {recipe.title}
+            {/* Padding on the h2, clamp on the inner span: with both on one
+                element the clipped third line shows through the padding. */}
+            <h2 className="font-display absolute inset-x-0 bottom-0 p-3 text-base font-medium leading-snug text-white drop-shadow sm:p-4 sm:text-xl">
+              <span className="line-clamp-2">{recipe.title}</span>
             </h2>
           </Link>
         </li>
