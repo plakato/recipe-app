@@ -21,8 +21,8 @@ export default async function EditRecipePage({
   if (!recipe) notFound();
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Edit recipe</h1>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <h1 className="font-display text-3xl">Edit recipe</h1>
       <RecipeForm
         action={updateRecipe}
         initial={recipeToDraft(recipe)}

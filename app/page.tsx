@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import RecipeImage from "@/components/RecipeImage";
+import { PlusIcon } from "@/components/Icons";
 
 // Always render fresh from the database.
 export const dynamic = "force-dynamic";
@@ -13,50 +14,42 @@ export default async function Home() {
     orderBy: { createdAt: "desc" },
   });
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-end justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Recipes</h1>
-        <span className="text-sm text-stone-500">
-          {recipes.length} {recipes.length === 1 ? "recipe" : "recipes"}
-        </span>
+  if (recipes.length === 0) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+        <p className="font-display text-3xl">Nothing here yet.</p>
+        <Link
+          href="/recipes/new"
+          className="flex items-center gap-2 rounded-full bg-amber-600 px-5 py-2.5 font-medium text-white shadow-sm hover:bg-amber-700"
+        >
+          <PlusIcon /> Add your first recipe
+        </Link>
       </div>
+    );
+  }
 
-      {recipes.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-stone-300 p-10 text-center dark:border-stone-700">
-          <p className="text-stone-600 dark:text-stone-400">
-            No recipes yet.
-          </p>
+  return (
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+      {recipes.map((recipe) => (
+        <li key={recipe.id}>
           <Link
-            href="/recipes/new"
-            className="mt-4 inline-block rounded-lg bg-amber-600 px-4 py-2 font-medium text-white hover:bg-amber-700"
+            href={`/recipes/${recipe.id}`}
+            className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-stone-200 shadow-sm ring-1 ring-black/5 transition hover:shadow-lg dark:bg-stone-800 dark:ring-white/10"
           >
-            Add your first recipe
+            <RecipeImage
+              src={recipe.imagePath}
+              alt=""
+              className="h-full w-full"
+              imgClassName="transition duration-500 group-hover:scale-105"
+            />
+            {/* Shadow rising from the bottom so the title stays readable. */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+            <h2 className="font-display absolute inset-x-0 bottom-0 line-clamp-2 p-4 text-lg font-medium leading-snug text-white drop-shadow sm:text-xl">
+              {recipe.title}
+            </h2>
           </Link>
-        </div>
-      ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {recipes.map((recipe) => {
-            return (
-              <li key={recipe.id}>
-                <Link
-                  href={`/recipes/${recipe.id}`}
-                  className="block h-full overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition hover:border-amber-300 hover:shadow-md dark:border-stone-800 dark:bg-stone-900"
-                >
-                  <RecipeImage
-                    src={recipe.imagePath}
-                    alt={recipe.title}
-                    className="aspect-video w-full"
-                  />
-                  <div className="p-4">
-                  <h2 className="font-semibold">{recipe.title}</h2>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+        </li>
+      ))}
+    </ul>
   );
 }

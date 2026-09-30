@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { restoreRecipe, permanentlyDeleteRecipe } from "@/app/actions";
+import RecipeImage from "@/components/RecipeImage";
+import { RestoreIcon, XIcon } from "@/components/Icons";
 
 export const dynamic = "force-dynamic";
 
@@ -12,65 +13,63 @@ export default async function TrashPage() {
     orderBy: { deletedAt: "desc" },
   });
 
+  const btn =
+    "flex h-10 w-10 items-center justify-center rounded-full transition";
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Trash</h1>
-        <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-          Deleted recipes live here. Restore them anytime, or delete permanently.
-        </p>
+        <h1 className="font-display text-3xl">Trash</h1>
+        <p className="mt-1 text-sm text-stone-500">Restore anytime, or delete forever.</p>
       </div>
 
       {recipes.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-stone-300 p-10 text-center text-stone-500 dark:border-stone-700">
-          Trash is empty.
-        </div>
+        <p className="py-16 text-center text-stone-500">Trash is empty.</p>
       ) : (
         <ul className="space-y-3">
           {recipes.map((recipe) => (
             <li
               key={recipe.id}
-              className="flex items-center justify-between gap-4 rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900"
+              className="flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 dark:bg-stone-900 dark:ring-white/10"
             >
-              <div className="min-w-0">
-                <p className="truncate font-medium">{recipe.title}</p>
+              <RecipeImage
+                src={recipe.imagePath}
+                alt=""
+                className="h-16 w-16 flex-none rounded-xl"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-display truncate text-lg">{recipe.title}</p>
                 {recipe.deletedAt && (
                   <p className="text-xs text-stone-500">
                     Deleted {recipe.deletedAt.toLocaleDateString()}
                   </p>
                 )}
               </div>
-              <div className="flex flex-none items-center gap-2">
-                <form action={restoreRecipe}>
-                  <input type="hidden" name="id" value={recipe.id} />
-                  <button
-                    type="submit"
-                    className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm font-medium hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
-                  >
-                    Restore
-                  </button>
-                </form>
-                <form action={permanentlyDeleteRecipe}>
-                  <input type="hidden" name="id" value={recipe.id} />
-                  <button
-                    type="submit"
-                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-                  >
-                    Delete forever
-                  </button>
-                </form>
-              </div>
+              <form action={restoreRecipe}>
+                <input type="hidden" name="id" value={recipe.id} />
+                <button
+                  type="submit"
+                  title="Restore"
+                  aria-label="Restore"
+                  className={`${btn} text-stone-500 hover:bg-stone-200/70 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100`}
+                >
+                  <RestoreIcon />
+                </button>
+              </form>
+              <form action={permanentlyDeleteRecipe}>
+                <input type="hidden" name="id" value={recipe.id} />
+                <button
+                  type="submit"
+                  title="Delete forever"
+                  aria-label="Delete forever"
+                  className={`${btn} text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40`}
+                >
+                  <XIcon />
+                </button>
+              </form>
             </li>
           ))}
         </ul>
       )}
-
-      <Link
-        href="/"
-        className="inline-block text-sm text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
-      >
-        ← Back to recipes
-      </Link>
     </div>
   );
 }

@@ -13,8 +13,8 @@ export default function AuthCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto max-w-sm">
-      <h1 className="mb-6 text-center text-2xl font-bold tracking-tight">{title}</h1>
+    <div className="mx-auto max-w-sm py-10">
+      <h1 className="font-display mb-6 text-center text-3xl">{title}</h1>
       {error && (
         <p
           role="alert"
