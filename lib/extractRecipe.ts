@@ -311,3 +311,59 @@ export function extractRecipesFromImage(
     modelOverride,
   );
 }
+
+// Read the model's {"best": n} answer for n candidate images. Returns the
+// 0-based index, -1 when the model says none of them shows the dish, or null
+// when the answer is unusable.
+export function parseBestImage(content: string, count: number): number | null {
+  let best: unknown;
+  try {
+    best = (extractJsonObject(content) as Record<string, unknown>).best;
+  } catch {
+    return null;
+  }
+  const n = typeof best === "string" ? Number(best) : best;
+  if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > count) return null;
+  return n - 1;
+}
+
+// Ask a vision model which of the candidate photos (data: URLs, in page order)
+// best shows the dish. Returns its index, -1 if none shows it, or null if no
+// model gave a usable answer.
+export async function chooseRecipeImage(
+  dish: string,
+  imageDataUrls: string[],
+): Promise<number | null> {
+  if (imageDataUrls.length === 0) return -1;
+  const content: ContentPart[] = [
+    {
+      type: "text",
+      text:
+        `These ${imageDataUrls.length} images come from a web page with the recipe "${dish}". ` +
+        "Which one best shows this finished dish? If none does, the one showing it being made or its main ingredients. " +
+        "Never pick photos of people, logos, ads, text or graphics, or a clearly different dish. " +
+        'Answer with JSON only: {"best": <image number>}, or {"best": 0} if none of them shows this food.',
+    },
+  ];
+  imageDataUrls.forEach((url, i) => {
+    content.push({ type: "text", text: `Image ${i + 1}:` });
+    content.push({ type: "image_url", image_url: { url } });
+  });
+
+  const models = [
+    ...new Set(
+      [process.env.OPENROUTER_MODEL ?? "google/gemma-4-31b-it:free", process.env.OPENROUTER_MODEL_FALLBACK].filter(
+        Boolean,
+      ) as string[],
+    ),
+  ];
+  for (const model of models) {
+    try {
+      const pick = parseBestImage(await callModel(model, [{ role: "user", content }]), imageDataUrls.length);
+      if (pick !== null) return pick;
+    } catch {
+      // Try the next model.
+    }
+  }
+  return null;
+}

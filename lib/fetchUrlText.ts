@@ -64,6 +64,77 @@ export function extractImageUrl(html: string, base: string): string | null {
   return pick(og?.[1]);
 }
 
+// Things in an image's URL or tag that mean it isn't a photo of the dish.
+const NOT_FOOD =
+  /(?:^|[^a-z])(?:logo|avatar|icons?|badge|banner|sprite|pixel|author|profile|headshot|gravatar|emoji|spacer|placeholder|ads?)(?:[^a-z]|$)|1x1/i;
+
+// Every plausible photo of the recipe on the page, best guesses first:
+// images in the schema.org Recipe data, then the share images (og:/twitter:),
+// then large <img> photos in the page (including lazy-loaded ones).
+// Returns absolute, de-duplicated URLs, at most `limit`.
+export function extractImageCandidates(html: string, base: string, limit = 10): string[] {
+  const out: string[] = [];
+  const add = (raw?: string | null) => {
+    if (!raw || out.length >= limit) return;
+    const cleaned = raw.trim().replace(/\\\//g, "/").replace(/\\u0026/gi, "&").replace(/&amp;/g, "&");
+    if (!cleaned || cleaned.startsWith("data:")) return;
+    let url: URL;
+    try {
+      url = new URL(cleaned, base);
+    } catch {
+      return; // not a URL
+    }
+    // "#primaryimage"-style values are references inside the JSON-LD, not images.
+    if (!/^https?:$/.test(url.protocol) || url.hash) return;
+    const u = url.href;
+    if (/\.svg($|\?)/i.test(u) || NOT_FOOD.test(u)) return;
+    // WordPress-style size suffix ("dish-500x375.jpg"): skip thumbnails, and
+    // treat other sizes of an image already listed as the same photo.
+    const size = url.pathname.match(/-(\d+)x(\d+)(\.\w+)$/);
+    if (size && (Number(size[1]) < 250 || Number(size[2]) < 200)) return;
+    const photo = (href: string) => href.replace(/-\d+x\d+(\.\w+)(\?.*)?$/, "$1");
+    if (out.some((o) => photo(o) === photo(u))) return;
+    out.push(u);
+  };
+
+  // 1. JSON-LD "image" values (string, array of strings, or {url}) in Recipe blocks first.
+  const ldBlocks = [
+    ...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi),
+  ].map((m) => m[1]);
+  ldBlocks.sort((a, b) => Number(/"Recipe"/.test(b)) - Number(/"Recipe"/.test(a)));
+  for (const ld of ldBlocks) {
+    for (const m of ld.matchAll(/"image"\s*:\s*(\[[^\]]*\]|\{[^}]*\}|"[^"]*")/gi)) {
+      for (const u of m[1].matchAll(/(?:"url"\s*:\s*)?"(https?:[^"]+|\/[^"]+)"/gi)) add(u[1]);
+    }
+  }
+
+  // 2. Share images, attributes in either order.
+  for (const m of html.matchAll(/<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)(?::src)?["'][^>]+content=["']([^"']+)["']/gi)) add(m[1]);
+  for (const m of html.matchAll(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:image|twitter:image)(?::src)?["']/gi)) add(m[1]);
+
+  // 3. Large photos in the page. Lazy loaders keep the real URL in data-*.
+  for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
+    const tag = m[0];
+    const attrs = [...tag.matchAll(/\b(?:class|id|alt)=["']([^"']*)["']/gi)].map((a) => a[1]).join(" ");
+    if (NOT_FOOD.test(attrs)) continue;
+    const w = Number(tag.match(/\bwidth=["']?(\d+)/i)?.[1] ?? 0);
+    const h = Number(tag.match(/\bheight=["']?(\d+)/i)?.[1] ?? 0);
+    if ((w && w < 250) || (h && h < 200)) continue;
+    const srcset = tag.match(/\b(?:data-)?srcset=["']([^"']+)["']/i)?.[1];
+    const largest = srcset
+      ?.split(",")
+      .map((c) => c.trim().split(/\s+/))
+      .sort((a, b) => parseInt(b[1] ?? "0") - parseInt(a[1] ?? "0"))[0]?.[0];
+    const src =
+      tag.match(/\bdata-(?:lazy-)?src=["']([^"']+)["']/i)?.[1] ??
+      largest ??
+      tag.match(/\bsrc=["']([^"']+)["']/i)?.[1];
+    if (src && /\.gif($|\?)/i.test(src)) continue;
+    add(src);
+  }
+  return out;
+}
+
 // Collect the contents of any <script type="application/ld+json"> blocks.
 export function extractJsonLd(html: string): string {
   const blocks: string[] = [];
@@ -121,7 +192,15 @@ export function extractVideoDescription(html: string): string {
   }
 }
 
-export type FetchedPage = { text: string; imageUrl: string | null };
+export type FetchedPage = {
+  text: string;
+  // The page's main image by its own markup (JSON-LD/og:image) — may not be food.
+  imageUrl: string | null;
+  // Every plausible recipe photo on the page, best guesses first.
+  imageCandidates: string[];
+  // The page's <title>, a good description of the dish for picking a photo.
+  title: string;
+};
 
 export async function fetchUrlText(url: string): Promise<FetchedPage> {
   let parsed: URL;
@@ -160,6 +239,7 @@ export async function fetchUrlText(url: string): Promise<FetchedPage> {
   const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() ?? "";
   const visible = stripTags(html);
   const imageUrl = extractImageUrl(html, res.url || parsed.href);
+  const imageCandidates = extractImageCandidates(html, res.url || parsed.href);
 
   const videoDescription = extractVideoDescription(html);
 
@@ -173,5 +253,5 @@ export async function fetchUrlText(url: string): Promise<FetchedPage> {
   const combined = parts.join("\n\n");
   const text =
     combined.length > MAX_CHARS ? combined.slice(0, MAX_CHARS) : combined;
-  return { text, imageUrl };
+  return { text, imageUrl, imageCandidates, title: stripTags(title) };
 }

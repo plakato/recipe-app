@@ -6,8 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
+import { pickRecipeImage } from "@/lib/pickImage";
 import { extractRecipeFromText, extractRecipeFromImage } from "@/lib/extractRecipe";
-import { downloadImageToUploads, saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
+import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
 import { unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
 import { findDuplicate, type DuplicateVerdict } from "@/lib/similarity";
@@ -43,14 +44,18 @@ export async function importRecipeFromUrl(url: string): Promise<ImportResult> {
   const trimmed = url.trim();
   if (!trimmed) return { ok: false, error: "Please enter a URL." };
   try {
-    const { text, imageUrl } = await fetchUrlText(trimmed);
+    const { text, title, imageCandidates } = await fetchUrlText(trimmed);
     const draft = await extractRecipeFromText(text);
-    // Best-effort: download the page's image locally. Failure is non-fatal —
-    // the recipe just shows a placeholder.
-    const imagePath = imageUrl
-      ? (await downloadImageToUploads(imageUrl)) ?? undefined
-      : undefined;
-    return { ok: true, draft: { ...draft, sourceUrl: trimmed, imagePath } };
+    // Then choose its photo — one after the other, so the two model calls
+    // don't compete for the free models' rate limit. The photo is best-effort:
+    // if it fails, the recipe just shows a placeholder.
+    const imagePath = await pickRecipeImage(draft.title || title, imageCandidates).catch(
+      () => null,
+    );
+    return {
+      ok: true,
+      draft: { ...draft, sourceUrl: trimmed, imagePath: imagePath ?? undefined },
+    };
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Import failed. Please try again.";

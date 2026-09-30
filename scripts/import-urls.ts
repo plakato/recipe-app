@@ -14,7 +14,7 @@ import { parseList } from "@/lib/recipes";
 import { findDuplicate, type Comparable } from "@/lib/similarity";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { extractRecipeFromText } from "@/lib/extractRecipe";
-import { downloadImageToUploads } from "@/lib/saveImage";
+import { pickRecipeImage } from "@/lib/pickImage";
 
 const argv = stripUserArg(process.argv.slice(2));
 const listFile = argv[0];
@@ -63,7 +63,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     const started = Date.now();
     process.stdout.write(`[${i + 1}/${todo.length}] ${url.slice(0, 80)} … `);
     try {
-      const { text, imageUrl } = await fetchUrlText(url);
+      const { text, imageCandidates } = await fetchUrlText(url);
       const draft = await extractRecipeFromText(text, undefined, model);
       const dup = findDuplicate(draft, known);
       if (dup) {
@@ -71,9 +71,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
         console.log(`SKIPPED: near-duplicate of "${dup.match.title}" (${Math.round(dup.score * 100)}%${dup.sameTitle ? ", same name" : ""})`);
         continue;
       }
-      const imagePath = imageUrl
-        ? ((await downloadImageToUploads(imageUrl)) ?? null)
-        : null;
+      const imagePath = await pickRecipeImage(draft.title, imageCandidates).catch(() => null);
       const recipe = await prisma.recipe.create({
         data: {
           userId,

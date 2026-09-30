@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractJsonObject, toDraft, toDrafts } from "@/lib/extractRecipe";
+import { extractJsonObject, parseBestImage, toDraft, toDrafts } from "@/lib/extractRecipe";
 
 describe("extractJsonObject", () => {
   it("parses a plain JSON object", () => {
@@ -73,5 +73,22 @@ describe("toDrafts", () => {
   it("returns [] for no recipes", () => {
     expect(toDrafts({ recipes: [] })).toEqual([]);
     expect(toDrafts(null)).toEqual([]);
+  });
+});
+
+describe("parseBestImage", () => {
+  it("turns the 1-based image number into an index", () => {
+    expect(parseBestImage('{"best": 3}', 5)).toBe(2);
+    expect(parseBestImage('```json\n{"best":"1"}\n```', 5)).toBe(0);
+  });
+
+  it("returns -1 when the model says none shows the dish", () => {
+    expect(parseBestImage('{"best": 0}', 5)).toBe(-1);
+  });
+
+  it("rejects out-of-range or unusable answers", () => {
+    expect(parseBestImage('{"best": 6}', 5)).toBeNull();
+    expect(parseBestImage('{"best": 2.5}', 5)).toBeNull();
+    expect(parseBestImage("the second one", 5)).toBeNull();
   });
 });

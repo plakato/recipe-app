@@ -41,10 +41,11 @@ async function saveBuffer(buf: Buffer, ext: string): Promise<string> {
   return `/uploads/${filename}`;
 }
 
-// Download a remote image (URL import). Returns public path or null on failure.
-export async function downloadImageToUploads(
+// Download a remote image into memory (URL import). Returns the bytes and the
+// file extension for its type, or null if it isn't a usable image.
+export async function fetchImage(
   imageUrl: string,
-): Promise<string | null> {
+): Promise<{ buf: Buffer; ext: string } | null> {
   try {
     const res = await safeFetch(imageUrl, {
       headers: {
@@ -61,10 +62,23 @@ export async function downloadImageToUploads(
 
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return null;
-    return await saveBuffer(buf, ext);
+    return { buf, ext };
   } catch {
     return null;
   }
+}
+
+// Store already-downloaded image bytes; returns the public path.
+export function saveImageBuffer(buf: Buffer, ext: string): Promise<string> {
+  return saveBuffer(buf, ext);
+}
+
+// Download a remote image and store it. Returns public path or null on failure.
+export async function downloadImageToUploads(
+  imageUrl: string,
+): Promise<string | null> {
+  const image = await fetchImage(imageUrl);
+  return image ? saveBuffer(image.buf, image.ext) : null;
 }
 
 // Save an uploaded photo (photo import). Returns both the public path to store
