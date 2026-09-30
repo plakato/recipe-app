@@ -12,14 +12,14 @@ type Props = {
   seed?: string;
 };
 
-// All tints of the one palette (sage + cream), varied only in lightness
+// All tints of the one palette (blush + cream), varied only in lightness
 // and direction, so image-less tiles still sit calmly in the grid.
 const placeholders = [
-  { bg: "from-sage-100 to-stone-100 dark:from-sage-900 dark:to-stone-900", emoji: "🍲" },
-  { bg: "from-stone-100 to-sage-200 dark:from-stone-900 dark:to-sage-900", emoji: "🍰" },
-  { bg: "from-sage-200 to-sage-50 dark:from-sage-950 dark:to-sage-900", emoji: "🥗" },
-  { bg: "from-stone-200 to-sage-100 dark:from-stone-800 dark:to-sage-950", emoji: "🥣" },
-  { bg: "from-sage-50 to-sage-200 dark:from-sage-900 dark:to-stone-950", emoji: "🧁" },
+  { bg: "from-blush-100 to-stone-100 dark:from-blush-900 dark:to-stone-900", emoji: "🍲" },
+  { bg: "from-stone-100 to-blush-200 dark:from-stone-900 dark:to-blush-900", emoji: "🍰" },
+  { bg: "from-blush-200 to-blush-50 dark:from-blush-950 dark:to-blush-900", emoji: "🥗" },
+  { bg: "from-stone-200 to-blush-100 dark:from-stone-800 dark:to-blush-950", emoji: "🥣" },
+  { bg: "from-blush-50 to-blush-200 dark:from-blush-900 dark:to-stone-950", emoji: "🧁" },
   { bg: "from-stone-100 to-stone-200 dark:from-stone-900 dark:to-stone-800", emoji: "🥐" },
 ];
 

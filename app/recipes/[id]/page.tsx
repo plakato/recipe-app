@@ -33,8 +33,8 @@ export default async function RecipeDetailPage({
 
   return (
     <article className="mx-auto max-w-4xl space-y-8">
-      {/* Hero: clean image with controls on top; the title sits below it. */}
-      <header className="space-y-4">
+      {/* Hero: image with controls on top and the title on a frosted label. */}
+      <header>
         <div className="relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-3xl">
           <RecipeImage
             src={recipe.imagePath}
@@ -42,6 +42,9 @@ export default async function RecipeDetailPage({
             alt={recipe.title}
             className="aspect-[4/3] w-full sm:aspect-[16/9]"
           />
+          <h1 className="font-display absolute bottom-3 left-3 right-3 w-fit rounded-2xl bg-[var(--background)]/85 px-4 py-2.5 text-2xl font-medium leading-tight text-stone-900 shadow-sm backdrop-blur-md sm:bottom-5 sm:left-5 sm:right-auto sm:max-w-[80%] sm:px-6 sm:py-4 sm:text-4xl dark:text-stone-100">
+            {recipe.title}
+          </h1>
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 sm:p-4">
             <Link href="/" title="All recipes" aria-label="All recipes" className={heroBtn}>
               <BackIcon />
@@ -71,10 +74,6 @@ export default async function RecipeDetailPage({
             </div>
           </div>
         </div>
-
-        <h1 className="font-display px-1 text-3xl font-medium leading-tight sm:text-5xl">
-          {recipe.title}
-        </h1>
       </header>
 
       <section className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
@@ -85,14 +84,14 @@ export default async function RecipeDetailPage({
               {ingredients.map((section, si) => (
                 <div key={si}>
                   {section.heading && (
-                    <h3 className="font-display mb-2 text-lg italic text-sage-800 dark:text-sage-300">
+                    <h3 className="font-display mb-2 text-lg italic text-blush-800 dark:text-blush-300">
                       {section.heading}
                     </h3>
                   )}
                   <ul className="space-y-2 text-stone-800 dark:text-stone-200">
                     {section.items.map((item, i) => (
                       <li key={i} className="flex gap-3">
-                        <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-sage-500" />
+                        <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-blush-500" />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -112,14 +111,14 @@ export default async function RecipeDetailPage({
               {instructions.map((section, si) => (
                 <div key={si}>
                   {section.heading && (
-                    <h3 className="font-display mb-3 text-lg italic text-sage-800 dark:text-sage-300">
+                    <h3 className="font-display mb-3 text-lg italic text-blush-800 dark:text-blush-300">
                       {section.heading}
                     </h3>
                   )}
                   <ol className="space-y-5">
                     {section.items.map((step, i) => (
                       <li key={i} className="flex gap-4">
-                        <span className="font-display w-8 flex-none text-3xl leading-none text-sage-600/80 dark:text-sage-400/80">
+                        <span className="font-display w-8 flex-none text-3xl leading-none text-blush-600/80 dark:text-blush-400/80">
                           {i + 1}
                         </span>
                         <p className="pt-1 leading-relaxed text-stone-800 dark:text-stone-200">{step}</p>

@@ -5,20 +5,20 @@
   --foreground: #1f1a16;
 }
 
-/* One accent (sage) plus a muted brick for errors/destructive actions, so
+/* One accent (a light dusty pink, "blush") plus a muted brick for errors/destructive actions, so
    the whole palette sits together on the warm cream background. */
 @theme {
-  --color-sage-50: #f4f6f1;
-  --color-sage-100: #e6ebdf;
-  --color-sage-200: #cfd9c4;
-  --color-sage-300: #afc09f;
-  --color-sage-400: #8ea37b;
-  --color-sage-500: #71875e;
-  --color-sage-600: #596d49;
-  --color-sage-700: #46573a;
-  --color-sage-800: #3a4731;
-  --color-sage-900: #30392a;
-  --color-sage-950: #191f16;
+  --color-blush-50: #fdf6f7;
+  --color-blush-100: #fbeaee;
+  --color-blush-200: #f6d3db;
+  --color-blush-300: #efb4c1;
+  --color-blush-400: #e592a5;
+  --color-blush-500: #d5728a;
+  --color-blush-600: #bb5870;
+  --color-blush-700: #9c465b;
+  --color-blush-800: #7f3b4d;
+  --color-blush-900: #693444;
+  --color-blush-950: #3b1922;
 
   --color-brick-50: #faf2ef;
   --color-brick-200: #ecc9bd;

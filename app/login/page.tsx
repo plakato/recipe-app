@@ -29,14 +29,14 @@ export default async function LoginPage({
         </div>
         <button
           type="submit"
-          className="w-full rounded-lg bg-sage-600 px-4 py-2.5 font-medium text-white hover:bg-sage-700"
+          className="w-full rounded-lg bg-blush-600 px-4 py-2.5 font-medium text-white hover:bg-blush-700"
         >
           Sign in
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-stone-500">
         Got an invite?{" "}
-        <Link href="/signup" className="text-sage-700 hover:underline dark:text-sage-400">
+        <Link href="/signup" className="text-blush-700 hover:underline dark:text-blush-400">
           Create an account
         </Link>
       </p>

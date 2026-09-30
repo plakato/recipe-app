@@ -3,6 +3,7 @@ import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { PlusIcon } from "@/components/Icons";
+import SaltLogo from "@/components/SaltLogo";
 import UserMenu from "@/components/UserMenu";
 import "./globals.css";
 
@@ -47,9 +48,8 @@ export default async function RootLayout({
       >
         <header className="sticky top-0 z-20 border-b border-stone-200/60 bg-[var(--background)]/85 backdrop-blur dark:border-stone-800/60">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-            <Link href="/" className="group text-2xl font-semibold lowercase tracking-[-0.04em]">
-              recepty
-              <span className="ml-0.5 inline-block h-2 w-2 rounded-full bg-sage-500 transition group-hover:scale-150" />
+            <Link href="/" className="group" aria-label="recepty – all recipes">
+              <SaltLogo />
             </Link>
             {user ? (
               <div className="flex items-center gap-2">
@@ -57,7 +57,7 @@ export default async function RootLayout({
                   href="/recipes/new"
                   title="Add a recipe"
                   aria-label="Add a recipe"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-sage-600 text-white shadow-sm transition hover:rotate-90 hover:bg-sage-700 hover:shadow"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-blush-300 text-blush-950 shadow-sm transition hover:rotate-90 hover:bg-blush-400 hover:shadow"
                 >
                   <PlusIcon />
                 </Link>
