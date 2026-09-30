@@ -33,6 +33,7 @@ export default async function TrashPage() {
             >
               <RecipeImage
                 src={recipe.imagePath}
+                seed={recipe.id}
                 alt=""
                 className="h-16 w-16 flex-none rounded-xl"
               />

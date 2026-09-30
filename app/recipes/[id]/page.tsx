@@ -37,6 +37,7 @@ export default async function RecipeDetailPage({
       <div className="relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-3xl">
         <RecipeImage
           src={recipe.imagePath}
+          seed={recipe.id}
           alt={recipe.title}
           className="aspect-[4/3] w-full sm:aspect-[16/9]"
         />

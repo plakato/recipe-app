@@ -17,9 +17,6 @@ export const PlusIcon = ({ className = "h-5 w-5" }: P) => (
 export const TrashIcon = ({ className = "h-5 w-5" }: P) => (
   <svg className={className} {...base}><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" /></svg>
 );
-export const LogoutIcon = ({ className = "h-5 w-5" }: P) => (
-  <svg className={className} {...base}><path d="M10 17l5-5-5-5M15 12H3M21 3v18" /></svg>
-);
 export const BackIcon = ({ className = "h-5 w-5" }: P) => (
   <svg className={className} {...base}><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
 );
@@ -40,4 +37,11 @@ export const RestoreIcon = ({ className = "h-5 w-5" }: P) => (
 );
 export const XIcon = ({ className = "h-5 w-5" }: P) => (
   <svg className={className} {...base}><path d="M18 6 6 18M6 6l12 12" /></svg>
+);
+// Chef's hat — the app's logo mark.
+export const ChefHatIcon = ({ className = "h-5 w-5" }: P) => (
+  <svg className={className} {...base}><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6ZM6 17h12" /></svg>
+);
+export const LogoutIcon = ({ className = "h-5 w-5" }: P) => (
+  <svg className={className} {...base}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></svg>
 );
