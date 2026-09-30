@@ -62,7 +62,7 @@ export default async function TrashPage() {
                   type="submit"
                   title="Delete forever"
                   aria-label="Delete forever"
-                  className={`${btn} text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40`}
+                  className={`${btn} text-brick-600 hover:bg-brick-50 dark:hover:bg-brick-950/40`}
                 >
                   <XIcon />
                 </button>

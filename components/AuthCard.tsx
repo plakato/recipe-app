@@ -1,6 +1,6 @@
 // Shared shell for the login and sign-up pages.
 export const fieldClass =
-  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
+  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-sage-500 focus:ring-2 focus:ring-sage-200 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
 export const labelClass = "block text-sm font-medium text-stone-700 dark:text-stone-300";
 
 export default function AuthCard({
@@ -18,7 +18,7 @@ export default function AuthCard({
       {error && (
         <p
           role="alert"
-          className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          className="mb-4 rounded-lg border border-brick-200 bg-brick-50 px-3 py-2 text-sm text-brick-700 dark:border-brick-900 dark:bg-brick-950 dark:text-brick-300"
         >
           {error}
         </p>

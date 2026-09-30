@@ -25,7 +25,7 @@ function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-amber-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-60"
+      className="rounded-lg bg-sage-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-sage-700 disabled:opacity-60"
     >
       {pending ? "Saving…" : label}
     </button>
@@ -33,7 +33,7 @@ function SubmitButton({ label }: { label: string }) {
 }
 
 const inputClass =
-  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
+  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-sage-500 focus:ring-2 focus:ring-sage-200 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
 const labelClass = "block text-sm font-medium text-stone-700 dark:text-stone-300";
 
 export default function RecipeForm({
@@ -70,14 +70,14 @@ export default function RecipeForm({
   return (
     <form action={formAction} className="space-y-5">
       {state?.error && (
-        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <p role="alert" className="rounded-lg border border-brick-200 bg-brick-50 px-3 py-2 text-sm text-brick-700 dark:border-brick-900 dark:bg-brick-950 dark:text-brick-300">
           {state.error}
         </p>
       )}
       {dup && (
         <div
           role="alert"
-          className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+          className="space-y-2 rounded-lg border border-sage-300 bg-sage-50 px-4 py-3 text-sm text-sage-900 dark:border-sage-700 dark:bg-sage-950 dark:text-sage-100"
         >
           <p className="font-medium">
             This looks very similar to “{dup.match.title}” ({Math.round(dup.score * 100)}% match).
@@ -103,7 +103,7 @@ export default function RecipeForm({
                 type="submit"
                 name="confirmDuplicate"
                 value="1"
-                className="rounded-lg border border-amber-400 px-3 py-1.5 font-medium hover:bg-amber-100 dark:hover:bg-amber-900"
+                className="rounded-lg border border-sage-400 px-3 py-1.5 font-medium hover:bg-sage-100 dark:hover:bg-sage-900"
               >
                 Save anyway, it&apos;s a different recipe
               </button>

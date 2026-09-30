@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { LogoutIcon, TrashIcon } from "@/components/Icons";
 
 const item =
-  "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-stone-700 transition hover:bg-amber-50 hover:text-amber-800 dark:text-stone-200 dark:hover:bg-stone-800 dark:hover:text-amber-300";
+  "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-stone-700 transition hover:bg-sage-50 hover:text-sage-800 dark:text-stone-200 dark:hover:bg-stone-800 dark:hover:text-sage-300";
 
 export default function UserMenu({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
@@ -36,7 +36,7 @@ export default function UserMenu({ email }: { email: string }) {
         aria-haspopup="menu"
         aria-label="Account menu"
         title={email}
-        className="font-display flex h-10 w-10 items-center justify-center rounded-full bg-rose-200 text-lg font-semibold text-rose-900 ring-2 ring-white transition hover:scale-105 hover:bg-rose-300 dark:bg-rose-900/60 dark:text-rose-100 dark:ring-stone-900"
+        className="font-display flex h-10 w-10 items-center justify-center rounded-full bg-sage-200 text-lg font-semibold text-sage-900 ring-2 ring-white transition hover:scale-105 hover:bg-sage-300 dark:bg-sage-900/60 dark:text-sage-100 dark:ring-stone-900"
       >
         {email.charAt(0).toUpperCase()}
       </button>

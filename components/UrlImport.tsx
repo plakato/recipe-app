@@ -6,7 +6,7 @@ import { createRecipe, importRecipeFromUrl } from "@/app/actions";
 import type { RecipeDraft } from "@/lib/recipes";
 
 const inputClass =
-  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
+  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-sage-500 focus:ring-2 focus:ring-sage-200 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
 
 export default function UrlImport() {
   const [url, setUrl] = useState("");
@@ -30,7 +30,7 @@ export default function UrlImport() {
   if (draft) {
     return (
       <div className="space-y-4">
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="rounded-lg border border-sage-200 bg-sage-50 px-4 py-3 text-sm text-sage-900 dark:border-sage-900/50 dark:bg-sage-950/30 dark:text-sage-200">
           Imported from the link. <strong>Check everything below</strong> —
           AI can miss or misread things — then save.
         </div>
@@ -78,7 +78,7 @@ export default function UrlImport() {
       </div>
 
       {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+        <p className="rounded-lg border border-brick-200 bg-brick-50 px-4 py-3 text-sm text-brick-700 dark:border-brick-900/50 dark:bg-brick-950/30 dark:text-brick-300">
           {error}
         </p>
       )}
@@ -87,7 +87,7 @@ export default function UrlImport() {
         type="button"
         onClick={handleImport}
         disabled={loading || !url.trim()}
-        className="rounded-lg bg-amber-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-60"
+        className="rounded-lg bg-sage-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-sage-700 disabled:opacity-60"
       >
         {loading ? "Reading the page…" : "Import recipe"}
       </button>

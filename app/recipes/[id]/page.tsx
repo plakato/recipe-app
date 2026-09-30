@@ -83,14 +83,14 @@ export default async function RecipeDetailPage({
               {ingredients.map((section, si) => (
                 <div key={si}>
                   {section.heading && (
-                    <h3 className="font-display mb-2 text-lg italic text-amber-800 dark:text-amber-300">
+                    <h3 className="font-display mb-2 text-lg italic text-sage-800 dark:text-sage-300">
                       {section.heading}
                     </h3>
                   )}
                   <ul className="space-y-2 text-stone-800 dark:text-stone-200">
                     {section.items.map((item, i) => (
                       <li key={i} className="flex gap-3">
-                        <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-amber-500" />
+                        <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-sage-500" />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -110,14 +110,14 @@ export default async function RecipeDetailPage({
               {instructions.map((section, si) => (
                 <div key={si}>
                   {section.heading && (
-                    <h3 className="font-display mb-3 text-lg italic text-amber-800 dark:text-amber-300">
+                    <h3 className="font-display mb-3 text-lg italic text-sage-800 dark:text-sage-300">
                       {section.heading}
                     </h3>
                   )}
                   <ol className="space-y-5">
                     {section.items.map((step, i) => (
                       <li key={i} className="flex gap-4">
-                        <span className="font-display w-8 flex-none text-3xl leading-none text-amber-600/80 dark:text-amber-400/80">
+                        <span className="font-display w-8 flex-none text-3xl leading-none text-sage-600/80 dark:text-sage-400/80">
                           {i + 1}
                         </span>
                         <p className="pt-1 leading-relaxed text-stone-800 dark:text-stone-200">{step}</p>

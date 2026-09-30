@@ -5,6 +5,30 @@
   --foreground: #1f1a16;
 }
 
+/* One accent (sage) plus a muted brick for errors/destructive actions, so
+   the whole palette sits together on the warm cream background. */
+@theme {
+  --color-sage-50: #f4f6f1;
+  --color-sage-100: #e6ebdf;
+  --color-sage-200: #cfd9c4;
+  --color-sage-300: #afc09f;
+  --color-sage-400: #8ea37b;
+  --color-sage-500: #71875e;
+  --color-sage-600: #596d49;
+  --color-sage-700: #46573a;
+  --color-sage-800: #3a4731;
+  --color-sage-900: #30392a;
+  --color-sage-950: #191f16;
+
+  --color-brick-50: #faf2ef;
+  --color-brick-200: #ecc9bd;
+  --color-brick-300: #dba594;
+  --color-brick-600: #a3503a;
+  --color-brick-700: #87402e;
+  --color-brick-900: #4d2519;
+  --color-brick-950: #2b150e;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

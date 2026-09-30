@@ -7,7 +7,7 @@ export default function NewRecipePage() {
   const card =
     "group flex flex-col items-center gap-3 rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-lg dark:bg-stone-900 dark:ring-white/10";
   const icon =
-    "flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-700 transition group-hover:bg-amber-600 group-hover:text-white dark:bg-amber-900/40 dark:text-amber-300";
+    "flex h-16 w-16 items-center justify-center rounded-full bg-sage-100 text-sage-700 transition group-hover:bg-sage-600 group-hover:text-white dark:bg-sage-900/40 dark:text-sage-300";
   return (
     <div className="mx-auto max-w-2xl space-y-8 py-6">
       <h1 className="font-display text-center text-3xl">New recipe</h1>

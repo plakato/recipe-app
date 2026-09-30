@@ -21,7 +21,7 @@ export default async function Home() {
         <p className="font-display text-3xl">Nothing cooking yet.</p>
         <Link
           href="/recipes/new"
-          className="flex items-center gap-2 rounded-full bg-amber-600 px-5 py-2.5 font-medium text-white shadow-sm hover:bg-amber-700"
+          className="flex items-center gap-2 rounded-full bg-sage-600 px-5 py-2.5 font-medium text-white shadow-sm hover:bg-sage-700"
         >
           <PlusIcon /> Add your first recipe
         </Link>
