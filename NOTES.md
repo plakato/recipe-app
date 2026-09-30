@@ -22,7 +22,14 @@ recipes are hidden, not deleted. In order:
      errors. Add proper not-found/error pages.
    - Also set the monthly spend limit on the OpenRouter key (dashboard) as the
      hard stop.
-2. **Public browsing.** Anyone opening the site sees Patricia's **40 photo
+2. ~~**Public browsing.**~~ — DONE 2026-09-30 (`lib/showcase.ts`): on when
+   `SHOWCASE_EMAIL` is set in .env (production needs it added by hand).
+   Note: in development, files in public/uploads are served statically, so
+   any photo URL opens without an account there; production serves photos
+   through `app/uploads/[name]/route.ts`, which allows visitors only the
+   showcase recipes' photos. It is 20 photo recipes (not 40 — that counted
+   a test account's copies).
+   Was: **Public browsing.** Anyone opening the site sees Patricia's **40 photo
    recipes** read-only, scans available on click as now. No account, nothing
    stored. **Not indexed by search engines for now** (`noindex`; reconsider
    later — copyright of cookbook scans, personal notes on cards).

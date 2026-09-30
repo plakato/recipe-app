@@ -30,8 +30,9 @@ DATABASE_URL="file:./dev.db"                              # already set
 OPENROUTER_API_KEY="sk-or-v1-..."                         # your OpenRouter key
 OPENROUTER_MODEL="google/gemma-4-31b-it:free"             # free, vision-capable
 OPENROUTER_MODEL_FALLBACK="google/gemma-4-26b-a4b-it:free"  # used if primary is busy
-OPENROUTER_MODEL_HQ="google/gemini-2.5-flash"            # paid, opt-in for handwriting (~$0.0015/photo)
+OPENROUTER_MODEL_HQ="google/gemini-2.5-flash"            # paid fallback when free models are busy (~$0.0015/photo), capped: AI_PAID_USD_PER_MONTH (default 5)
 INVITE_CODE="something-secret"                            # required to create an account on /signup
+SHOWCASE_EMAIL="you@example.com"                          # optional: visitors without an account browse this account's recipes (read-only)
 BACKUP_REMOTE="gdrive:RecipeAppBackup"                    # optional; rclone remote:folder for scripts/backup.sh
 UPLOAD_DIR="/srv/recipes/data/uploads"                    # production only; defaults to public/uploads
 ```

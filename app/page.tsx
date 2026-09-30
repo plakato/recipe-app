@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { currentViewer } from "@/lib/showcase";
 import RecipeImage from "@/components/RecipeImage";
 import { CookingPot } from "lucide-react";
 import { PlusIcon } from "@/components/Icons";
@@ -10,13 +11,15 @@ import { visibleRecipes } from "@/lib/features";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const userId = await requireUserId();
+  // Signed in: your recipes. Otherwise the public showcase, read-only.
+  const viewer = await currentViewer();
+  if (!viewer) redirect("/login");
   const recipes = await prisma.recipe.findMany({
-    where: { userId, deletedAt: null, ...visibleRecipes },
+    where: { userId: viewer.userId, deletedAt: null, ...visibleRecipes },
     orderBy: { createdAt: "desc" },
   });
 
-  if (recipes.length === 0) {
+  if (recipes.length === 0 && viewer.signedIn) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
         <CookingPot className="h-14 w-14 text-stone-300" strokeWidth={1.5} />
@@ -34,6 +37,16 @@ export default async function Home() {
   // Bento grid: the newest recipe takes a 2×2 tile, the rest are squares.
   // Titles sit on a dark shadow rising from the bottom of each photo.
   return (
+    <>
+    {!viewer.signedIn && (
+      <p className="mb-4 text-sm text-stone-600 dark:text-stone-400">
+        You&rsquo;re browsing our family recipes.{" "}
+        <Link href="/login" className="font-medium text-olive-700 underline-offset-2 hover:underline dark:text-olive-300">
+          Sign in
+        </Link>{" "}
+        to keep your own.
+      </p>
+    )}
     <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {recipes.map((recipe, i) => (
         <li key={recipe.id} className={i === 0 ? "col-span-2 row-span-2" : ""}>
@@ -62,6 +75,7 @@ export default async function Home() {
         </li>
       ))}
     </ul>
+    </>
   );
 }
 

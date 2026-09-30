@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/auth";
+import { currentViewer } from "@/lib/showcase";
 import { groupSections, parseList } from "@/lib/recipes";
 import { softDeleteRecipe } from "@/app/actions";
 import RecipeImage from "@/components/RecipeImage";
@@ -20,11 +20,14 @@ export default async function RecipeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const userId = await requireUserId();
+  // Signed in: your recipes. Otherwise the public showcase, read-only.
+  const viewer = await currentViewer();
+  if (!viewer) notFound();
   const recipe = await prisma.recipe.findFirst({
-    where: { id, userId, deletedAt: null, ...visibleRecipes },
+    where: { id, userId: viewer.userId, deletedAt: null, ...visibleRecipes },
   });
   if (!recipe) notFound();
+  const canEdit = viewer.signedIn;
 
   const ingredients = groupSections(parseList(recipe.ingredients));
   const instructions = groupSections(parseList(recipe.instructions));
@@ -64,15 +67,19 @@ export default async function RecipeDetailPage({
                   {recipe.sourceUrl ? <LinkIcon /> : <PhotoIcon />}
                 </a>
               )}
-              <Link href={`/recipes/${recipe.id}/edit`} title="Edit" aria-label="Edit" className={heroBtn}>
-                <EditIcon />
-              </Link>
-              <form action={softDeleteRecipe}>
-                <input type="hidden" name="id" value={recipe.id} />
-                <button type="submit" title="Move to Trash" aria-label="Move to Trash" className={heroBtn}>
-                  <TrashIcon />
-                </button>
-              </form>
+              {canEdit && (
+                <>
+                  <Link href={`/recipes/${recipe.id}/edit`} title="Edit" aria-label="Edit" className={heroBtn}>
+                    <EditIcon />
+                  </Link>
+                  <form action={softDeleteRecipe}>
+                    <input type="hidden" name="id" value={recipe.id} />
+                    <button type="submit" title="Move to Trash" aria-label="Move to Trash" className={heroBtn}>
+                      <TrashIcon />
+                    </button>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -20,6 +20,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Family Recipes",
   description: "Our family recipe collection",
+  // Not in search engines for now (roadmap step 2; reconsider later).
+  robots: { index: false, follow: false },
 };
 
 export default async function RootLayout({
@@ -56,7 +58,14 @@ export default async function RootLayout({
                 </Link>
                 <UserMenu email={user.email} />
               </div>
-            ) : null}
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-lg bg-stone-100 px-3.5 py-2 text-sm font-medium text-stone-900 transition hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+              >
+                Sign in
+              </Link>
+            )}
           </nav>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">{children}</main>

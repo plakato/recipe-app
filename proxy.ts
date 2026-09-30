@@ -8,12 +8,25 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/lib/auth-constants";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/api/auth/login", "/api/auth/signup"];
+const PUBLIC_PATHS = ["/login", "/signup", "/api/auth/login", "/api/auth/signup", "/robots.txt"];
+
+// Pages visitors may open without an account when public browsing is on
+// (SHOWCASE_EMAIL): the recipe list, a recipe, and its photos. The pages
+// themselves decide what to show; everything else (adding, editing, Trash,
+// imports) still needs an account.
+function isBrowsable(pathname: string): boolean {
+  if (!process.env.SHOWCASE_EMAIL) return false;
+  return (
+    pathname === "/" ||
+    (/^\/recipes\/[^/]+$/.test(pathname) && pathname !== "/recipes/new") ||
+    pathname.startsWith("/uploads/")
+  );
+}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has(SESSION_COOKIE);
-  const isPublic = PUBLIC_PATHS.includes(pathname);
+  const isPublic = PUBLIC_PATHS.includes(pathname) || isBrowsable(pathname);
 
   if (!hasSession && !isPublic) {
     const login = new URL("/login", request.url);
