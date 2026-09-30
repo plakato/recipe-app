@@ -97,6 +97,29 @@ export function toDrafts(parsed: unknown): RecipeDraft[] {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// The free models, in the order to try them.
+function freeModels(): string[] {
+  return [
+    process.env.OPENROUTER_MODEL ?? "google/gemma-4-31b-it:free",
+    process.env.OPENROUTER_MODEL_FALLBACK,
+  ].filter(Boolean) as string[];
+}
+
+// The paid model (OPENROUTER_MODEL_HQ), used only when all the free models
+// are busy — unless it is already in the list (e.g. passed as an override).
+function paidFallback(tried: string[]): string | undefined {
+  const hq = process.env.OPENROUTER_MODEL_HQ;
+  return hq && !tried.includes(hq) ? hq : undefined;
+}
+
+// Errors that mean "try again later" rather than "this failed".
+function isBusy(e: unknown): boolean {
+  return (
+    e instanceof Error &&
+    /OpenRouter (429|502|503|404)|rate-limit|Empty response/i.test(e.message)
+  );
+}
+
 // Call one model. Retries on 429 (free-tier rate limit) and 503 with a short
 // backoff, since free models are frequently busy. Throws on other errors.
 async function callModel(model: string, messages: ChatMessage[]): Promise<string> {
@@ -177,16 +200,15 @@ async function runModels(
   parse: (parsed: unknown) => RecipeDraft[],
   modelOverride?: string,
 ): Promise<RecipeDraft[]> {
-  const primary = process.env.OPENROUTER_MODEL ?? "google/gemma-4-31b-it:free";
-  const fallback = process.env.OPENROUTER_MODEL_FALLBACK;
-  const models = [
-    ...new Set(
-      [modelOverride, primary, fallback].filter(Boolean) as string[],
-    ),
-  ];
+  const models = [...new Set([modelOverride, ...freeModels()].filter(Boolean) as string[])];
+  const paid = paidFallback(models);
 
   const errors: unknown[] = [];
-  for (const model of models) {
+  for (const model of [...models, ...(paid ? [paid] : [])]) {
+    // The paid model is a last resort: only when every free model was busy,
+    // never to second-guess a free model that found no recipe.
+    if (model === paid && !errors.every(isBusy)) break;
+    if (model === paid) console.warn(`Free models busy; reading the recipe with paid ${paid}.`);
     try {
       const content = await callModel(model, messages);
       const drafts = parse(extractJsonObject(content));
@@ -201,8 +223,6 @@ async function runModels(
   }
   // Prefer a substantive error (e.g. "no recipe found") over a later model's
   // rate-limit noise, so the user sees why the material was rejected.
-  const isBusy = (e: unknown) =>
-    e instanceof Error && /OpenRouter (429|503|404)|rate-limit/i.test(e.message);
   const best = errors.find((e) => !isBusy(e)) ?? errors[errors.length - 1];
   throw best instanceof Error ? best : new Error("Recipe extraction failed.");
 }
@@ -350,19 +370,19 @@ export async function chooseRecipeImage(
     content.push({ type: "image_url", image_url: { url } });
   });
 
-  const models = [
-    ...new Set(
-      [process.env.OPENROUTER_MODEL ?? "google/gemma-4-31b-it:free", process.env.OPENROUTER_MODEL_FALLBACK].filter(
-        Boolean,
-      ) as string[],
-    ),
-  ];
-  for (const model of models) {
+  const models = freeModels();
+  const paid = paidFallback(models);
+  const errors: unknown[] = [];
+  for (const model of [...models, ...(paid ? [paid] : [])]) {
+    // Paid model only if every free model was busy (not if one just answered badly).
+    if (model === paid && !errors.every(isBusy)) break;
+    if (model === paid) console.warn(`Free models busy; choosing the photo with paid ${paid}.`);
     try {
       const pick = parseBestImage(await callModel(model, [{ role: "user", content }]), imageDataUrls.length);
       if (pick !== null) return pick;
-    } catch {
-      // Try the next model.
+      errors.push(new Error(`Unusable answer from ${model}`));
+    } catch (err) {
+      errors.push(err);
     }
   }
   return null;

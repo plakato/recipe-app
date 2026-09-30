@@ -1,5 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { extractJsonObject, parseBestImage, toDraft, toDrafts } from "@/lib/extractRecipe";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import {
+  extractJsonObject,
+  extractRecipeFromText,
+  parseBestImage,
+  toDraft,
+  toDrafts,
+} from "@/lib/extractRecipe";
 
 describe("extractJsonObject", () => {
   it("parses a plain JSON object", () => {
@@ -90,5 +96,57 @@ describe("parseBestImage", () => {
     expect(parseBestImage('{"best": 6}', 5)).toBeNull();
     expect(parseBestImage('{"best": 2.5}', 5)).toBeNull();
     expect(parseBestImage("the second one", 5)).toBeNull();
+  });
+});
+
+describe("paid model fallback", () => {
+  const RECIPE = JSON.stringify({ title: "Cake", ingredients: ["flour"], instructions: ["bake"] });
+  const NONE = JSON.stringify({ title: "", ingredients: [], instructions: [] });
+  let calls: string[];
+
+  // Fake OpenRouter: each model answers with a status and (for 200) a body.
+  function fakeOpenRouter(answers: Record<string, [number, string?]>) {
+    calls = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: { body: string }) => {
+        const model = JSON.parse(init.body).model as string;
+        calls.push(model);
+        const [status, content] = answers[model];
+        return new Response(
+          status === 200 ? JSON.stringify({ choices: [{ message: { content } }] }) : "busy",
+          { status },
+        );
+      }),
+    );
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("OPENROUTER_API_KEY", "test");
+    vi.stubEnv("OPENROUTER_MODEL", "free-a");
+    vi.stubEnv("OPENROUTER_MODEL_FALLBACK", "free-b");
+    vi.stubEnv("OPENROUTER_MODEL_HQ", "paid");
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("is not used when a free model answers", async () => {
+    fakeOpenRouter({ "free-a": [200, RECIPE], "free-b": [404], paid: [200, RECIPE] });
+    await expect(extractRecipeFromText("x")).resolves.toMatchObject({ title: "Cake" });
+    expect(calls).toEqual(["free-a"]);
+  });
+
+  it("is used when every free model is busy", async () => {
+    fakeOpenRouter({ "free-a": [404], "free-b": [404], paid: [200, RECIPE] });
+    await expect(extractRecipeFromText("x")).resolves.toMatchObject({ title: "Cake" });
+    expect(calls).toEqual(["free-a", "free-b", "paid"]);
+  });
+
+  it("is not asked again when a free model found no recipe", async () => {
+    fakeOpenRouter({ "free-a": [200, NONE], "free-b": [404], paid: [200, RECIPE] });
+    await expect(extractRecipeFromText("x")).rejects.toThrow(/did not find a recipe/);
+    expect(calls).toEqual(["free-a", "free-b"]);
   });
 });
