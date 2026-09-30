@@ -1,38 +1,32 @@
-// Temporary: round 2 — ten editorial directions (serif titles, paper tones,
-// dark accents), each with its own logo mark and layout, using real recipes.
+// Temporary: round 3 — app-style sans fonts, kitchen-object logos, squared
+// buttons; half the versions mix card sizes, half keep an even grid.
 import {
-  Bodoni_Moda,
-  DM_Serif_Display,
+  Albert_Sans,
   Figtree,
-  Fraunces,
-  Gloock,
-  Hanken_Grotesk,
-  Instrument_Sans,
-  Instrument_Serif,
-  Inter_Tight,
-  Libre_Caslon_Text,
-  Newsreader,
-  Schibsted_Grotesk,
-  Young_Serif,
+  Geist,
+  Inter,
+  Lexend,
+  Nunito_Sans,
+  Outfit,
+  Public_Sans,
+  Rubik,
+  Urbanist,
 } from "next/font/google";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const instrumentSerif = Instrument_Serif({ subsets: ["latin", "latin-ext"], weight: "400", style: ["normal", "italic"] });
-const instrumentSans = Instrument_Sans({ subsets: ["latin", "latin-ext"] });
-const newsreader = Newsreader({ subsets: ["latin", "latin-ext"], style: ["normal", "italic"] });
-const gloock = Gloock({ subsets: ["latin", "latin-ext"], weight: "400" });
-const bodoni = Bodoni_Moda({ subsets: ["latin", "latin-ext"], style: ["normal", "italic"] });
-const dmSerif = DM_Serif_Display({ subsets: ["latin", "latin-ext"], weight: "400" });
-const fraunces = Fraunces({ subsets: ["latin", "latin-ext"] });
-const youngSerif = Young_Serif({ subsets: ["latin", "latin-ext"], weight: "400" });
-const caslon = Libre_Caslon_Text({ subsets: ["latin", "latin-ext"], weight: ["400", "700"] });
-const hanken = Hanken_Grotesk({ subsets: ["latin", "latin-ext"] });
-const schibsted = Schibsted_Grotesk({ subsets: ["latin", "latin-ext"] });
+const inter = Inter({ subsets: ["latin", "latin-ext"] });
+const geist = Geist({ subsets: ["latin", "latin-ext"] });
 const figtree = Figtree({ subsets: ["latin", "latin-ext"] });
-const interTight = Inter_Tight({ subsets: ["latin", "latin-ext"] });
+const rubik = Rubik({ subsets: ["latin", "latin-ext"] });
+const outfit = Outfit({ subsets: ["latin", "latin-ext"] });
+const urbanist = Urbanist({ subsets: ["latin", "latin-ext"] });
+const albert = Albert_Sans({ subsets: ["latin", "latin-ext"] });
+const publicSans = Public_Sans({ subsets: ["latin", "latin-ext"] });
+const nunito = Nunito_Sans({ subsets: ["latin", "latin-ext"] });
+const lexend = Lexend({ subsets: ["latin", "latin-ext"] });
 
 type R = { id: string; title: string; imagePath: string | null };
 
@@ -45,120 +39,236 @@ function Img({ r, className = "", empty }: { r: R; className?: string; empty: st
   );
 }
 
-const serif = (f: { style: { fontFamily: string } }, italic = false) => ({
-  fontFamily: f.style.fontFamily,
-  ...(italic ? { fontStyle: "italic" as const } : {}),
-});
+// ---------- Kitchen glyphs (24×24, filled with currentColor) ----------
+const G = ({ children, className = "h-6 w-6" }: { children: React.ReactNode; className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+    {children}
+  </svg>
+);
+const glyph = {
+  pot: (
+    <G>
+      <circle cx="12" cy="5.5" r="1.6" />
+      <rect x="3" y="8" width="18" height="2.4" rx="1.2" />
+      <path d="M5 11.5h14V17a3.5 3.5 0 0 1-3.5 3.5h-7A3.5 3.5 0 0 1 5 17Z" />
+      <rect x="1.5" y="12.5" width="4" height="2.2" rx="1.1" />
+      <rect x="18.5" y="12.5" width="4" height="2.2" rx="1.1" />
+    </G>
+  ),
+  hat: (
+    <G>
+      <path d="M6.5 16.5v-3.3A4.3 4.3 0 0 1 7.6 4.9a5 5 0 0 1 8.8 0 4.3 4.3 0 0 1 1.1 8.3v3.3Z" />
+      <rect x="6.5" y="18" width="11" height="2.8" rx="0.8" />
+    </G>
+  ),
+  whisk: (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+      <path d="M12 14.5C5.5 11 6.5 1.8 12 1.8s6.5 9.2 0 12.7Z" />
+      <path d="M12 14.5C9 11 9.3 1.8 12 1.8s3 9.2 0 12.7Z" />
+      <path d="M12 1.8v12.7" />
+      <path d="M12 15v7" strokeWidth="3" />
+    </svg>
+  ),
+  pan: (
+    <G>
+      <circle cx="9.5" cy="11.5" r="8" />
+      <path d="M8.7 7.3c-2.4.3-3.9 2.3-3.5 4.4.4 2.4 2.9 3.6 5 3 1.9-.5 3.5-1.5 3.4-3.6-.1-2.4-2.3-4.1-4.9-3.8Z" fill="#fff" />
+      <circle cx="9.4" cy="11.2" r="1.9" fill="#E8C468" />
+      <rect x="16.5" y="10.2" width="7" height="2.6" rx="1.3" />
+    </G>
+  ),
+  cutlery: (
+    <G>
+      <path d="M5 2.5a.8.8 0 0 1 1.6 0V7h1V2.5a.8.8 0 0 1 1.6 0V7h1V2.5a.8.8 0 0 1 1.6 0V8a3 3 0 0 1-2.2 2.9V20.5a1.2 1.2 0 0 1-2.4 0V10.9A3 3 0 0 1 5 8Z" />
+      <path d="M17.5 2c2.2 1 3.3 4.2 3.3 8.3v1.2h-2.3v9a1.2 1.2 0 0 1-2.4 0V3.2c0-.8.7-1.4 1.4-1.2Z" />
+    </G>
+  ),
+  bowl: (
+    <G>
+      <path d="M17.4 3.4a1 1 0 0 1 1.5 1.3L15 9.5h-2.6Z" />
+      <path d="M2.5 10.5h19a1 1 0 0 1 1 1.1A10.5 9 0 0 1 12 20.5 10.5 9 0 0 1 1.5 11.6a1 1 0 0 1 1-1.1Z" />
+    </G>
+  ),
+  spatula: (
+    <G>
+      <path d="M8.5 1.5h7a2 2 0 0 1 2 2V10a3 3 0 0 1-3 3h-5a3 3 0 0 1-3-3V3.5a2 2 0 0 1 2-2Zm1.3 2.5v6h1.2V4Zm3.2 0v6h1.2V4Z" fillRule="evenodd" />
+      <rect x="10.7" y="12.5" width="2.6" height="10" rx="1.3" />
+    </G>
+  ),
+  ladle: (
+    <G>
+      <path d="M16.3 2a2.7 2.7 0 0 1 2.7 2.7v.5h-2.2v-.5a.5.5 0 0 0-1 0V12h-2.2V4.7A2.7 2.7 0 0 1 16.3 2Z" />
+      <path d="M4 12h16a1 1 0 0 1 1 1.1 9 8 0 0 1-18 0A1 1 0 0 1 4 12Z" />
+    </G>
+  ),
+  pin: (
+    <G>
+      <rect x="3.5" y="8.4" width="17" height="7.2" rx="3.6" transform="rotate(-35 12 12)" />
+      <rect x="-1" y="10.8" width="5.2" height="2.4" rx="1.2" transform="rotate(-35 12 12)" />
+      <rect x="19.8" y="10.8" width="5.2" height="2.4" rx="1.2" transform="rotate(-35 12 12)" />
+    </G>
+  ),
+  mortar: (
+    <G>
+      <rect x="11.5" y="1.2" width="3.2" height="11" rx="1.6" transform="rotate(30 13 7)" />
+      <path d="M3 11h18l-1.4 5.4A4 4 0 0 1 15.7 19.5H8.3a4 4 0 0 1-3.9-3.1Z" />
+      <rect x="7" y="20.3" width="10" height="2.2" rx="1.1" />
+    </G>
+  ),
+};
 
+const PlusGlyph = ({ className = "h-4 w-4" }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+// ---------- Versions ----------
 type Version = {
   name: string;
   about: string;
+  font: string;
   frame: string;
-  sans: string;
   header: string;
   logo: React.ReactElement;
-  plus: string;
+  add: React.ReactElement; // the "new recipe" control
   avatar: string;
   body: (rs: R[]) => React.ReactElement;
 };
 
+const title = "line-clamp-2 leading-snug";
+
 const versions: Version[] = [
   {
-    name: "Pine",
-    about: "The closest to no. 8, cleaner: Instrument Serif, bone paper, pine green, bowl-and-spoon mark",
-    frame: "bg-[#F6F4EE] text-[#141414]",
-    sans: instrumentSans.className,
+    name: "Pot · Inter",
+    about: "Even grid · bone + pine · tall photos, title below · labelled button",
+    font: inter.className,
+    frame: "bg-[#F6F4EE] text-[#171717]",
     header: "border-b border-black/10",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        <path d="M6 20h28a14 14 0 0 1-28 0Z" fill="#1F4D3A" />
-        <path d="M24 16 33 5" stroke="#1F4D3A" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
+    logo: <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1F4D3A] text-[#F6F4EE]">{glyph.pot}</span>,
+    add: (
+      <span className="flex h-9 items-center gap-1.5 rounded-lg bg-[#1F4D3A] px-3 text-sm font-medium text-white">
+        <PlusGlyph /> New recipe
+      </span>
     ),
-    plus: "bg-[#1F4D3A] text-[#F6F4EE]",
-    avatar: "ring-1 ring-[#1F4D3A]/40 text-[#1F4D3A]",
+    avatar: "rounded-lg bg-[#E6E2D8] text-[#1F4D3A]",
     body: (rs) => (
-      <div className="grid grid-cols-2 gap-x-5 gap-y-8 p-5 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-6 p-5 sm:grid-cols-3">
         {rs.slice(0, 6).map((r) => (
-          <div key={r.id} className="group">
-            <div className="aspect-[3/4] overflow-hidden">
-              <Img r={r} empty="bg-[#E4E9E1]" className="transition duration-700 group-hover:scale-[1.03]" />
+          <div key={r.id}>
+            <div className="aspect-[4/5] overflow-hidden rounded-xl">
+              <Img r={r} empty="bg-[#E4E9E1]" />
             </div>
-            <p className="mt-3 line-clamp-2 text-2xl leading-[1.1]" style={serif(instrumentSerif)}>
-              {r.title}
-            </p>
+            <p className={`mt-2.5 text-[15px] font-semibold ${title}`}>{r.title}</p>
           </div>
         ))}
       </div>
     ),
   },
   {
-    name: "Masonry",
-    about: "Newsreader italic + Inter Tight, white, olive · uneven columns of different photo heights (Pinterest-like)",
-    frame: "bg-white text-[#171717]",
-    sans: interTight.className,
+    name: "Chef's hat · Geist",
+    about: "Mixed sizes (bento) · white + ink + olive · newest recipe takes a 2×2 tile",
+    font: geist.className,
+    frame: "bg-white text-[#111]",
     header: "border-b border-black/5",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        <circle cx="20" cy="20" r="15" fill="none" stroke="#56642C" strokeWidth="2.5" />
-        <path d="M5 22h30" stroke="#56642C" strokeWidth="2.5" />
-      </svg>
+    logo: <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#111] text-white">{glyph.hat}</span>,
+    add: (
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#5F6F2E] text-white">
+        <PlusGlyph />
+      </span>
     ),
-    plus: "bg-[#171717] text-white",
-    avatar: "bg-[#EEF0E6] text-[#56642C]",
+    avatar: "rounded-lg bg-[#F0F1EA] text-[#111]",
+    body: (rs) => (
+      <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
+        {rs.slice(0, 9).map((r, i) => (
+          <div key={r.id} className={`relative overflow-hidden rounded-xl ${i === 0 ? "col-span-2 row-span-2" : ""} aspect-square`}>
+            <Img r={r} empty="bg-[#EEF0E6]" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/65 to-transparent" />
+            <p className={`absolute inset-x-0 bottom-0 p-3 font-semibold text-white ${i === 0 ? "text-2xl" : "text-sm"} ${title}`}>{r.title}</p>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    name: "Whisk · Figtree",
+    about: "Mixed sizes (masonry) · warm paper + oxblood · uneven photo heights, title below",
+    font: figtree.className,
+    frame: "bg-[#F2EFE8] text-[#1A1A1A]",
+    header: "border-b border-black/10",
+    logo: <span className="text-[#6B1F2A]">{glyph.whisk}</span>,
+    add: (
+      <span className="flex h-9 items-center gap-1.5 rounded-lg border border-[#6B1F2A]/30 px-3 text-sm font-semibold text-[#6B1F2A]">
+        <PlusGlyph /> Add
+      </span>
+    ),
+    avatar: "rounded-lg bg-[#6B1F2A] text-white",
     body: (rs) => (
       <div className="columns-2 gap-4 p-5 sm:columns-3">
         {rs.slice(0, 7).map((r, i) => (
-          <div key={r.id} className="mb-6 break-inside-avoid">
-            <div className={`overflow-hidden rounded-md ${["aspect-[3/4]", "aspect-square", "aspect-[4/5]", "aspect-[2/3]"][i % 4]}`}>
-              <Img r={r} empty="bg-[#EEF0E6]" />
+          <div key={r.id} className="mb-5 break-inside-avoid">
+            <div className={`overflow-hidden rounded-lg ${["aspect-[3/4]", "aspect-square", "aspect-[4/5]", "aspect-[2/3]"][i % 4]}`}>
+              <Img r={r} empty="bg-[#E6DED2]" />
             </div>
-            <p className="mt-2 line-clamp-2 text-lg leading-snug" style={serif(newsreader, true)}>
-              {r.title}
-            </p>
+            <p className={`mt-2 font-semibold ${title}`}>{r.title}</p>
           </div>
         ))}
       </div>
     ),
   },
   {
-    name: "Feature",
-    about: "Gloock + Hanken Grotesk, warm paper, oxblood · newest recipe as a big feature, the rest in a small grid",
-    frame: "bg-[#F2EFE8] text-[#151515]",
-    sans: hanken.className,
-    header: "border-b border-black/10",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        <rect width="40" height="40" fill="#151515" />
-        <text x="20" y="29" textAnchor="middle" fontSize="26" fill="#F2EFE8" style={serif(gloock)}>
-          r
-        </text>
-      </svg>
+    name: "Frying pan · Rubik",
+    about: "Even grid · dark app with egg-yolk yellow · square photos, title on the photo",
+    font: rubik.className,
+    frame: "bg-[#121212] text-[#F2EFE8]",
+    header: "border-b border-white/10",
+    logo: <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8C468] text-[#121212]">{glyph.pan}</span>,
+    add: (
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8C468] text-[#121212]">
+        <PlusGlyph />
+      </span>
     ),
-    plus: "bg-[#6B1F2A] text-white",
-    avatar: "bg-[#151515] text-[#F2EFE8]",
+    avatar: "rounded-lg bg-white/10 text-[#F2EFE8]",
     body: (rs) => (
-      <div className="space-y-8 p-5">
-        <div className="grid gap-5 sm:grid-cols-[3fr_2fr] sm:items-end">
-          <div className="aspect-[4/3] overflow-hidden">
-            <Img r={rs[0]} empty="bg-[#E6DED2]" />
+      <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">
+        {rs.slice(0, 6).map((r) => (
+          <div key={r.id} className="relative aspect-square overflow-hidden rounded-lg">
+            <Img r={r} empty="bg-[#222]" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 to-transparent" />
+            <p className={`absolute inset-x-0 bottom-0 p-3 font-medium text-white ${title}`}>{r.title}</p>
           </div>
-          <div>
-            <p className="font-mono text-xs text-[#6B1F2A]">Newest</p>
-            <p className="mt-2 text-4xl leading-[1.05] sm:text-5xl" style={serif(gloock)}>
-              {rs[0].title}
-            </p>
+        ))}
+      </div>
+    ),
+  },
+  {
+    name: "Knife & fork · Outfit",
+    about: "Mixed sizes (feature) · sand + forest green · newest recipe big, the rest in a grid",
+    font: outfit.className,
+    frame: "bg-[#EEE9DF] text-[#1B1B1B]",
+    header: "border-b border-black/10",
+    logo: <span className="text-[#243B2F]">{glyph.cutlery}</span>,
+    add: (
+      <span className="flex h-9 items-center gap-1.5 rounded-lg bg-[#243B2F] px-3 text-sm font-medium text-[#EEE9DF]">
+        <PlusGlyph /> New
+      </span>
+    ),
+    avatar: "rounded-lg bg-[#DDD5C6] text-[#243B2F]",
+    body: (rs) => (
+      <div className="space-y-6 p-5">
+        <div className="grid gap-4 sm:grid-cols-[3fr_2fr] sm:items-end">
+          <div className="aspect-[4/3] overflow-hidden rounded-2xl">
+            <Img r={rs[0]} empty="bg-[#DDD5C6]" />
           </div>
+          <p className="text-3xl font-semibold leading-tight sm:text-4xl">{rs[0].title}</p>
         </div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-6 border-t border-black/10 pt-6 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {rs.slice(1, 5).map((r) => (
             <div key={r.id}>
-              <div className="aspect-square overflow-hidden">
-                <Img r={r} empty="bg-[#E6DED2]" />
+              <div className="aspect-square overflow-hidden rounded-xl">
+                <Img r={r} empty="bg-[#DDD5C6]" />
               </div>
-              <p className="mt-2 line-clamp-2 text-lg leading-tight" style={serif(gloock)}>
-                {r.title}
-              </p>
+              <p className={`mt-2 font-medium ${title}`}>{r.title}</p>
             </div>
           ))}
         </div>
@@ -166,233 +276,161 @@ const versions: Version[] = [
     ),
   },
   {
-    name: "Index",
-    about: "Bodoni Moda + Inter Tight, white, ink blue · a numbered index of big titles, small photo on the right",
-    frame: "bg-white text-[#10182B]",
-    sans: interTight.className,
-    header: "border-b border-[#10182B]",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        <text x="4" y="30" fontSize="30" fill="#10182B" style={serif(bodoni, true)}>
-          R
-        </text>
-        <circle cx="31" cy="27" r="3.2" fill="#2D4E9A" />
-      </svg>
+    name: "Mixing bowl · Urbanist",
+    about: "Even rows · white + navy · compact app list: thumbnail left, title right, two columns",
+    font: urbanist.className,
+    frame: "bg-white text-[#14213D]",
+    header: "border-b border-[#14213D]/10",
+    logo: <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1D3557] text-white">{glyph.bowl}</span>,
+    add: (
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#1D3557] text-white">
+        <PlusGlyph />
+      </span>
     ),
-    plus: "bg-[#10182B] text-white",
-    avatar: "ring-1 ring-[#10182B] text-[#10182B]",
+    avatar: "rounded-lg bg-[#E8EDF5] text-[#1D3557]",
     body: (rs) => (
-      <ol className="px-5">
-        {rs.slice(0, 6).map((r, i) => (
-          <li key={r.id} className="group flex items-center gap-4 border-b border-[#10182B]/15 py-4 last:border-0">
-            <span className="w-8 font-mono text-xs text-[#2D4E9A]">{String(i + 1).padStart(2, "0")}</span>
-            <p className="min-w-0 flex-1 text-2xl leading-tight sm:text-4xl" style={serif(bodoni)}>
-              <span className="line-clamp-2 transition group-hover:italic">{r.title}</span>
-            </p>
-            <div className="h-16 w-16 flex-none overflow-hidden sm:h-20 sm:w-28">
-              <Img r={r} empty="bg-[#E5EAF4]" />
-            </div>
-          </li>
-        ))}
-      </ol>
-    ),
-  },
-  {
-    name: "Dark Editorial",
-    about: "Instrument Serif on charcoal, bone text · full-bleed square photos with the serif title on the photo",
-    frame: "bg-[#111111] text-[#EDE9E0]",
-    sans: instrumentSans.className,
-    header: "border-b border-white/10",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        <circle cx="20" cy="20" r="15" fill="none" stroke="#EDE9E0" strokeWidth="1.5" />
-        <circle cx="20" cy="20" r="5" fill="#C9B98F" />
-      </svg>
-    ),
-    plus: "bg-[#EDE9E0] text-[#111]",
-    avatar: "bg-white/10 text-[#EDE9E0]",
-    body: (rs) => (
-      <div className="grid grid-cols-2 gap-0.5 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-x-6 p-4 sm:grid-cols-2">
         {rs.slice(0, 6).map((r) => (
-          <div key={r.id} className="relative aspect-square overflow-hidden">
-            <Img r={r} empty="bg-[#222]" />
-            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />
-            <p className="absolute inset-x-0 bottom-0 line-clamp-2 p-3 text-2xl leading-[1.05] text-white" style={serif(instrumentSerif)}>
-              {r.title}
-            </p>
+          <div key={r.id} className="flex items-center gap-4 border-b border-[#14213D]/10 py-3">
+            <div className="h-16 w-16 flex-none overflow-hidden rounded-lg">
+              <Img r={r} empty="bg-[#E8EDF5]" />
+            </div>
+            <p className={`font-bold ${title}`}>{r.title}</p>
           </div>
         ))}
       </div>
     ),
   },
   {
-    name: "Headline First",
-    about: "DM Serif Display + Schibsted Grotesk, sand, deep forest · the title comes first, the photo underneath it",
-    frame: "bg-[#EEE9DF] text-[#1B1B1B]",
-    sans: schibsted.className,
-    header: "border-b border-black/10",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        <path d="M6 22h28a14 14 0 0 1-28 0Z" fill="#243B2F" />
-        <path d="M6 18h28a14 14 0 0 0-28 0Z" fill="none" stroke="#243B2F" strokeWidth="2" />
-        <circle cx="20" cy="4" r="2" fill="#243B2F" />
-      </svg>
-    ),
-    plus: "bg-[#243B2F] text-[#EEE9DF]",
-    avatar: "bg-[#DDD5C6] text-[#243B2F]",
-    body: (rs) => (
-      <div className="grid grid-cols-1 gap-x-6 gap-y-10 p-5 sm:grid-cols-3">
-        {rs.slice(0, 6).map((r) => (
-          <div key={r.id}>
-            <p className="mb-3 line-clamp-2 min-h-[2.2em] text-3xl leading-[1.05]" style={serif(dmSerif)}>
-              {r.title}
-            </p>
-            <div className="aspect-[4/3] overflow-hidden rounded-sm">
-              <Img r={r} empty="bg-[#DDD5C6]" />
-            </div>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    name: "Soft Modern",
-    about: "Fraunces + Figtree, off-white, aubergine · rounded photos, a round arrow button tucked into the corner",
+    name: "Spatula · Albert Sans",
+    about: "Mixed sizes (rhythm) · off-white + aubergine · a row of two big, then a row of three small",
+    font: albert.className,
     frame: "bg-[#F7F5F0] text-[#221B26]",
-    sans: figtree.className,
     header: "",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        <rect width="40" height="40" rx="20" fill="#3E2A47" />
-        <text x="20" y="28" textAnchor="middle" fontSize="22" fill="#F7F5F0" style={serif(fraunces, true)}>
-          r
-        </text>
-      </svg>
+    logo: <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3E2A47] text-[#F7F5F0]">{glyph.spatula}</span>,
+    add: (
+      <span className="flex h-9 items-center gap-1.5 rounded-lg bg-[#3E2A47] px-3 text-sm font-medium text-white">
+        <PlusGlyph /> New recipe
+      </span>
     ),
-    plus: "bg-[#3E2A47] text-white",
-    avatar: "bg-[#E9E3EC] text-[#3E2A47]",
+    avatar: "rounded-lg bg-[#E9E3EC] text-[#3E2A47]",
     body: (rs) => (
-      <div className="grid grid-cols-2 gap-x-4 gap-y-7 p-5 sm:grid-cols-3">
-        {rs.slice(0, 6).map((r) => (
-          <div key={r.id} className="group">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem]">
-              <Img r={r} empty="bg-[#E9E3EC]" />
-              <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#F7F5F0] text-[#3E2A47] transition group-hover:bg-[#3E2A47] group-hover:text-white">
-                ↗
-              </span>
-            </div>
-            <p className="mt-3 line-clamp-2 px-1 text-xl leading-tight" style={serif(fraunces)}>
-              {r.title}
-            </p>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    name: "Book Covers",
-    about: "Young Serif + Instrument Sans, bone · photo on top, title on a solid colour block like a book spine",
-    frame: "bg-[#F4F1EA] text-[#141414]",
-    sans: instrumentSans.className,
-    header: "border-b border-black/10",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        <path d="M20 11c-4-3-9-3-14-2v21c5-1 10-1 14 2 4-3 9-3 14-2V9c-5-1-10-1-14 2Z" fill="none" stroke="#1F4D3A" strokeWidth="2.5" strokeLinejoin="round" />
-        <path d="M20 11v21" stroke="#1F4D3A" strokeWidth="2.5" />
-      </svg>
-    ),
-    plus: "bg-[#1F4D3A] text-white",
-    avatar: "bg-[#E4DED2] text-[#1F4D3A]",
-    body: (rs) => {
-      const tones = ["bg-[#1F4D3A]", "bg-[#1D3557]", "bg-[#5E2129]", "bg-[#2E2A26]"];
-      return (
-        <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3">
-          {rs.slice(0, 6).map((r, i) => (
-            <div key={r.id} className="overflow-hidden rounded-sm">
-              <div className="aspect-square">
-                <Img r={r} empty="bg-[#E4DED2]" />
+      <div className="space-y-5 p-5">
+        <div className="grid grid-cols-2 gap-4">
+          {rs.slice(0, 2).map((r) => (
+            <div key={r.id}>
+              <div className="aspect-[4/3] overflow-hidden rounded-xl">
+                <Img r={r} empty="bg-[#E9E3EC]" />
               </div>
-              <div className={`${tones[i % tones.length]} flex min-h-[5.5rem] items-end p-3 text-[#F4F1EA]`}>
-                <p className="line-clamp-3 text-lg leading-tight" style={serif(youngSerif)}>
-                  {r.title}
-                </p>
-              </div>
+              <p className={`mt-2.5 text-lg font-semibold ${title}`}>{r.title}</p>
             </div>
           ))}
         </div>
-      );
-    },
+        <div className="grid grid-cols-3 gap-4">
+          {rs.slice(2, 5).map((r) => (
+            <div key={r.id}>
+              <div className="aspect-square overflow-hidden rounded-xl">
+                <Img r={r} empty="bg-[#E9E3EC]" />
+              </div>
+              <p className={`mt-2 text-sm font-semibold ${title}`}>{r.title}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
   },
   {
-    name: "Gallery",
-    about: "Libre Caslon + Inter Tight, pure white, black · photos in black & white that turn to colour on hover",
-    frame: "bg-white text-black",
-    sans: interTight.className,
-    header: "",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        <circle cx="14" cy="20" r="8" fill="#000" />
-        <rect x="24" y="12" width="12" height="16" fill="none" stroke="#000" strokeWidth="2" />
-      </svg>
+    name: "Ladle · Public Sans",
+    about: "Mixed sizes (app shelves) · bone + deep teal · a swipeable row of big newest cards, then a grid",
+    font: publicSans.className,
+    frame: "bg-[#F6F4EE] text-[#132A2A]",
+    header: "border-b border-black/10",
+    logo: <span className="text-[#0F4C4C]">{glyph.ladle}</span>,
+    add: (
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0F4C4C] text-white">
+        <PlusGlyph />
+      </span>
     ),
-    plus: "bg-black text-white",
-    avatar: "ring-1 ring-black text-black",
+    avatar: "rounded-lg bg-[#DDE8E6] text-[#0F4C4C]",
     body: (rs) => (
-      <div className="grid grid-cols-2 gap-x-6 gap-y-10 p-6 sm:grid-cols-3">
-        {rs.slice(0, 6).map((r, i) => (
-          <div key={r.id} className="group">
-            <div className="aspect-[4/5] overflow-hidden">
-              <Img r={r} empty="bg-[#EFEFEF]" className="grayscale transition duration-500 group-hover:grayscale-0" />
+      <div className="space-y-5 py-5">
+        <p className="px-5 text-xs font-semibold uppercase tracking-wider text-[#0F4C4C]">Newest</p>
+        <div className="flex gap-4 overflow-x-auto px-5 pb-1">
+          {rs.slice(0, 4).map((r) => (
+            <div key={r.id} className="w-64 flex-none">
+              <div className="aspect-[4/3] overflow-hidden rounded-xl">
+                <Img r={r} empty="bg-[#DDE8E6]" />
+              </div>
+              <p className={`mt-2 font-semibold ${title}`}>{r.title}</p>
             </div>
-            <div className="mt-3 flex gap-3">
-              <span className="pt-1 font-mono text-[10px] text-black/40">{String(i + 1).padStart(3, "0")}</span>
-              <p className="line-clamp-2 text-lg leading-snug" style={serif(caslon)}>
-                {r.title}
-              </p>
+          ))}
+        </div>
+        <p className="px-5 pt-2 text-xs font-semibold uppercase tracking-wider text-[#0F4C4C]">All recipes</p>
+        <div className="grid grid-cols-3 gap-3 px-5 sm:grid-cols-5">
+          {rs.slice(0, 5).map((r) => (
+            <div key={r.id}>
+              <div className="aspect-square overflow-hidden rounded-lg">
+                <Img r={r} empty="bg-[#DDE8E6]" />
+              </div>
+              <p className={`mt-1.5 text-xs font-medium ${title}`}>{r.title}</p>
             </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    name: "Rolling pin · Nunito Sans",
+    about: "Even grid · warm white, charcoal + mustard · photo with a solid title band under it",
+    font: nunito.className,
+    frame: "bg-[#FAFAF7] text-[#2E2A26]",
+    header: "border-b border-black/10",
+    logo: <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#D4A017] text-[#2E2A26]">{glyph.pin}</span>,
+    add: (
+      <span className="flex h-9 items-center gap-1.5 rounded-lg bg-[#2E2A26] px-3 text-sm font-bold text-white">
+        <PlusGlyph /> New recipe
+      </span>
+    ),
+    avatar: "rounded-lg bg-[#F1E7CC] text-[#2E2A26]",
+    body: (rs) => (
+      <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3">
+        {rs.slice(0, 6).map((r) => (
+          <div key={r.id} className="overflow-hidden rounded-xl bg-white ring-1 ring-black/5">
+            <div className="aspect-[4/3]">
+              <Img r={r} empty="bg-[#F1E7CC]" />
+            </div>
+            <p className={`min-h-[4rem] p-3 font-bold ${title}`}>{r.title}</p>
           </div>
         ))}
       </div>
     ),
   },
   {
-    name: "Zig-zag",
-    about: "Instrument Serif, bone, ink · wide rows: photo and big title side by side, alternating left and right",
-    frame: "bg-[#F6F4EE] text-[#141414]",
-    sans: instrumentSans.className,
-    header: "border-b border-black/10",
-    logo: (
-      <svg viewBox="0 0 40 40" className="h-9 w-9">
-        {Array.from({ length: 8 }, (_, i) => (
-          <ellipse key={i} cx="20" cy="11" rx="3.2" ry="8" fill="#141414" transform={`rotate(${i * 45} 20 20)`} />
-        ))}
-        <circle cx="20" cy="20" r="3" fill="#F6F4EE" />
-      </svg>
+    name: "Mortar & pestle · Lexend",
+    about: "Mixed sizes (masonry, dense) · white + herb green · uneven heights, title on the photo",
+    font: lexend.className,
+    frame: "bg-white text-[#111]",
+    header: "border-b border-black/5",
+    logo: <span className="text-[#2F6B3F]">{glyph.mortar}</span>,
+    add: (
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2F6B3F] text-white">
+        <PlusGlyph />
+      </span>
     ),
-    plus: "bg-[#141414] text-[#F6F4EE]",
-    avatar: "bg-[#E8E4DA] text-[#141414]",
+    avatar: "rounded-lg bg-[#EAF2EC] text-[#2F6B3F]",
     body: (rs) => (
-      <div className="divide-y divide-black/10 px-5">
-        {rs.slice(0, 4).map((r, i) => (
-          <div key={r.id} className={`flex items-center gap-5 py-5 sm:gap-10 ${i % 2 ? "flex-row-reverse" : ""}`}>
-            <div className="aspect-[4/3] w-1/2 flex-none overflow-hidden">
-              <Img r={r} empty="bg-[#E8E4DA]" />
-            </div>
-            <p className={`text-2xl leading-[1.05] sm:text-5xl ${i % 2 ? "text-right" : ""}`} style={serif(instrumentSerif)}>
-              {r.title}
-            </p>
+      <div className="columns-2 gap-2 p-3 sm:columns-4">
+        {rs.slice(0, 8).map((r, i) => (
+          <div key={r.id} className={`relative mb-2 break-inside-avoid overflow-hidden rounded-lg ${["aspect-[3/4]", "aspect-square", "aspect-[2/3]", "aspect-[4/5]"][i % 4]}`}>
+            <Img r={r} empty="bg-[#EAF2EC]" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/65 to-transparent" />
+            <p className={`absolute inset-x-0 bottom-0 p-2.5 text-sm font-medium text-white ${title}`}>{r.title}</p>
           </div>
         ))}
       </div>
     ),
   },
 ];
-
-const PlusGlyph = () => (
-  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M12 5v14M5 12h14" />
-  </svg>
-);
 
 export default async function DesignLab() {
   const userId = await requireUserId();
@@ -409,13 +447,15 @@ export default async function DesignLab() {
     return true;
   });
   const noImage = all.find((r) => !r.imagePath);
-  const sample = [...withImages.slice(0, 5), ...(noImage ? [noImage] : []), ...withImages.slice(5, 7)];
+  const sample = [...withImages.slice(0, 5), ...(noImage ? [noImage] : []), ...withImages.slice(5, 8)];
 
   return (
     <div className="space-y-14 py-4">
       <div>
-        <h1 className="text-3xl font-semibold">Round 2 · around no. 8</h1>
-        <p className="mt-1 text-sm text-stone-500">Editorial feel, ten takes. Tell me what works in which.</p>
+        <h1 className="text-3xl font-semibold">Round 3</h1>
+        <p className="mt-1 text-sm text-stone-500">
+          App fonts, kitchen logos, squared buttons. Versions 2, 3, 5, 7, 8 and 10 mix card sizes; the rest keep an even grid.
+        </p>
       </div>
       {versions.map((v, n) => (
         <section key={v.name}>
@@ -425,16 +465,12 @@ export default async function DesignLab() {
             </span>
             <span className="text-sm text-stone-500">{v.about}</span>
           </h2>
-          <div className={`overflow-hidden rounded-2xl ring-1 ring-black/10 ${v.frame} ${v.sans}`}>
+          <div className={`overflow-hidden rounded-2xl ring-1 ring-black/10 ${v.frame} ${v.font}`}>
             <div className={`flex items-center justify-between px-5 py-3 ${v.header}`}>
               {v.logo}
               <div className="flex items-center gap-2">
-                <span className={`flex h-9 w-9 items-center justify-center rounded-full ${v.plus}`}>
-                  <PlusGlyph />
-                </span>
-                <span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium ${v.avatar}`}>
-                  B
-                </span>
+                {v.add}
+                <span className={`flex h-9 w-9 items-center justify-center text-sm font-semibold ${v.avatar}`}>B</span>
               </div>
             </div>
             {v.body(sample)}
