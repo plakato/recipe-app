@@ -14,7 +14,7 @@ const LANGS = [
 ];
 
 const selectClass =
-  "rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-blush-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
+  "rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-olive-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
 
 export default function PhotoImport() {
   const [file, setFile] = useState<File | null>(null);
@@ -57,7 +57,7 @@ export default function PhotoImport() {
   if (draft) {
     return (
       <div className="space-y-4">
-        <div className="rounded-lg border border-blush-200 bg-blush-50 px-4 py-3 text-sm text-blush-900 dark:border-blush-900/50 dark:bg-blush-950/30 dark:text-blush-200">
+        <div className="rounded-lg border border-olive-200 bg-olive-50 px-4 py-3 text-sm text-olive-900 dark:border-olive-900/50 dark:bg-olive-950/30 dark:text-olive-200">
           Read from your photo. <strong>Check everything below</strong> —
           handwriting and photos are easy to misread — then save.
         </div>
@@ -97,7 +97,7 @@ export default function PhotoImport() {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex-1 rounded-xl border-2 border-dashed border-stone-300 px-6 py-10 text-center text-stone-500 transition hover:border-blush-400 hover:text-stone-700 dark:border-stone-700 dark:hover:text-stone-300"
+          className="flex-1 rounded-xl border-2 border-dashed border-stone-300 px-6 py-10 text-center text-stone-500 transition hover:border-olive-400 hover:text-stone-700 dark:border-stone-700 dark:hover:text-stone-300"
         >
           {file ? "📷 Choose a different photo" : "📷 Take or choose a photo"}
         </button>
@@ -124,7 +124,7 @@ export default function PhotoImport() {
             type="checkbox"
             checked={highQuality}
             onChange={(e) => setHighQuality(e.target.checked)}
-            className="h-4 w-4 accent-blush-600"
+            className="h-4 w-4 accent-olive-600"
           />
           Better reading for handwriting{" "}
           <span className="text-stone-400">(paid, ~1¢)</span>
@@ -156,7 +156,7 @@ export default function PhotoImport() {
         type="button"
         onClick={handleExtract}
         disabled={loading || !file}
-        className="rounded-lg bg-blush-300 px-5 py-2.5 font-medium text-blush-950 shadow-sm transition hover:bg-blush-400 disabled:opacity-60"
+        className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
       >
         {loading ? "Reading the photo…" : "Read recipe from photo"}
       </button>

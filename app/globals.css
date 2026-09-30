@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fcf8f8;
-  --foreground: #1f1a16;
+  --background: #ffffff;
+  --foreground: #111111;
 }
 
-/* One accent (a light dusty pink, "blush") plus a muted brick for errors/destructive actions, so
-   the whole palette sits together on the soft rose-white background. */
+/* One accent (olive) plus a muted brick for errors/destructive actions, on
+   white with near-black text. */
 @theme {
-  --color-blush-50: #fef8f9;
-  --color-blush-100: #fdf0f3;
-  --color-blush-200: #fbdfe5;
-  --color-blush-300: #f7c9d3;
-  --color-blush-400: #f1adbc;
-  --color-blush-500: #e690a4;
-  --color-blush-600: #cf7289;
-  --color-blush-700: #ad5a6f;
-  --color-blush-800: #8a4859;
-  --color-blush-900: #6f3c4a;
-  --color-blush-950: #3e1f28;
+  --color-olive-50: #f6f7ef;
+  --color-olive-100: #eceedd;
+  --color-olive-200: #d9dfbc;
+  --color-olive-300: #bfc991;
+  --color-olive-400: #a2b066;
+  --color-olive-500: #849449;
+  --color-olive-600: #5f6f2e;
+  --color-olive-700: #4c5926;
+  --color-olive-800: #3e4822;
+  --color-olive-900: #343c1f;
+  --color-olive-950: #1b200e;
 
   --color-brick-50: #faf2ef;
   --color-brick-200: #ecc9bd;
@@ -34,13 +34,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-fraunces);
+  --font-display: var(--font-geist-sans);
 
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #161214;
+    --background: #111111;
     --foreground: #f1ebe3;
   }
 }
@@ -52,7 +52,8 @@ body {
 }
 
 .font-display {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-variation-settings: "opsz" 72, "SOFT" 50;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 

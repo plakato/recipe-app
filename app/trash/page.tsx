@@ -14,7 +14,7 @@ export default async function TrashPage() {
   });
 
   const btn =
-    "flex h-10 w-10 items-center justify-center rounded-full transition";
+    "flex h-10 w-10 items-center justify-center rounded-lg transition";
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>

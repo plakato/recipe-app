@@ -10,8 +10,8 @@ const options = [
     Icon: CameraIcon,
     title: ["From a", "photo"],
     hint: "Cookbook page, handwritten card or screenshot",
-    block: "bg-blush-200 hover:bg-blush-300 text-blush-950 dark:bg-blush-900/50 dark:hover:bg-blush-900/70 dark:text-blush-100",
-    icon: "text-blush-300 dark:text-blush-800",
+    block: "bg-olive-100 hover:bg-olive-200 text-olive-950 dark:bg-olive-900/50 dark:hover:bg-olive-900/70 dark:text-olive-100",
+    icon: "text-olive-200 dark:text-olive-800",
   },
   {
     href: "/recipes/import/url",

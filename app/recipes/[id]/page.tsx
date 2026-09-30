@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 // Round, translucent icon buttons that sit on top of the hero image.
 const heroBtn =
-  "flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/60";
+  "flex h-10 w-10 items-center justify-center rounded-lg bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/60";
 
 export default async function RecipeDetailPage({
   params,
@@ -85,14 +85,14 @@ export default async function RecipeDetailPage({
               {ingredients.map((section, si) => (
                 <div key={si}>
                   {section.heading && (
-                    <h3 className="font-display mb-2 text-lg italic text-blush-800 dark:text-blush-300">
+                    <h3 className="font-display mb-2 text-lg text-olive-800 dark:text-olive-300">
                       {section.heading}
                     </h3>
                   )}
                   <ul className="space-y-2 text-stone-800 dark:text-stone-200">
                     {section.items.map((item, i) => (
                       <li key={i} className="flex gap-3">
-                        <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-blush-500" />
+                        <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-olive-500" />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -112,14 +112,14 @@ export default async function RecipeDetailPage({
               {instructions.map((section, si) => (
                 <div key={si}>
                   {section.heading && (
-                    <h3 className="font-display mb-3 text-lg italic text-blush-800 dark:text-blush-300">
+                    <h3 className="font-display mb-3 text-lg text-olive-800 dark:text-olive-300">
                       {section.heading}
                     </h3>
                   )}
                   <ol className="space-y-5">
                     {section.items.map((step, i) => (
                       <li key={i} className="flex gap-4">
-                        <span className="font-display w-8 flex-none text-3xl leading-none text-blush-600/80 dark:text-blush-400/80">
+                        <span className="font-display w-8 flex-none text-3xl leading-none text-olive-600/80 dark:text-olive-400/80">
                           {i + 1}
                         </span>
                         <p className="pt-1 leading-relaxed text-stone-800 dark:text-stone-200">{step}</p>

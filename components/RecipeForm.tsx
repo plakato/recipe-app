@@ -25,7 +25,7 @@ function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-blush-300 px-5 py-2.5 font-medium text-blush-950 shadow-sm transition hover:bg-blush-400 disabled:opacity-60"
+      className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
     >
       {pending ? "Saving…" : label}
     </button>
@@ -33,7 +33,7 @@ function SubmitButton({ label }: { label: string }) {
 }
 
 const inputClass =
-  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-blush-500 focus:ring-2 focus:ring-blush-200 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
+  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-olive-500 focus:ring-2 focus:ring-olive-200 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
 const labelClass = "block text-sm font-medium text-stone-700 dark:text-stone-300";
 
 export default function RecipeForm({
@@ -77,7 +77,7 @@ export default function RecipeForm({
       {dup && (
         <div
           role="alert"
-          className="space-y-2 rounded-lg border border-blush-300 bg-blush-50 px-4 py-3 text-sm text-blush-900 dark:border-blush-700 dark:bg-blush-950 dark:text-blush-100"
+          className="space-y-2 rounded-lg border border-olive-300 bg-olive-50 px-4 py-3 text-sm text-olive-900 dark:border-olive-700 dark:bg-olive-950 dark:text-olive-100"
         >
           <p className="font-medium">
             This looks very similar to “{dup.match.title}” ({Math.round(dup.score * 100)}% match).
@@ -103,7 +103,7 @@ export default function RecipeForm({
                 type="submit"
                 name="confirmDuplicate"
                 value="1"
-                className="rounded-lg border border-blush-400 px-3 py-1.5 font-medium hover:bg-blush-100 dark:hover:bg-blush-900"
+                className="rounded-lg border border-olive-400 px-3 py-1.5 font-medium hover:bg-olive-100 dark:hover:bg-olive-900"
               >
                 Save anyway, it&apos;s a different recipe
               </button>
