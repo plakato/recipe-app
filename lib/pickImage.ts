@@ -1,13 +1,14 @@
-// Pick the photo that best shows the recipe from the candidate images on its
+// Pick the photo that best shows each recipe from the candidate images on its
 // web page (URL import). The page's own "main image" is often the author, a
 // logo or a banner, so a vision model looks at the candidates and chooses.
 // Server-only (network + filesystem + sharp).
 
-import { chooseRecipeImage } from "@/lib/extractRecipe";
+import { chooseRecipeImages } from "@/lib/extractRecipe";
 import { fetchImage, saveImageBuffer } from "@/lib/saveImage";
 
-// How many candidates to download and show the model (one request).
-const MAX_CANDIDATES = 6;
+// How many candidates to download and show the model (one request): a few
+// more when the page holds several recipes, each maybe with its own photo.
+const candidateLimit = (recipes: number) => Math.min(10, Math.max(6, recipes + 3));
 // Size of the copies sent to the model: enough to recognise a dish, cheap to send.
 const THUMB_SIZE = 384;
 
@@ -34,19 +35,36 @@ async function prepare(url: string): Promise<Usable | null> {
   }
 }
 
-// Returns the stored image path, or null when no candidate shows the dish.
-export async function pickRecipeImage(dish: string, candidates: string[]): Promise<string | null> {
-  const usable = (await Promise.all(candidates.slice(0, MAX_CANDIDATES).map(prepare))).filter(
-    (u): u is Usable => u !== null,
-  );
-  if (usable.length === 0) return null;
+// For each recipe (by name), the stored image path, or null when no candidate
+// shows it. Recipes that share a photo share one stored file.
+export async function pickRecipeImages(
+  dishes: string[],
+  candidates: string[],
+): Promise<(string | null)[]> {
+  const usable = (
+    await Promise.all(candidates.slice(0, candidateLimit(dishes.length)).map(prepare))
+  ).filter((u): u is Usable => u !== null);
+  if (usable.length === 0) return dishes.map(() => null);
 
-  const pick = await chooseRecipeImage(
-    dish,
-    usable.map((u) => u.thumb),
+  // If no model answered, fall back to the page's first usable image for all.
+  const picks =
+    (await chooseRecipeImages(
+      dishes,
+      usable.map((u) => u.thumb),
+    )) ?? dishes.map(() => 0);
+
+  const saved = new Map<number, Promise<string>>();
+  return Promise.all(
+    picks.map((i) => {
+      if (i < 0) return null; // the model saw no photo of this dish
+      if (!saved.has(i)) saved.set(i, saveImageBuffer(usable[i].buf, usable[i].ext));
+      return saved.get(i)!;
+    }),
   );
-  if (pick === -1) return null; // the model saw no photo of this dish
-  // If no model answered, fall back to the page's first usable image.
-  const chosen = usable[pick ?? 0];
-  return saveImageBuffer(chosen.buf, chosen.ext);
+}
+
+// Single-recipe convenience: the stored image path, or null.
+export async function pickRecipeImage(dish: string, candidates: string[]): Promise<string | null> {
+  const [path] = await pickRecipeImages([dish], candidates);
+  return path;
 }

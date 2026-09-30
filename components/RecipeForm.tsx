@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import type { RecipeDraft } from "@/lib/recipes";
@@ -17,6 +17,11 @@ type Props = {
   recipeId?: string;
   sourceType?: string;
   submitLabel?: string;
+  // Reviewing several imported recipes in a row: save without leaving the
+  // page, then report the new recipe's id.
+  onSaved?: (id: string) => void;
+  // Replaces the Cancel link (e.g. "Skip this one" in a multi-recipe import).
+  secondaryAction?: React.ReactNode;
 };
 
 function SubmitButton({ label }: { label: string }) {
@@ -42,6 +47,8 @@ export default function RecipeForm({
   recipeId,
   sourceType = "manual",
   submitLabel = "Save recipe",
+  onSaved,
+  secondaryAction,
 }: Props) {
   // Controlled fields so AI import (later phases) can populate them via setState.
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -66,6 +73,16 @@ export default function RecipeForm({
 
   const [state, formAction] = useActionState(action, null);
   const dup = state?.duplicate;
+
+  // Tell the parent once, when a "stay" save succeeds.
+  const reported = useRef<string | null>(null);
+  const savedId = state?.saved?.id;
+  useEffect(() => {
+    if (savedId && reported.current !== savedId) {
+      reported.current = savedId;
+      onSaved?.(savedId);
+    }
+  }, [savedId, onSaved]);
 
   return (
     <form action={formAction} className="space-y-5">
@@ -113,6 +130,7 @@ export default function RecipeForm({
       )}
       {recipeId && <input type="hidden" name="id" value={recipeId} />}
       <input type="hidden" name="sourceType" value={sourceType} />
+      {onSaved && <input type="hidden" name="stay" value="1" />}
       {initial?.sourceUrl && (
         <input type="hidden" name="sourceUrl" value={initial.sourceUrl} />
       )}
@@ -210,12 +228,14 @@ export default function RecipeForm({
 
       <div className="flex items-center gap-3 pt-2">
         <SubmitButton label={submitLabel} />
-        <Link
-          href={recipeId ? `/recipes/${recipeId}` : "/"}
-          className="rounded-lg px-4 py-2.5 font-medium text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
-        >
-          Cancel
-        </Link>
+        {secondaryAction ?? (
+          <Link
+            href={recipeId ? `/recipes/${recipeId}` : "/"}
+            className="rounded-lg px-4 py-2.5 font-medium text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+          >
+            Cancel
+          </Link>
+        )}
       </div>
     </form>
   );

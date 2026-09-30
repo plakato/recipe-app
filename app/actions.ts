@@ -6,8 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
-import { pickRecipeImage } from "@/lib/pickImage";
-import { extractRecipeFromText, extractRecipeFromImage } from "@/lib/extractRecipe";
+import { pickRecipeImages } from "@/lib/pickImage";
+import { extractRecipeFromImage, extractRecipesFromText } from "@/lib/extractRecipe";
 import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
 import { unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
@@ -38,23 +38,34 @@ export type ImportResult =
   | { ok: true; draft: RecipeDraft }
   | { ok: false; error: string };
 
-// URL import (Phase 2): fetch the page, reduce it to text, extract via
-// OpenRouter, and hand the draft back to the client to pre-fill the form.
-export async function importRecipeFromUrl(url: string): Promise<ImportResult> {
+// URL import: a page may hold several recipes (e.g. "5 no-bake desserts").
+export type UrlImportResult =
+  | { ok: true; drafts: RecipeDraft[] }
+  | { ok: false; error: string };
+
+// URL import: fetch the page, reduce it to text, extract every recipe on it
+// via OpenRouter, pick each one's photo, and hand the drafts back to the
+// client to review one by one before anything is saved.
+export async function importRecipesFromUrl(url: string): Promise<UrlImportResult> {
   const trimmed = url.trim();
   if (!trimmed) return { ok: false, error: "Please enter a URL." };
   try {
     const { text, title, imageCandidates } = await fetchUrlText(trimmed);
-    const draft = await extractRecipeFromText(text);
-    // Then choose its photo — one after the other, so the two model calls
-    // don't compete for the free models' rate limit. The photo is best-effort:
-    // if it fails, the recipe just shows a placeholder.
-    const imagePath = await pickRecipeImage(draft.title || title, imageCandidates).catch(
-      () => null,
-    );
+    const drafts = await extractRecipesFromText(text);
+    // Then choose the photos — after extraction, not alongside it, so the two
+    // model calls don't compete for the free models' rate limit. Photos are
+    // best-effort: if picking fails, the recipes just show a placeholder.
+    const images = await pickRecipeImages(
+      drafts.map((d) => d.title || title),
+      imageCandidates,
+    ).catch(() => drafts.map(() => null));
     return {
       ok: true,
-      draft: { ...draft, sourceUrl: trimmed, imagePath: imagePath ?? undefined },
+      drafts: drafts.map((d, i) => ({
+        ...d,
+        sourceUrl: trimmed,
+        imagePath: images[i] ?? undefined,
+      })),
     };
   } catch (err) {
     const message =
@@ -102,10 +113,12 @@ export async function importRecipeFromPhoto(
 }
 
 // Result of a save attempt, consumed by RecipeForm via useActionState.
-// On success the action redirects, so a returned value always means "not saved".
+// On success the action redirects — unless the form asked to stay (reviewing
+// several imported recipes in a row), in which case it returns `saved`.
 export type SaveState = {
   error?: string;
   duplicate?: NonNullable<DuplicateVerdict>;
+  saved?: { id: string };
 } | null;
 
 // Compare the submitted recipe with the user's other recipes. Returns a
@@ -185,6 +198,7 @@ export async function createRecipe(
     data: { ...fields, imagePath: image.imagePath, userId },
   });
   revalidatePath("/");
+  if (formData.get("stay") === "1") return { saved: { id: recipe.id } };
   redirect(`/recipes/${recipe.id}`);
 }
 

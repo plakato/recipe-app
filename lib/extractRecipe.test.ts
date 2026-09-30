@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import {
   extractJsonObject,
   extractRecipeFromText,
-  parseBestImage,
+  parseImageChoices,
   toDraft,
   toDrafts,
 } from "@/lib/extractRecipe";
@@ -82,20 +82,20 @@ describe("toDrafts", () => {
   });
 });
 
-describe("parseBestImage", () => {
-  it("turns the 1-based image number into an index", () => {
-    expect(parseBestImage('{"best": 3}', 5)).toBe(2);
-    expect(parseBestImage('```json\n{"best":"1"}\n```', 5)).toBe(0);
+describe("parseImageChoices", () => {
+  it("turns 1-based image numbers into indexes, one per recipe", () => {
+    expect(parseImageChoices('{"photos": [3, 1, "2"]}', 3, 5)).toEqual([2, 0, 1]);
   });
 
-  it("returns -1 when the model says none shows the dish", () => {
-    expect(parseBestImage('{"best": 0}', 5)).toBe(-1);
+  it("uses -1 for recipes no image shows, and allows shared images", () => {
+    expect(parseImageChoices('```json\n{"photos":[1,0,1]}\n```', 3, 2)).toEqual([0, -1, 0]);
   });
 
-  it("rejects out-of-range or unusable answers", () => {
-    expect(parseBestImage('{"best": 6}', 5)).toBeNull();
-    expect(parseBestImage('{"best": 2.5}', 5)).toBeNull();
-    expect(parseBestImage("the second one", 5)).toBeNull();
+  it("rejects answers of the wrong length, out of range or unusable", () => {
+    expect(parseImageChoices('{"photos": [1, 2]}', 3, 5)).toBeNull();
+    expect(parseImageChoices('{"photos": [6]}', 1, 5)).toBeNull();
+    expect(parseImageChoices('{"photos": [1.5]}', 1, 5)).toBeNull();
+    expect(parseImageChoices("the second one", 1, 5)).toBeNull();
   });
 });
 

@@ -332,37 +332,50 @@ export function extractRecipesFromImage(
   );
 }
 
-// Read the model's {"best": n} answer for n candidate images. Returns the
-// 0-based index, -1 when the model says none of them shows the dish, or null
-// when the answer is unusable.
-export function parseBestImage(content: string, count: number): number | null {
-  let best: unknown;
+// Read the model's {"photos": [n, ...]} answer: one 1-based image number per
+// recipe, 0 for "no photo of this one". Returns 0-based indexes (-1 for none),
+// or null when the answer is unusable.
+export function parseImageChoices(
+  content: string,
+  recipeCount: number,
+  imageCount: number,
+): number[] | null {
+  let photos: unknown;
   try {
-    best = (extractJsonObject(content) as Record<string, unknown>).best;
+    photos = (extractJsonObject(content) as Record<string, unknown>).photos;
   } catch {
     return null;
   }
-  const n = typeof best === "string" ? Number(best) : best;
-  if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > count) return null;
-  return n - 1;
+  if (!Array.isArray(photos) || photos.length !== recipeCount) return null;
+  const picks = photos.map((p) => (typeof p === "string" ? Number(p) : p));
+  if (!picks.every((n) => typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= imageCount)) {
+    return null;
+  }
+  return (picks as number[]).map((n) => n - 1);
 }
 
 // Ask a vision model which of the candidate photos (data: URLs, in page order)
-// best shows the dish. Returns its index, -1 if none shows it, or null if no
-// model gave a usable answer.
-export async function chooseRecipeImage(
-  dish: string,
+// shows each recipe. One request for the whole page, however many recipes it
+// has. Returns an index per recipe (-1 = none shows it), or null if no model
+// gave a usable answer.
+export async function chooseRecipeImages(
+  dishes: string[],
   imageDataUrls: string[],
-): Promise<number | null> {
-  if (imageDataUrls.length === 0) return -1;
+): Promise<number[] | null> {
+  if (imageDataUrls.length === 0) return dishes.map(() => -1);
+  const list = dishes.map((d, i) => `${i + 1}. ${d}`).join("\n");
   const content: ContentPart[] = [
     {
       type: "text",
       text:
-        `These ${imageDataUrls.length} images come from a web page with the recipe "${dish}". ` +
-        "Which one best shows this finished dish? If none does, the one showing it being made or its main ingredients. " +
+        `These ${imageDataUrls.length} images come from a web page with ${
+          dishes.length === 1 ? "this recipe" : `these ${dishes.length} recipes`
+        }:\n${list}\n\n` +
+        "For each recipe, pick the image that best shows that finished dish; if none does, the one showing it being made or its main ingredients. " +
+        "Several recipes may share one image when the page has a single photo for all of them. " +
         "Never pick photos of people, logos, ads, text or graphics, or a clearly different dish. " +
-        'Answer with JSON only: {"best": <image number>}, or {"best": 0} if none of them shows this food.',
+        `Answer with JSON only: {"photos": [one image number per recipe, in recipe order]}, using 0 for a recipe that no image shows. ` +
+        `It must list exactly ${dishes.length} number${dishes.length === 1 ? "" : "s"}.`,
     },
   ];
   imageDataUrls.forEach((url, i) => {
@@ -376,10 +389,11 @@ export async function chooseRecipeImage(
   for (const model of [...models, ...(paid ? [paid] : [])]) {
     // Paid model only if every free model was busy (not if one just answered badly).
     if (model === paid && !errors.every(isBusy)) break;
-    if (model === paid) console.warn(`Free models busy; choosing the photo with paid ${paid}.`);
+    if (model === paid) console.warn(`Free models busy; choosing photos with paid ${paid}.`);
     try {
-      const pick = parseBestImage(await callModel(model, [{ role: "user", content }]), imageDataUrls.length);
-      if (pick !== null) return pick;
+      const answer = await callModel(model, [{ role: "user", content }]);
+      const picks = parseImageChoices(answer, dishes.length, imageDataUrls.length);
+      if (picks) return picks;
       errors.push(new Error(`Unusable answer from ${model}`));
     } catch (err) {
       errors.push(err);
