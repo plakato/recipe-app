@@ -1,15 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { pickRecipeImages } from "@/lib/pickImage";
+import { sweepUnusedUploads } from "@/lib/cleanUploads";
 import { extractRecipeFromImage, extractRecipesFromText } from "@/lib/extractRecipe";
 import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
-import { unlink } from "node:fs/promises";
+import { access, unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
 import { findDuplicate, type DuplicateVerdict } from "@/lib/similarity";
 
@@ -49,6 +51,8 @@ export type UrlImportResult =
 export async function importRecipesFromUrl(url: string): Promise<UrlImportResult> {
   const trimmed = url.trim();
   if (!trimmed) return { ok: false, error: "Please enter a URL." };
+  // Imports leave photos of skipped drafts behind; tidy up after responding.
+  after(sweepUnusedUploads);
   try {
     const { text, title, imageCandidates } = await fetchUrlText(trimmed);
     const drafts = await extractRecipesFromText(text);
@@ -83,6 +87,7 @@ export async function importRecipeFromPhoto(
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Please choose a photo first." };
   }
+  after(sweepUnusedUploads);
   const language = String(formData.get("language") ?? "").trim() || undefined;
   // Opt-in paid model for better reading (e.g. handwriting). Falls back to the
   // free models if the paid one is unavailable.
@@ -172,6 +177,11 @@ async function resolveImage(
     return { imagePath: saved.imagePath };
   }
   if (formData.get("removeImage") === "1") return { imagePath: null };
+  // A draft left open for over a day may have lost its photo to the cleanup
+  // (lib/cleanUploads.ts): save without it rather than point at nothing.
+  if (current && !(await access(uploadFilePath(current)).then(() => true, () => false))) {
+    return { imagePath: null };
+  }
   return { imagePath: current };
 }
 
