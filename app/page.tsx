@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/auth";
 import RecipeImage from "@/components/RecipeImage";
 import { CookingPot } from "lucide-react";
 import { PlusIcon } from "@/components/Icons";
+import { visibleRecipes } from "@/lib/features";
 
 // Always render fresh from the database.
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const userId = await requireUserId();
   const recipes = await prisma.recipe.findMany({
-    where: { userId, deletedAt: null },
+    where: { userId, deletedAt: null, ...visibleRecipes },
     orderBy: { createdAt: "desc" },
   });
 

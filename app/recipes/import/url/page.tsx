@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { URL_IMPORT_ENABLED } from "@/lib/features";
 import UrlImport from "@/components/UrlImport";
 
 export default function ImportFromUrlPage() {
+  if (!URL_IMPORT_ENABLED) notFound();
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>

@@ -4,6 +4,7 @@ import { updateRecipe } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { recipeToDraft } from "@/lib/recipes";
+import { visibleRecipes } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function EditRecipePage({
   const { id } = await params;
   const userId = await requireUserId();
   const recipe = await prisma.recipe.findFirst({
-    where: { id, userId, deletedAt: null },
+    where: { id, userId, deletedAt: null, ...visibleRecipes },
   });
 
   if (!recipe) notFound();

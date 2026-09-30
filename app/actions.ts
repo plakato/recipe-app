@@ -14,6 +14,7 @@ import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
 import { access, unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
 import { findDuplicate, type DuplicateVerdict } from "@/lib/similarity";
+import { URL_IMPORT_ENABLED, visibleRecipes } from "@/lib/features";
 
 // Read the recipe fields shared by create and update out of submitted FormData.
 function readRecipeFields(formData: FormData) {
@@ -49,6 +50,10 @@ export type UrlImportResult =
 // via OpenRouter, pick each one's photo, and hand the drafts back to the
 // client to review one by one before anything is saved.
 export async function importRecipesFromUrl(url: string): Promise<UrlImportResult> {
+  // Paused: refuse even direct calls, so no AI tokens are spent on it.
+  if (!URL_IMPORT_ENABLED) {
+    return { ok: false, error: "Adding recipes from a link is not available right now." };
+  }
   const trimmed = url.trim();
   if (!trimmed) return { ok: false, error: "Please enter a URL." };
   // Imports leave photos of skipped drafts behind; tidy up after responding.
@@ -138,7 +143,12 @@ async function duplicateCheck(
   excludeId?: string,
 ): Promise<SaveState> {
   const others = await prisma.recipe.findMany({
-    where: { userId, deletedAt: null, ...(excludeId ? { id: { not: excludeId } } : {}) },
+    where: {
+      userId,
+      deletedAt: null,
+      ...visibleRecipes,
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
     select: { id: true, title: true, ingredients: true, instructions: true },
   });
   const verdict = findDuplicate(
@@ -224,7 +234,7 @@ export async function updateRecipe(
   const blocked = await duplicateCheck(userId, fields, formData, id);
   if (blocked) return blocked;
   const existing = await prisma.recipe.findFirst({
-    where: { id, userId },
+    where: { id, userId, ...visibleRecipes },
     select: { imagePath: true },
   });
   if (!existing) return { error: "Recipe not found." };
@@ -232,7 +242,7 @@ export async function updateRecipe(
   if ("error" in image) return { error: image.error };
   // Scope by userId so only the owner's recipes can be edited.
   await prisma.recipe.updateMany({
-    where: { id, userId },
+    where: { id, userId, ...visibleRecipes },
     data: { ...fields, imagePath: image.imagePath },
   });
   if (existing.imagePath && existing.imagePath !== image.imagePath) {
@@ -249,7 +259,7 @@ export async function softDeleteRecipe(formData: FormData) {
   if (!id) throw new Error("Missing recipe id.");
   const userId = await requireUserId();
   await prisma.recipe.updateMany({
-    where: { id, userId },
+    where: { id, userId, ...visibleRecipes },
     data: { deletedAt: new Date() },
   });
   revalidatePath("/");
@@ -262,7 +272,7 @@ export async function restoreRecipe(formData: FormData) {
   if (!id) throw new Error("Missing recipe id.");
   const userId = await requireUserId();
   await prisma.recipe.updateMany({
-    where: { id, userId },
+    where: { id, userId, ...visibleRecipes },
     data: { deletedAt: null },
   });
   revalidatePath("/");
@@ -277,7 +287,7 @@ export async function permanentlyDeleteRecipe(formData: FormData) {
   if (!id) throw new Error("Missing recipe id.");
   const userId = await requireUserId();
   await prisma.recipe.deleteMany({
-    where: { id, userId, deletedAt: { not: null } },
+    where: { id, userId, deletedAt: { not: null }, ...visibleRecipes },
   });
   revalidatePath("/trash");
   redirect("/trash");

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { URL_IMPORT_ENABLED } from "@/lib/features";
 import { CameraIcon, LinkIcon } from "@/components/Icons";
 
 // Recipes are added from a photo or a link; the AI fills the form and the
@@ -24,6 +26,8 @@ const options = [
 ];
 
 export default function NewRecipePage() {
+  // With link import paused, photo is the only option: skip the chooser.
+  if (!URL_IMPORT_ENABLED) redirect("/recipes/import/photo");
   return (
     <div className="mx-auto max-w-3xl py-2 sm:py-10">
       <h1 className="font-display mb-6 text-3xl sm:mb-8 sm:text-5xl">Add a recipe</h1>

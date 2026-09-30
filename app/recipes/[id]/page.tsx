@@ -6,6 +6,7 @@ import { groupSections, parseList } from "@/lib/recipes";
 import { softDeleteRecipe } from "@/app/actions";
 import RecipeImage from "@/components/RecipeImage";
 import { BackIcon, EditIcon, LinkIcon, PhotoIcon, TrashIcon } from "@/components/Icons";
+import { visibleRecipes } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default async function RecipeDetailPage({
   const { id } = await params;
   const userId = await requireUserId();
   const recipe = await prisma.recipe.findFirst({
-    where: { id, userId, deletedAt: null },
+    where: { id, userId, deletedAt: null, ...visibleRecipes },
   });
   if (!recipe) notFound();
 

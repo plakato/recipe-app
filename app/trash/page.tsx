@@ -3,13 +3,14 @@ import { requireUserId } from "@/lib/auth";
 import { restoreRecipe, permanentlyDeleteRecipe } from "@/app/actions";
 import RecipeImage from "@/components/RecipeImage";
 import { RestoreIcon, XIcon } from "@/components/Icons";
+import { visibleRecipes } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
 export default async function TrashPage() {
   const userId = await requireUserId();
   const recipes = await prisma.recipe.findMany({
-    where: { userId, deletedAt: { not: null } },
+    where: { userId, deletedAt: { not: null }, ...visibleRecipes },
     orderBy: { deletedAt: "desc" },
   });
 
