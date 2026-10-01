@@ -13,9 +13,8 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (user?.isGuest) await removeGuest(user.id);
   else await destroySession(store.get(SESSION_COOKIE)?.value);
-  // With public browsing on, everyone lands back on the recipes.
-  const home = process.env.SHOWCASE_EMAIL ? "/" : "/login";
-  const res = NextResponse.redirect(siteUrl(request, home), 303);
+  // Back to the recipes: the public ones, or the login page if browsing is off.
+  const res = NextResponse.redirect(siteUrl(request, "/"), 303);
   res.cookies.set(SESSION_COOKIE, "", { path: "/", maxAge: 0 });
   return res;
 }

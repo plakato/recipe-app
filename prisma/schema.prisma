@@ -21,6 +21,9 @@ model User {
   // Demo visitors get a temporary guest account (lib/demo.ts), deleted after
   // guestExpiresAt; signing up turns it into a normal account.
   isGuest        Boolean   @default(false)
+  // The account whose recipes visitors browse and the demo copies (at most
+  // one; set with scripts/set-showcase.ts). No personal data in config.
+  isShowcase     Boolean   @default(false)
   guestExpiresAt DateTime?
   recipes   Recipe[]
   sessions  Session[]

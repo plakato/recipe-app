@@ -1,15 +1,13 @@
 // Public browsing: visitors without an account see one account's recipes —
-// the one named by SHOWCASE_EMAIL — read-only. Unset means off: visitors are
-// sent to sign in, as before. Server-only.
+// the one marked isShowcase in the database (scripts/set-showcase.ts) —
+// read-only. No account marked means off: visitors are sent to sign in.
+// Server-only.
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
-import { normalizeEmail } from "@/lib/password";
 
 export const getShowcaseUserId = cache(async (): Promise<string | null> => {
-  const email = normalizeEmail(process.env.SHOWCASE_EMAIL ?? "");
-  if (!email) return null;
-  const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  const user = await prisma.user.findFirst({ where: { isShowcase: true }, select: { id: true } });
   return user?.id ?? null;
 });
 

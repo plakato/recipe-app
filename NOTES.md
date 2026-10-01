@@ -22,8 +22,10 @@ recipes are hidden, not deleted. In order:
      errors. Add proper not-found/error pages.
    - Also set the monthly spend limit on the OpenRouter key (dashboard) as the
      hard stop.
-2. ~~**Public browsing.**~~ — DONE 2026-09-30 (`lib/showcase.ts`): on when
-   `SHOWCASE_EMAIL` is set in .env (production needs it added by hand).
+2. ~~**Public browsing.**~~ — DONE 2026-09-30 (`lib/showcase.ts`): on when an
+   account is marked as the showcase in the database — no email in config:
+   `npx tsx --env-file=.env scripts/set-showcase.ts you@example.com`
+   (`--off` to stop; run it once on the server).
    Note: in development, files in public/uploads are served statically, so
    any photo URL opens without an account there; production serves photos
    through `app/uploads/[name]/route.ts`, which allows visitors only the

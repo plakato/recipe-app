@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentViewer } from "@/lib/showcase";
 import { groupSections, parseList } from "@/lib/recipes";
@@ -22,7 +22,8 @@ export default async function RecipeDetailPage({
   const { id } = await params;
   // Signed in: your recipes. Otherwise the public showcase, read-only.
   const viewer = await currentViewer();
-  if (!viewer) notFound();
+  // No public browsing (no showcase account): visitors must sign in.
+  if (!viewer) redirect(`/login?next=${encodeURIComponent(`/recipes/${id}`)}`);
   const recipe = await prisma.recipe.findFirst({
     where: { id, userId: viewer.userId, deletedAt: null, ...visibleRecipes },
   });
