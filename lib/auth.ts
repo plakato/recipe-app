@@ -14,6 +14,9 @@ import type { User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SESSION_COOKIE } from "@/lib/auth-constants";
 
+// A demo guest account lives this long after its last use (see lib/demo.ts).
+export const GUEST_TTL_MS = 24 * 60 * 60 * 1000;
+
 export { SESSION_COOKIE };
 const SESSION_DAYS = 30;
 
@@ -32,9 +35,9 @@ function cookieOptions(expires: Date) {
 
 // Create a session for the user and return the Set-Cookie parameters.
 // Callers in Route Handlers set the cookie on their response.
-export async function createSession(userId: string) {
+export async function createSession(userId: string, days = SESSION_DAYS) {
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
+  const expiresAt = new Date(Date.now() + days * 86_400_000);
   await prisma.session.create({
     data: { id: hashToken(token), userId, expiresAt },
   });
@@ -60,7 +63,20 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
     await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
     return null;
   }
-  return session.user;
+  const user = session.user;
+  if (user.isGuest && user.guestExpiresAt) {
+    const left = user.guestExpiresAt.getTime() - Date.now();
+    // An expired demo is over even before the cleanup deletes it.
+    if (left <= 0) return null;
+    // Keep a demo in use alive: push its expiry to a day from now, at most
+    // once an hour so browsing doesn't write on every request.
+    if (left < GUEST_TTL_MS - 60 * 60 * 1000) {
+      const guestExpiresAt = new Date(Date.now() + GUEST_TTL_MS);
+      await prisma.user.update({ where: { id: user.id }, data: { guestExpiresAt } });
+      return { ...user, guestExpiresAt };
+    }
+  }
+  return user;
 });
 
 // Use in pages and Server Actions: the current user, or redirect to login.

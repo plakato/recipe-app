@@ -1,15 +1,17 @@
 "use client";
 
 // Avatar button in the header that opens a small menu with Trash and
-// Sign out, so those don't need their own (easily misread) icons.
+// Sign out, so those don't need their own (easily misread) icons. In the demo
+// (a temporary guest account) it offers signing up to keep the copy instead.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { UserPlus } from "lucide-react";
 import { LogoutIcon, TrashIcon } from "@/components/Icons";
 
 const item =
   "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-stone-700 transition hover:bg-olive-50 hover:text-olive-800 dark:text-stone-200 dark:hover:bg-stone-800 dark:hover:text-olive-300";
 
-export default function UserMenu({ email }: { email: string }) {
+export default function UserMenu({ email, guest = false }: { email: string; guest?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -35,23 +37,32 @@ export default function UserMenu({ email }: { email: string }) {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Account menu"
-        title={email}
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-stone-100 text-sm font-semibold text-stone-900 transition hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+        title={guest ? "Demo" : email}
+        className={`flex h-9 items-center justify-center rounded-lg bg-stone-100 text-sm font-semibold text-stone-900 transition hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700 ${
+          guest ? "px-3" : "w-9"
+        }`}
       >
-        {email.charAt(0).toUpperCase()}
+        {guest ? "Demo" : email.charAt(0).toUpperCase()}
       </button>
       {open && (
         <div
           role="menu"
           className="absolute right-0 mt-2 w-60 origin-top-right rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-black/5 dark:bg-stone-900 dark:ring-white/10"
         >
-          <p className="truncate px-3 pb-2 pt-1 text-xs text-stone-500 dark:text-stone-400">{email}</p>
+          <p className="px-3 pb-2 pt-1 text-xs text-stone-500 dark:text-stone-400">
+            {guest ? "Your demo copy — kept for a day unless you sign up." : <span className="block truncate">{email}</span>}
+          </p>
+          {guest && (
+            <Link href="/signup" role="menuitem" className={item} onClick={() => setOpen(false)}>
+              <UserPlus className="h-4 w-4" /> Sign up to keep it
+            </Link>
+          )}
           <Link href="/trash" role="menuitem" className={item} onClick={() => setOpen(false)}>
             <TrashIcon className="h-4 w-4" /> Trash
           </Link>
           <form method="post" action="/api/auth/logout">
             <button type="submit" role="menuitem" className={item}>
-              <LogoutIcon className="h-4 w-4" /> Sign out
+              <LogoutIcon className="h-4 w-4" /> {guest ? "Leave the demo" : "Sign out"}
             </button>
           </form>
         </div>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createSession } from "@/lib/auth";
+import { createSession, getSessionUser } from "@/lib/auth";
 import { hashPassword, isValidEmail, MIN_PASSWORD_LENGTH, normalizeEmail } from "@/lib/password";
 import { redirectWithError, isSameOrigin, siteUrl } from "@/lib/auth-forms";
 
@@ -41,8 +41,16 @@ export async function POST(request: Request) {
 
   const hashed = await hashPassword(password);
   const legacy = await prisma.user.findUnique({ where: { email: LEGACY_OWNER_EMAIL } });
-  const user =
-    legacy && !legacy.password
+  // Signing up from the demo turns the guest account into this account, so
+  // the visitor keeps everything they changed.
+  const current = await getSessionUser();
+  const guest = current?.isGuest ? current : null;
+  const user = guest
+    ? await prisma.user.update({
+        where: { id: guest.id },
+        data: { email, name: name || null, password: hashed, isGuest: false, guestExpiresAt: null },
+      })
+    : legacy && !legacy.password
       ? await prisma.user.update({
           where: { id: legacy.id },
           data: { email, name: name || null, password: hashed },

@@ -33,7 +33,15 @@ recipes are hidden, not deleted. In order:
    recipes** read-only, scans available on click as now. No account, nothing
    stored. **Not indexed by search engines for now** (`noindex`; reconsider
    later — copyright of cookbook scans, personal notes on cards).
-3. **Trying it without an account.** Photo import allowed within the limits
+3. ~~**Trying it without an account.**~~ — DONE 2026-10-01 (`lib/demo.ts`,
+   `/demo`): the first edit/delete/add asks to start the demo; the visitor
+   gets a temporary guest account (User.isGuest) with copies of the showcase
+   recipes (Recipe.copiedFromId; photos shared, not copied), signed in by
+   cookie. Kept a day after last use (extended as they use it), then deleted
+   by the hourly housekeeping (`lib/housekeeping.ts`); "Leave the demo"
+   deletes it at once; signing up converts it into the real account. Limits:
+   10 new demos per IP / 500 per day (`DEMO_GUESTS_*`), 3 imports per demo.
+   Was: **Trying it without an account.** Photo import allowed within the limits
    above. The first save/edit/delete warns "your changes are kept only for
    this visit — sign up to keep them" and creates a temporary private copy
    (deleted ~a day after last use). Signing up turns it into a real account.
@@ -50,7 +58,12 @@ recipes are hidden, not deleted. In order:
 6. **Dish pictures, automatically.** Crop the dish photo from the page when
    there is one, otherwise generate one (once, stored, within the budget).
    The scan stays attached as the source photo.
-7. **Later.** Link import returns (incl. multi-recipe pages, already built);
+7. **Daily usage statistics.** A daily summary of AI use: tokens and cost per
+   model (free and paid), how many imports and edits, from accounts vs.
+   demo visitors. Today `AiUsage` records imports and paid-call costs only;
+   this needs token counts for every model call (OpenRouter's `usage`) and
+   edit events too. (Requested 2026-10-01.)
+8. **Later.** Link import returns (incl. multi-recipe pages, already built);
    ChatGPT connection over our database (read-only MCP server with sign-in).
 
 ## Deferred features

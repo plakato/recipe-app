@@ -28,6 +28,9 @@ export default async function RecipeDetailPage({
   });
   if (!recipe) notFound();
   const canEdit = viewer.signedIn;
+  // Visitors get the same buttons; they lead to the demo start (lib/demo.ts),
+  // which hands them their own copy of this recipe.
+  const demo = (next: string) => `/demo?next=${encodeURIComponent(next)}`;
 
   const ingredients = groupSections(parseList(recipe.ingredients));
   const instructions = groupSections(parseList(recipe.instructions));
@@ -78,6 +81,16 @@ export default async function RecipeDetailPage({
                       <TrashIcon />
                     </button>
                   </form>
+                </>
+              )}
+              {!canEdit && (
+                <>
+                  <Link href={demo(`/recipes/${recipe.id}/edit`)} title="Edit" aria-label="Edit" className={heroBtn}>
+                    <EditIcon />
+                  </Link>
+                  <Link href={demo(`/recipes/${recipe.id}`)} title="Move to Trash" aria-label="Move to Trash" className={heroBtn}>
+                    <TrashIcon />
+                  </Link>
                 </>
               )}
             </div>

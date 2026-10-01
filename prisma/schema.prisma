@@ -18,9 +18,15 @@ model User {
   email     String   @unique
   password  String? // scrypt hash (lib/password.ts); null only for the legacy placeholder owner
   name      String?
+  // Demo visitors get a temporary guest account (lib/demo.ts), deleted after
+  // guestExpiresAt; signing up turns it into a normal account.
+  isGuest        Boolean   @default(false)
+  guestExpiresAt DateTime?
   recipes   Recipe[]
   sessions  Session[]
   createdAt DateTime @default(now())
+
+  @@index([isGuest, guestExpiresAt])
 }
 
 // A signed-in browser. The cookie holds a random token; we store only its
@@ -45,6 +51,7 @@ model Recipe {
   sourceType   String    @default("manual") // "url" | "photo" | "voice" | "manual"
   sourceUrl    String?
   imagePath    String? // stored photo path, if any
+  copiedFromId String? // the showcase recipe this is a copy of (demo / starter copies)
   deletedAt    DateTime? // soft delete — set instead of erasing (Trash)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

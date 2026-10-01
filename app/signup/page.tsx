@@ -20,8 +20,10 @@ export default async function SignupPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  // Already signed in (with a valid session): nothing to do here.
-  if (await getSessionUser()) redirect("/");
+  // Already signed in (with a valid session): nothing to do here. Demo
+  // guests may still sign in, or sign up to keep their copy.
+  const current = await getSessionUser();
+  if (current && !current.isGuest) redirect("/");
   const { error } = await searchParams;
   return (
     <AuthCard title="Create your account" error={error ? ERRORS[error] ?? "Sign-up failed." : null}>

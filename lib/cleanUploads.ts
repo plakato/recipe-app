@@ -11,8 +11,6 @@ import { UPLOAD_DIR } from "@/lib/saveImage";
 // A draft may sit in the review form for a while before it's saved, so only
 // photos older than this are considered abandoned.
 export const GRACE_MS = 24 * 60 * 60 * 1000;
-// Automatic sweeps run at most this often.
-const SWEEP_EVERY_MS = 60 * 60 * 1000;
 
 // Only files the app itself stored: "<uuid>.<ext>".
 const STORED = /^[0-9a-f-]{36}\.[a-z0-9]+$/i;
@@ -63,17 +61,4 @@ export async function removeUnusedUploads({
     await Promise.all(unused.map((n) => unlink(path.join(UPLOAD_DIR, n)).catch(() => {})));
   }
   return unused;
-}
-
-// Run a sweep unless one ran within the last hour (per server process).
-let lastSweep = 0;
-export async function sweepUnusedUploads(): Promise<void> {
-  if (Date.now() - lastSweep < SWEEP_EVERY_MS) return;
-  lastSweep = Date.now();
-  try {
-    const removed = await removeUnusedUploads();
-    if (removed.length) console.info(`Removed ${removed.length} unused photo(s) from uploads.`);
-  } catch (err) {
-    console.warn("Cleaning unused uploads failed:", err);
-  }
 }

@@ -8,6 +8,7 @@ export type ErrorCode =
   | "limit-visitor"
   | "limit-ip"
   | "limit-everyone"
+  | "limit-demo"
   | "unknown";
 
 export const USER_MESSAGES: Record<ErrorCode, string> = {
@@ -23,6 +24,8 @@ export const USER_MESSAGES: Record<ErrorCode, string> = {
     "Lots of recipes have been added from your network today. Please try again tomorrow — sorry!",
   "limit-everyone":
     "The recipe reader has reached its limit for today. Please try again tomorrow — sorry!",
+  "limit-demo":
+    "The demo is very popular today, so we can't start a new one right now. Please try again tomorrow — or sign up to start your own cookbook.",
   unknown: "Something went wrong while reading the recipe. Please try again — sorry about that!",
 };
 

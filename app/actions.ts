@@ -4,11 +4,11 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/auth";
+import { requireUser, requireUserId } from "@/lib/auth";
 import { linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { pickRecipeImages } from "@/lib/pickImage";
-import { sweepUnusedUploads } from "@/lib/cleanUploads";
+import { runHousekeeping } from "@/lib/housekeeping";
 import { refundImport, startImport } from "@/lib/aiBudget";
 import { clientIp } from "@/lib/clientIp";
 import { AppError, USER_MESSAGES, toUserMessage } from "@/lib/userErrors";
@@ -48,8 +48,9 @@ export type ImportResult =
 // (lib/aiBudget.ts). Checks the session for real — the proxy only checks that
 // a cookie exists. Returns the reservation id or a message to show.
 async function reserveImport(): Promise<{ id: string } | { error: string }> {
-  const userId = await requireUserId();
-  const slot = await startImport({ userId, ip: await clientIp() });
+  const user = await requireUser();
+  // Demo guests get the smaller per-visitor allowance.
+  const slot = await startImport({ userId: user.id, ip: await clientIp(), anonymous: user.isGuest });
   return "limit" in slot ? { error: USER_MESSAGES[slot.limit] } : slot;
 }
 
@@ -78,7 +79,7 @@ export async function importRecipesFromUrl(url: string): Promise<UrlImportResult
   const slot = await reserveImport();
   if ("error" in slot) return { ok: false, error: slot.error };
   // Imports leave photos of skipped drafts behind; tidy up after responding.
-  after(sweepUnusedUploads);
+  after(runHousekeeping);
   let page: Awaited<ReturnType<typeof fetchUrlText>>;
   try {
     page = await fetchUrlText(trimmed);
@@ -121,7 +122,7 @@ export async function importRecipeFromPhoto(
   }
   const slot = await reserveImport();
   if ("error" in slot) return { ok: false, error: slot.error };
-  after(sweepUnusedUploads);
+  after(runHousekeeping);
   const language = String(formData.get("language") ?? "").trim() || undefined;
   try {
     const saved = await saveUploadedImage(file);

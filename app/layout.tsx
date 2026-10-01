@@ -5,6 +5,9 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { PlusIcon } from "@/components/Icons";
 import UserMenu from "@/components/UserMenu";
+import { getShowcaseUserId } from "@/lib/showcase";
+import { runHousekeeping } from "@/lib/housekeeping";
+import { after } from "next/server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,6 +33,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getSessionUser();
+  const showcase = !user && (await getShowcaseUserId());
+  // Hourly tidy-up (expired demos, unused photos), after the page is sent.
+  after(runHousekeeping);
   return (
     <html
       lang="en"
@@ -56,15 +62,28 @@ export default async function RootLayout({
                 >
                   <PlusIcon />
                 </Link>
-                <UserMenu email={user.email} />
+                <UserMenu email={user.email} guest={user.isGuest} />
               </div>
             ) : (
-              <Link
-                href="/login"
-                className="rounded-lg bg-stone-100 px-3.5 py-2 text-sm font-medium text-stone-900 transition hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
-              >
-                Sign in
-              </Link>
+              <div className="flex items-center gap-2">
+                {/* With public browsing on, + starts the demo (lib/demo.ts). */}
+                {showcase && (
+                  <Link
+                    href="/demo?next=%2Frecipes%2Fnew"
+                    title="Add a recipe"
+                    aria-label="Add a recipe"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-olive-600 text-white transition hover:bg-olive-700"
+                  >
+                    <PlusIcon />
+                  </Link>
+                )}
+                <Link
+                  href="/login"
+                  className="rounded-lg bg-stone-100 px-3.5 py-2 text-sm font-medium text-stone-900 transition hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+                >
+                  Sign in
+                </Link>
+              </div>
             )}
           </nav>
         </header>

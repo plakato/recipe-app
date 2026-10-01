@@ -11,13 +11,15 @@ import { SESSION_COOKIE } from "@/lib/auth-constants";
 const PUBLIC_PATHS = ["/login", "/signup", "/api/auth/login", "/api/auth/signup", "/robots.txt"];
 
 // Pages visitors may open without an account when public browsing is on
-// (SHOWCASE_EMAIL): the recipe list, a recipe, and its photos. The pages
+// (SHOWCASE_EMAIL): the recipe list, a recipe, its photos, and the demo
+// start page. The pages
 // themselves decide what to show; everything else (adding, editing, Trash,
 // imports) still needs an account.
 function isBrowsable(pathname: string): boolean {
   if (!process.env.SHOWCASE_EMAIL) return false;
   return (
     pathname === "/" ||
+    pathname === "/demo" ||
     (/^\/recipes\/[^/]+$/.test(pathname) && pathname !== "/recipes/new") ||
     pathname.startsWith("/uploads/")
   );
