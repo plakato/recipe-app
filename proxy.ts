@@ -10,15 +10,16 @@ import { SESSION_COOKIE } from "@/lib/auth-constants";
 
 const PUBLIC_PATHS = ["/login", "/signup", "/api/auth/login", "/api/auth/signup", "/robots.txt"];
 
-// Pages visitors may open without an account: the recipe list, a recipe,
-// its photos, and the demo start page. The pages themselves decide what to
-// show — with no showcase account (lib/showcase.ts) they send visitors to
-// sign in. Everything else (adding, editing, Trash, imports) needs an account.
+// Pages visitors may open without an account: the recipe list, a recipe and
+// its photos, editing a recipe and adding one from a photo (their demo starts
+// at their first change — lib/demoSession.ts). The pages themselves decide
+// what to show; with no showcase account (lib/showcase.ts) they send visitors
+// to sign in. Trash and link import still need an account.
 function isBrowsable(pathname: string): boolean {
   return (
     pathname === "/" ||
-    pathname === "/demo" ||
-    (/^\/recipes\/[^/]+$/.test(pathname) && pathname !== "/recipes/new") ||
+    /^\/recipes\/[^/]+(\/edit)?$/.test(pathname) ||
+    pathname === "/recipes/import/photo" ||
     pathname.startsWith("/uploads/")
   );
 }

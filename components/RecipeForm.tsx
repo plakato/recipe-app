@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { RecipeDraft } from "@/lib/recipes";
 import { listToLines } from "@/lib/recipes";
 import RecipeImage from "@/components/RecipeImage";
+import Turnstile from "@/components/Turnstile";
 import type { SaveState } from "@/app/actions";
 
 type Props = {
@@ -22,14 +23,17 @@ type Props = {
   onSaved?: (id: string) => void;
   // Replaces the Cancel link (e.g. "Skip this one" in a multi-recipe import).
   secondaryAction?: React.ReactNode;
+  // Visitors (demo): Cloudflare site key for the background bot check; saving
+  // waits until it has passed.
+  botCheckKey?: string | null;
 };
 
-function SubmitButton({ label }: { label: string }) {
+function SubmitButton({ label, waiting = false }: { label: string; waiting?: boolean }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={pending || waiting}
       className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
     >
       {pending ? "Saving…" : label}
@@ -49,7 +53,9 @@ export default function RecipeForm({
   submitLabel = "Save recipe",
   onSaved,
   secondaryAction,
+  botCheckKey,
 }: Props) {
+  const [botCheckReady, setBotCheckReady] = useState(!botCheckKey);
   // Controlled fields so AI import (later phases) can populate them via setState.
   const [title, setTitle] = useState(initial?.title ?? "");
   const [ingredients, setIngredients] = useState(
@@ -227,7 +233,10 @@ export default function RecipeForm({
       </div>
 
       <div className="flex items-center gap-3 pt-2">
-        <SubmitButton label={submitLabel} />
+        {botCheckKey && (
+          <Turnstile key={state?.at ?? 0} siteKey={botCheckKey} action="demo" onToken={(t) => setBotCheckReady(!!t)} />
+        )}
+        <SubmitButton label={submitLabel} waiting={!botCheckReady} />
         {secondaryAction ?? (
           <Link
             href={recipeId ? `/recipes/${recipeId}` : "/"}

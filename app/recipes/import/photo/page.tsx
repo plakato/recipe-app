@@ -1,8 +1,18 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth";
+import { getShowcaseUserId } from "@/lib/showcase";
+import { turnstileSiteKey } from "@/lib/turnstile";
 import { URL_IMPORT_ENABLED } from "@/lib/features";
 import PhotoImport from "@/components/PhotoImport";
 
-export default function ImportFromPhotoPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ImportFromPhotoPage() {
+  // Visitors may try it too (their demo starts with the first reading);
+  // without public browsing they need to sign in.
+  const signedIn = !!(await getSessionUser());
+  if (!signedIn && !(await getShowcaseUserId())) redirect("/login?next=%2Frecipes%2Fimport%2Fphoto");
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -13,7 +23,7 @@ export default function ImportFromPhotoPage() {
         </p>
       </div>
 
-      <PhotoImport />
+      <PhotoImport botCheckKey={signedIn ? null : turnstileSiteKey()} />
 
       {/* With link import paused, photo is the only way to add: no chooser. */}
       {URL_IMPORT_ENABLED && (

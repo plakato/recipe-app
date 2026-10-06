@@ -1,9 +1,10 @@
 "use client";
 
-// Cloudflare Turnstile widget (see lib/turnstile.ts). Put it inside a <form>:
-// it adds the hidden "cf-turnstile-response" field with a one-time token.
-// Invisible for people. Each token works once: after a failed submit, remount
-// it (change its React `key`) to get a fresh one.
+// Cloudflare Turnstile widget (see lib/turnstile.ts). Runs in the background
+// while people use the page. Inside a <form> it adds the hidden
+// "cf-turnstile-response" field itself; `onToken` also hands the token over
+// (or null when it expires) so buttons can wait for it. Each token works once:
+// after a failed submit, remount it (change its React `key`) for a fresh one.
 import { useEffect, useRef } from "react";
 
 type TurnstileApi = {
@@ -43,8 +44,8 @@ export default function Turnstile({
 }: {
   siteKey: string;
   action: "signup" | "demo";
-  // Called when a token is ready (e.g. to submit the form automatically).
-  onToken?: () => void;
+  // Called with the token when it's ready, and with null when it expires.
+  onToken?: (token: string | null) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const widget = useRef<string | null>(null);
@@ -63,7 +64,8 @@ export default function Turnstile({
           action,
           // Tokens expire after a few minutes: get a new one quietly.
           "refresh-expired": "auto",
-          callback: () => tokenReady.current?.(),
+          callback: (token: string) => tokenReady.current?.(token),
+          "expired-callback": () => tokenReady.current?.(null),
         });
       })
       .catch(() => {

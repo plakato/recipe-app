@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser, requireUser, requireUserId } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
+import type { User } from "@prisma/client";
+import { userForChange } from "@/lib/demoSession";
 import { enterUsage } from "@/lib/usageContext";
 import { linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
@@ -48,8 +50,7 @@ export type ImportResult =
 // Reserve one AI import for the signed-in person against the daily limits
 // (lib/aiBudget.ts). Checks the session for real — the proxy only checks that
 // a cookie exists. Returns the reservation id or a message to show.
-async function reserveImport(): Promise<{ id: string; userId: string; isGuest: boolean } | { error: string }> {
-  const user = await requireUser();
+async function reserveImport(user: User): Promise<{ id: string; userId: string; isGuest: boolean } | { error: string }> {
   // Demo guests get the smaller per-visitor allowance.
   const slot = await startImport({ userId: user.id, ip: await clientIp(), anonymous: user.isGuest });
   if ("limit" in slot) return { error: USER_MESSAGES[slot.limit] };
@@ -57,10 +58,9 @@ async function reserveImport(): Promise<{ id: string; userId: string; isGuest: b
 }
 
 // Record recipe activity for the daily statistics (never blocks the action).
-async function logActivity(kind: string, userId: string): Promise<void> {
-  const user = await getSessionUser();
+async function logActivity(kind: string, user: Pick<User, "id" | "isGuest">): Promise<void> {
   await prisma.activity
-    .create({ data: { kind, userId, isGuest: user?.isGuest ?? false } })
+    .create({ data: { kind, userId: user.id, isGuest: user.isGuest } })
     .catch((err) => console.warn("Could not record activity:", err));
 }
 
@@ -86,7 +86,7 @@ export async function importRecipesFromUrl(url: string): Promise<UrlImportResult
   }
   const trimmed = url.trim();
   if (!trimmed) return { ok: false, error: "Please enter a URL." };
-  const slot = await reserveImport();
+  const slot = await reserveImport(await requireUser());
   if ("error" in slot) return { ok: false, error: slot.error };
   // AI calls below are recorded for this person (statistics).
   enterUsage({ userId: slot.userId, isGuest: slot.isGuest });
@@ -132,7 +132,11 @@ export async function importRecipeFromPhoto(
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Please choose a photo first." };
   }
-  const slot = await reserveImport();
+  // A visitor's demo starts here, at their first change (lib/demoSession.ts).
+  const who = await userForChange(formData);
+  if (!who) redirect("/login");
+  if ("error" in who) return { ok: false, error: who.error };
+  const slot = await reserveImport(who.user);
   if ("error" in slot) return { ok: false, error: slot.error };
   // AI calls below are recorded for this person (statistics).
   enterUsage({ userId: slot.userId, isGuest: slot.isGuest });
@@ -165,6 +169,7 @@ export type SaveState = {
   error?: string;
   duplicate?: NonNullable<DuplicateVerdict>;
   saved?: { id: string };
+  at?: number; // set when a visitor's bot check failed: the form gets a fresh token
 } | null;
 
 // Compare the submitted recipe with the user's other recipes. Returns a
@@ -245,7 +250,8 @@ export async function createRecipe(
 ): Promise<SaveState> {
   const fields = readRecipeFields(formData);
   if (!fields.title) return { error: "A title is required." };
-  const userId = await requireUserId();
+  const user = await requireUser();
+  const userId = user.id;
   const blocked = await duplicateCheck(userId, fields, formData);
   if (blocked) return blocked;
   const image = await resolveImage(formData, fields.imagePath);
@@ -253,7 +259,7 @@ export async function createRecipe(
   const recipe = await prisma.recipe.create({
     data: { ...fields, imagePath: image.imagePath, userId },
   });
-  await logActivity("created", userId);
+  await logActivity("created", user);
   revalidatePath("/");
   if (formData.get("stay") === "1") return { saved: { id: recipe.id } };
   redirect(`/recipes/${recipe.id}`);
@@ -263,11 +269,18 @@ export async function updateRecipe(
   _prev: SaveState,
   formData: FormData,
 ): Promise<SaveState> {
-  const id = String(formData.get("id") ?? "");
-  if (!id) return { error: "Missing recipe id." };
   const fields = readRecipeFields(formData);
   if (!fields.title) return { error: "A title is required." };
-  const userId = await requireUserId();
+  // A visitor editing a showcase recipe gets their demo now and edits their
+  // own copy of it; the original is never touched.
+  const who = await userForChange(formData);
+  if (!who) redirect("/login");
+  if ("error" in who) return { error: who.error, at: Date.now() };
+  const user = who.user;
+  const userId = user.id;
+  const formId = String(formData.get("id") ?? "");
+  const id = who.copies?.get(formId) ?? formId;
+  if (!id) return { error: "Missing recipe id." };
   const blocked = await duplicateCheck(userId, fields, formData, id);
   if (blocked) return blocked;
   const existing = await prisma.recipe.findFirst({
@@ -282,7 +295,7 @@ export async function updateRecipe(
     where: { id, userId, ...visibleRecipes },
     data: { ...fields, imagePath: image.imagePath },
   });
-  if (edited.count) await logActivity("edited", userId);
+  if (edited.count) await logActivity("edited", user);
   if (existing.imagePath && existing.imagePath !== image.imagePath) {
     await deleteImageIfUnused(existing.imagePath);
   }
@@ -292,15 +305,22 @@ export async function updateRecipe(
 }
 
 // Soft delete: move to Trash by stamping deletedAt. Recoverable via restore.
-export async function softDeleteRecipe(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
+// Returns a message only when nothing was deleted (e.g. a visitor's bot
+// check failed); otherwise redirects home.
+export async function softDeleteRecipe(_prev: { error: string; at: number } | null, formData: FormData) {
+  // A visitor deleting a showcase recipe gets their demo now and deletes
+  // their own copy of it; the original is never touched.
+  const who = await userForChange(formData);
+  if (!who) redirect("/login");
+  if ("error" in who) return { error: who.error, at: Date.now() };
+  const formId = String(formData.get("id") ?? "");
+  const id = who.copies?.get(formId) ?? formId;
   if (!id) throw new Error("Missing recipe id.");
-  const userId = await requireUserId();
   const deleted = await prisma.recipe.updateMany({
-    where: { id, userId, ...visibleRecipes },
+    where: { id, userId: who.user.id, ...visibleRecipes },
     data: { deletedAt: new Date() },
   });
-  if (deleted.count) await logActivity("deleted", userId);
+  if (deleted.count) await logActivity("deleted", who.user);
   revalidatePath("/");
   revalidatePath("/trash");
   redirect("/");
@@ -309,12 +329,13 @@ export async function softDeleteRecipe(formData: FormData) {
 export async function restoreRecipe(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing recipe id.");
-  const userId = await requireUserId();
+  const user = await requireUser();
+  const userId = user.id;
   const restored = await prisma.recipe.updateMany({
     where: { id, userId, ...visibleRecipes },
     data: { deletedAt: null },
   });
-  if (restored.count) await logActivity("restored", userId);
+  if (restored.count) await logActivity("restored", user);
   revalidatePath("/");
   revalidatePath("/trash");
   redirect(`/recipes/${id}`);
@@ -325,11 +346,12 @@ export async function restoreRecipe(formData: FormData) {
 export async function permanentlyDeleteRecipe(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing recipe id.");
-  const userId = await requireUserId();
+  const user = await requireUser();
+  const userId = user.id;
   const erased = await prisma.recipe.deleteMany({
     where: { id, userId, deletedAt: { not: null }, ...visibleRecipes },
   });
-  if (erased.count) await logActivity("erased", userId);
+  if (erased.count) await logActivity("erased", user);
   revalidatePath("/trash");
   redirect("/trash");
 }

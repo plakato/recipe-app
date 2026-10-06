@@ -1,8 +1,9 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import RecipeForm from "@/components/RecipeForm";
 import { updateRecipe } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/auth";
+import { currentViewer } from "@/lib/showcase";
+import { turnstileSiteKey } from "@/lib/turnstile";
 import { recipeToDraft } from "@/lib/recipes";
 import { visibleRecipes } from "@/lib/features";
 
@@ -14,9 +15,12 @@ export default async function EditRecipePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const userId = await requireUserId();
+  // Owners edit their recipe; visitors see the showcase recipe and, on save,
+  // get their demo with their own copy of it (app/actions.ts → updateRecipe).
+  const viewer = await currentViewer();
+  if (!viewer) redirect(`/login?next=${encodeURIComponent(`/recipes/${id}/edit`)}`);
   const recipe = await prisma.recipe.findFirst({
-    where: { id, userId, deletedAt: null, ...visibleRecipes },
+    where: { id, userId: viewer.userId, deletedAt: null, ...visibleRecipes },
   });
 
   if (!recipe) notFound();
@@ -30,6 +34,7 @@ export default async function EditRecipePage({
         recipeId={recipe.id}
         sourceType={recipe.sourceType}
         submitLabel="Save changes"
+        botCheckKey={viewer.signedIn ? null : turnstileSiteKey()}
       />
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import RecipeForm from "@/components/RecipeForm";
+import Turnstile from "@/components/Turnstile";
 import { createRecipe, importRecipeFromPhoto } from "@/app/actions";
 import type { RecipeDraft } from "@/lib/recipes";
 
@@ -16,7 +17,14 @@ const LANGS = [
 const selectClass =
   "rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-olive-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
 
-export default function PhotoImport() {
+// botCheckKey: set for visitors (demo). The invisible bot check runs while
+// they pick a photo; reading starts only once it has passed, and their demo
+// begins with that first reading (app/actions.ts → importRecipeFromPhoto).
+export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: string | null }) {
+  const [botToken, setBotToken] = useState<string | null>(null);
+  const [botAttempt, setBotAttempt] = useState(0);
+  // After the first reading the visitor is signed in to their demo.
+  const [needsBotCheck, setNeedsBotCheck] = useState(!!botCheckKey);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [language, setLanguage] = useState("Slovak");
@@ -42,12 +50,17 @@ export default function PhotoImport() {
     const formData = new FormData();
     formData.append("photo", file);
     formData.append("language", language);
+    if (needsBotCheck && botToken) formData.append("cf-turnstile-response", botToken);
     const result = await importRecipeFromPhoto(formData);
     setLoading(false);
     if (result.ok) {
+      setNeedsBotCheck(false);
       setDraft(result.draft);
     } else {
       setError(result.error);
+      // The token was used: get a fresh one for the next try.
+      setBotToken(null);
+      setBotAttempt((n) => n + 1);
     }
   }
 
@@ -139,10 +152,13 @@ export default function PhotoImport() {
         </p>
       )}
 
+      {botCheckKey && needsBotCheck && (
+        <Turnstile key={botAttempt} siteKey={botCheckKey} action="demo" onToken={setBotToken} />
+      )}
       <button
         type="button"
         onClick={handleExtract}
-        disabled={loading || !file}
+        disabled={loading || !file || (needsBotCheck && !botToken)}
         className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
       >
         {loading ? "Reading the photo…" : "Read recipe from photo"}

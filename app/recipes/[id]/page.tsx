@@ -3,9 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentViewer } from "@/lib/showcase";
 import { groupSections, parseList } from "@/lib/recipes";
-import { softDeleteRecipe } from "@/app/actions";
 import RecipeImage from "@/components/RecipeImage";
-import { BackIcon, EditIcon, LinkIcon, PhotoIcon, TrashIcon } from "@/components/Icons";
+import DeleteButton from "@/components/DeleteButton";
+import { turnstileSiteKey } from "@/lib/turnstile";
+import { BackIcon, EditIcon, LinkIcon, PhotoIcon } from "@/components/Icons";
 import { visibleRecipes } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
@@ -28,10 +29,6 @@ export default async function RecipeDetailPage({
     where: { id, userId: viewer.userId, deletedAt: null, ...visibleRecipes },
   });
   if (!recipe) notFound();
-  const canEdit = viewer.signedIn;
-  // Visitors get the same buttons; they lead to the demo start (lib/demo.ts),
-  // which hands them their own copy of this recipe.
-  const demo = (next: string) => `/demo?next=${encodeURIComponent(next)}`;
 
   const ingredients = groupSections(parseList(recipe.ingredients));
   const instructions = groupSections(parseList(recipe.instructions));
@@ -71,29 +68,12 @@ export default async function RecipeDetailPage({
                   {recipe.sourceUrl ? <LinkIcon /> : <PhotoIcon />}
                 </a>
               )}
-              {canEdit && (
-                <>
-                  <Link href={`/recipes/${recipe.id}/edit`} title="Edit" aria-label="Edit" className={heroBtn}>
-                    <EditIcon />
-                  </Link>
-                  <form action={softDeleteRecipe}>
-                    <input type="hidden" name="id" value={recipe.id} />
-                    <button type="submit" title="Move to Trash" aria-label="Move to Trash" className={heroBtn}>
-                      <TrashIcon />
-                    </button>
-                  </form>
-                </>
-              )}
-              {!canEdit && (
-                <>
-                  <Link href={demo(`/recipes/${recipe.id}/edit`)} title="Edit" aria-label="Edit" className={heroBtn}>
-                    <EditIcon />
-                  </Link>
-                  <Link href={demo(`/recipes/${recipe.id}`)} title="Move to Trash" aria-label="Move to Trash" className={heroBtn}>
-                    <TrashIcon />
-                  </Link>
-                </>
-              )}
+              {/* Owners edit their recipe. Visitors get the same buttons: their demo
+                  starts on save/delete (background bot check), on their own copy. */}
+              <Link href={`/recipes/${recipe.id}/edit`} title="Upraviť" aria-label="Upraviť" className={heroBtn}>
+                <EditIcon />
+              </Link>
+              <DeleteButton id={recipe.id} className={heroBtn} botCheckKey={viewer.signedIn ? null : turnstileSiteKey()} />
             </div>
           </div>
         </div>

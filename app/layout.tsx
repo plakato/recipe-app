@@ -68,10 +68,10 @@ export default async function RootLayout({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                {/* With public browsing on, + starts the demo (lib/demo.ts). */}
+                {/* With public browsing on, visitors can add too (as a demo). */}
                 {showcase && (
                   <Link
-                    href="/demo?next=%2Frecipes%2Fnew"
+                    href="/recipes/new"
                     title="Add a recipe"
                     aria-label="Add a recipe"
                     className="flex h-9 w-9 items-center justify-center rounded-lg bg-olive-600 text-white transition hover:bg-olive-700"

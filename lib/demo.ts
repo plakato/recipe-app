@@ -73,21 +73,6 @@ export async function createGuest(
   return { userId: user.id, copies: await copyShowcaseRecipes(user.id) };
 }
 
-// Only paths inside the app (no "//evil.com", no full URLs) may follow the
-// demo start; anything else goes home.
-export function safeNext(raw: string | null | undefined): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return "/";
-  return raw;
-}
-
-// Where to go after the demo starts: a showcase recipe's page (or its edit
-// page) becomes the guest's own copy of it.
-export function demoTarget(next: string, copies: Map<string, string>): string {
-  const m = next.match(/^\/recipes\/([^/]+)(\/edit)?$/);
-  if (!m || !copies.has(m[1])) return next;
-  return `/recipes/${copies.get(m[1])}${m[2] ?? ""}`;
-}
-
 // Delete guest accounts with their recipes and sessions. Only ever guests:
 // the isGuest condition is repeated in every delete. Their photos become
 // unused and the uploads cleanup removes them later.
