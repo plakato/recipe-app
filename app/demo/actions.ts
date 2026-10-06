@@ -4,13 +4,15 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { createSession, getSessionUser } from "@/lib/auth";
-import { clientIp } from "@/lib/clientIp";
+import { clientIp, requestHost } from "@/lib/clientIp";
 import { createGuest, demoTarget, safeNext } from "@/lib/demo";
 import { runHousekeeping } from "@/lib/housekeeping";
 import { getShowcaseUserId } from "@/lib/showcase";
 import { USER_MESSAGES } from "@/lib/userErrors";
+import { verifyTurnstile } from "@/lib/turnstile";
 
-export type DemoState = { error: string } | null;
+// `at` changes on every failure, so the form can refresh its bot-check token.
+export type DemoState = { error: string; at: number } | null;
 
 // Start the demo: a temporary guest account with its own copy of the
 // showcase recipes, signed in by cookie, then on to what the visitor wanted
@@ -20,9 +22,21 @@ export async function startDemo(_prev: DemoState, formData: FormData): Promise<D
   if (await getSessionUser()) redirect(next); // already signed in or in a demo
   if (!(await getShowcaseUserId())) redirect("/login"); // demo not set up
 
+  // Invisible bot check (lib/turnstile.ts) before creating anything.
+  const human = await verifyTurnstile(formData.get("cf-turnstile-response"), "demo", {
+    ip: await clientIp(),
+    host: await requestHost(),
+  });
+  if (!human) {
+    return {
+      error: "We couldn't confirm you're a person (our automatic check didn't go through). Please try again.",
+      at: Date.now(),
+    };
+  }
+
   after(runHousekeeping);
   const guest = await createGuest(await clientIp());
-  if ("limit" in guest) return { error: USER_MESSAGES[guest.limit] };
+  if ("limit" in guest) return { error: USER_MESSAGES[guest.limit], at: Date.now() };
 
   // Short-lived session: the guest account itself expires a day after last use.
   const cookie = await createSession(guest.userId, 2);

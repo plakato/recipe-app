@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { safeNext } from "@/lib/demo";
 import { getShowcaseUserId } from "@/lib/showcase";
 import DemoStart from "@/components/DemoStart";
+import { turnstileSiteKey } from "@/lib/turnstile";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function DemoPage({
           use it — unless you sign up.
         </p>
       </div>
-      <DemoStart next={next} />
+      <DemoStart next={next} siteKey={turnstileSiteKey()} />
       <p className="text-sm text-stone-500">
         Already have an account?{" "}
         <Link href="/login" className="font-medium text-olive-700 hover:underline dark:text-olive-300">

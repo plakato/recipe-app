@@ -47,7 +47,15 @@ recipes are hidden, not deleted. In order:
    above. The first save/edit/delete warns "your changes are kept only for
    this visit — sign up to keep them" and creates a temporary private copy
    (deleted ~a day after last use). Signing up turns it into a real account.
-4. **Open sign-up for everyone.** Bot protection that doesn't bother people:
+4. **Open sign-up for everyone.** — Turnstile DONE 2026-10-06
+   (`lib/turnstile.ts`, `components/Turnstile.tsx`) on sign-up and demo
+   start; the first photo import needs none (only accounts/demos import, and
+   both passed it). Live site key `0x4AAAAAAFPFuzUJRKzzW--3` (public); the
+   secret goes only in the server's .env. Local .env uses Cloudflare's test
+   keys (they answer with no action and hostname "example.com"). Still to do
+   in this step: honeypot field, per-IP sign-up limit, open sign-up (drop the
+   invite code), starter copies for new accounts.
+   Was: **Open sign-up for everyone.** Bot protection that doesn't bother people:
    Cloudflare Turnstile in *invisible* mode on sign-up and the first photo
    import only, per-IP limits, a honeypot field. New accounts start with a
    copy of the 40 recipes (same copy step as 3). Later: password-reset email

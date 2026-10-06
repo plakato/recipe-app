@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { createSession, getSessionUser } from "@/lib/auth";
 import { hashPassword, isValidEmail, MIN_PASSWORD_LENGTH, normalizeEmail } from "@/lib/password";
 import { redirectWithError, isSameOrigin, siteUrl } from "@/lib/auth-forms";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { clientIp, requestHost } from "@/lib/clientIp";
 
 // The placeholder owner that held every recipe before accounts existed. The
 // first real account adopts it (and therefore all existing recipes).
@@ -13,6 +15,12 @@ export async function POST(request: Request) {
     return new NextResponse("Cross-site request refused.", { status: 403 });
   }
   const form = await request.formData();
+  // Invisible bot check first, before any other work (lib/turnstile.ts).
+  const human = await verifyTurnstile(form.get("cf-turnstile-response"), "signup", {
+    ip: await clientIp(),
+    host: await requestHost(),
+  });
+  if (!human) return redirectWithError(request, "/signup", "bot");
   const email = normalizeEmail(String(form.get("email") ?? ""));
   const name = String(form.get("name") ?? "").trim().slice(0, 80);
   const password = String(form.get("password") ?? "");

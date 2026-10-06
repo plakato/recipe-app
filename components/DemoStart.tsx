@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { startDemo, type DemoState } from "@/app/demo/actions";
+import Turnstile from "@/components/Turnstile";
 
 function StartButton() {
   const { pending } = useFormStatus();
@@ -17,7 +18,7 @@ function StartButton() {
   );
 }
 
-export default function DemoStart({ next }: { next: string }) {
+export default function DemoStart({ next, siteKey }: { next: string; siteKey: string | null }) {
   const [state, action] = useActionState<DemoState, FormData>(startDemo, null);
   return (
     <form action={action} className="space-y-4">
@@ -27,6 +28,8 @@ export default function DemoStart({ next }: { next: string }) {
           {state.error}
         </p>
       )}
+      {/* Invisible bot check; a new one after each failed try (fresh token). */}
+      {siteKey && <Turnstile key={state?.at ?? 0} siteKey={siteKey} action="demo" />}
       <StartButton />
     </form>
   );
