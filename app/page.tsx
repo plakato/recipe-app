@@ -2,7 +2,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { currentViewer } from "@/lib/showcase";
-import { getSessionUser } from "@/lib/auth";
 import RecipeImage from "@/components/RecipeImage";
 import { CookingPot } from "lucide-react";
 import { PlusIcon } from "@/components/Icons";
@@ -15,7 +14,6 @@ export default async function Home() {
   // Signed in: your recipes. Otherwise the public showcase, read-only.
   const viewer = await currentViewer();
   if (!viewer) redirect("/login");
-  const guest = viewer.signedIn && (await getSessionUser())?.isGuest;
   const recipes = await prisma.recipe.findMany({
     where: { userId: viewer.userId, deletedAt: null, ...visibleRecipes },
     orderBy: { createdAt: "desc" },
@@ -39,26 +37,6 @@ export default async function Home() {
   // Bento grid: the newest recipe takes a 2×2 tile, the rest are squares.
   // Titles sit on a dark shadow rising from the bottom of each photo.
   return (
-    <>
-    {!viewer.signedIn && (
-      <p className="mb-4 text-sm text-stone-600 dark:text-stone-400">
-        You&rsquo;re browsing our family recipes — open one, edit it or add your own to try
-        it out.{" "}
-        <Link href="/login" className="font-medium text-olive-700 underline-offset-2 hover:underline dark:text-olive-300">
-          Sign in
-        </Link>
-      </p>
-    )}
-    {guest && (
-      <p className="mb-4 rounded-lg border border-olive-200 bg-olive-50 px-4 py-3 text-sm text-olive-900 dark:border-olive-900/50 dark:bg-olive-950/30 dark:text-olive-200">
-        This is your demo copy: change anything you like. It&rsquo;s kept for a day after you
-        last use it —{" "}
-        <Link href="/signup" className="font-semibold underline-offset-2 hover:underline">
-          sign up
-        </Link>{" "}
-        to keep it.
-      </p>
-    )}
     <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {recipes.map((recipe, i) => (
         <li key={recipe.id} className={i === 0 ? "col-span-2 row-span-2" : ""}>
@@ -87,7 +65,6 @@ export default async function Home() {
         </li>
       ))}
     </ul>
-    </>
   );
 }
 

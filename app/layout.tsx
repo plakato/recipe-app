@@ -34,6 +34,8 @@ export default async function RootLayout({
 }>) {
   const user = await getSessionUser();
   const showcase = !user && (await getShowcaseUserId());
+  // Demo mode: browsing the public recipes, or in a demo (guest) account.
+  const demoMode = Boolean(showcase) || !!user?.isGuest;
   // Hourly tidy-up (expired demos, unused photos), after the page is sent.
   after(runHousekeeping);
   return (
@@ -87,7 +89,23 @@ export default async function RootLayout({
             )}
           </nav>
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">{children}</main>
+        <main className={`mx-auto max-w-6xl px-4 py-6 sm:px-6 ${demoMode ? "pb-20" : ""}`}>{children}</main>
+        {demoMode && (
+          <div
+            role="note"
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-stone-900/95 px-4 py-2.5 text-center text-sm text-stone-100 backdrop-blur"
+          >
+            Unless you sign in, you&rsquo;re in <strong>demo mode</strong> — the changes you make
+            won&rsquo;t be saved.{" "}
+            <Link href="/login" className="font-semibold text-olive-300 underline-offset-2 hover:underline">
+              Sign in
+            </Link>
+            {" · "}
+            <Link href="/signup" className="font-semibold text-olive-300 underline-offset-2 hover:underline">
+              Sign up
+            </Link>
+          </div>
+        )}
 
       </body>
     </html>

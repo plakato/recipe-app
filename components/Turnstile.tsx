@@ -39,12 +39,19 @@ function loadTurnstile(): Promise<TurnstileApi> {
 export default function Turnstile({
   siteKey,
   action,
+  onToken,
 }: {
   siteKey: string;
   action: "signup" | "demo";
+  // Called when a token is ready (e.g. to submit the form automatically).
+  onToken?: () => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const widget = useRef<string | null>(null);
+  const tokenReady = useRef(onToken);
+  useEffect(() => {
+    tokenReady.current = onToken;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +63,7 @@ export default function Turnstile({
           action,
           // Tokens expire after a few minutes: get a new one quietly.
           "refresh-expired": "auto",
+          callback: () => tokenReady.current?.(),
         });
       })
       .catch(() => {

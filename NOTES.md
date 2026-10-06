@@ -43,6 +43,11 @@ recipes are hidden, not deleted. In order:
    by the hourly housekeeping (`lib/housekeeping.ts`); "Leave the demo"
    deletes it at once; signing up converts it into the real account. Limits:
    10 new demos per IP / 500 per day (`DEMO_GUESTS_*`), 3 imports per demo.
+   2026-10-06: no "Try it" page any more — /demo starts the demo by itself
+   as soon as the invisible bot check is done (~2 s) and goes straight to
+   the edit/add page; a note fixed at the bottom of every page says "Unless
+   you sign in, you're in demo mode — the changes you make won't be saved."
+   (shown to visitors and demo guests, not to real accounts).
    Was: **Trying it without an account.** Photo import allowed within the limits
    above. The first save/edit/delete warns "your changes are kept only for
    this visit — sign up to keep them" and creates a temporary private copy
