@@ -82,10 +82,10 @@ export type UrlImportResult =
 export async function importRecipesFromUrl(url: string): Promise<UrlImportResult> {
   // Paused: refuse even direct calls, so no AI tokens are spent on it.
   if (!URL_IMPORT_ENABLED) {
-    return { ok: false, error: "Adding recipes from a link is not available right now." };
+    return { ok: false, error: "Pridávanie receptov z odkazu teraz nie je dostupné." };
   }
   const trimmed = url.trim();
-  if (!trimmed) return { ok: false, error: "Please enter a URL." };
+  if (!trimmed) return { ok: false, error: "Zadajte prosím adresu stránky." };
   const slot = await reserveImport(await requireUser());
   if ("error" in slot) return { ok: false, error: slot.error };
   // AI calls below are recorded for this person (statistics).
@@ -130,7 +130,7 @@ export async function importRecipeFromPhoto(
 ): Promise<ImportResult> {
   const file = formData.get("photo");
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Please choose a photo first." };
+    return { ok: false, error: "Najprv prosím vyberte fotku." };
   }
   // A visitor's demo starts here, at their first change (lib/demoSession.ts).
   const who = await userForChange(formData);
@@ -148,7 +148,7 @@ export async function importRecipeFromPhoto(
       await refundImport(slot.id);
       return {
         ok: false,
-        error: "That image type isn't supported, or it's too large (max 8 MB).",
+        error: "Tento typ obrázka nepodporujeme alebo je príliš veľký (najviac 8 MB).",
       };
     }
     // Free models first; the paid one only as a budget-capped fallback.
@@ -223,7 +223,7 @@ async function resolveImage(
   if (file instanceof File && file.size > 0) {
     const saved = await saveUploadedImage(file);
     if (!saved) {
-      return { error: "That image type isn't supported, or it's too large (max 8 MB)." };
+      return { error: "Tento typ obrázka nepodporujeme alebo je príliš veľký (najviac 8 MB)." };
     }
     return { imagePath: saved.imagePath };
   }
@@ -249,7 +249,7 @@ export async function createRecipe(
   formData: FormData,
 ): Promise<SaveState> {
   const fields = readRecipeFields(formData);
-  if (!fields.title) return { error: "A title is required." };
+  if (!fields.title) return { error: "Zadajte prosím názov receptu." };
   const user = await requireUser();
   const userId = user.id;
   const blocked = await duplicateCheck(userId, fields, formData);
@@ -270,7 +270,7 @@ export async function updateRecipe(
   formData: FormData,
 ): Promise<SaveState> {
   const fields = readRecipeFields(formData);
-  if (!fields.title) return { error: "A title is required." };
+  if (!fields.title) return { error: "Zadajte prosím názov receptu." };
   // A visitor editing a showcase recipe gets their demo now and edits their
   // own copy of it; the original is never touched.
   const who = await userForChange(formData);
@@ -280,14 +280,14 @@ export async function updateRecipe(
   const userId = user.id;
   const formId = String(formData.get("id") ?? "");
   const id = who.copies?.get(formId) ?? formId;
-  if (!id) return { error: "Missing recipe id." };
+  if (!id) return { error: "Chýba identifikátor receptu." };
   const blocked = await duplicateCheck(userId, fields, formData, id);
   if (blocked) return blocked;
   const existing = await prisma.recipe.findFirst({
     where: { id, userId, ...visibleRecipes },
     select: { imagePath: true },
   });
-  if (!existing) return { error: "Recipe not found." };
+  if (!existing) return { error: "Recept sa nenašiel." };
   const image = await resolveImage(formData, existing.imagePath);
   if ("error" in image) return { error: image.error };
   // Scope by userId so only the owner's recipes can be edited.
@@ -315,7 +315,7 @@ export async function softDeleteRecipe(_prev: { error: string; at: number } | nu
   if ("error" in who) return { error: who.error, at: Date.now() };
   const formId = String(formData.get("id") ?? "");
   const id = who.copies?.get(formId) ?? formId;
-  if (!id) throw new Error("Missing recipe id.");
+  if (!id) throw new Error("Chýba identifikátor receptu.");
   const deleted = await prisma.recipe.updateMany({
     where: { id, userId: who.user.id, ...visibleRecipes },
     data: { deletedAt: new Date() },
@@ -328,7 +328,7 @@ export async function softDeleteRecipe(_prev: { error: string; at: number } | nu
 
 export async function restoreRecipe(formData: FormData) {
   const id = String(formData.get("id") ?? "");
-  if (!id) throw new Error("Missing recipe id.");
+  if (!id) throw new Error("Chýba identifikátor receptu.");
   const user = await requireUser();
   const userId = user.id;
   const restored = await prisma.recipe.updateMany({
@@ -345,7 +345,7 @@ export async function restoreRecipe(formData: FormData) {
 // (but recoverable from backups — see the backup strategy).
 export async function permanentlyDeleteRecipe(formData: FormData) {
   const id = String(formData.get("id") ?? "");
-  if (!id) throw new Error("Missing recipe id.");
+  if (!id) throw new Error("Chýba identifikátor receptu.");
   const user = await requireUser();
   const userId = user.id;
   const erased = await prisma.recipe.deleteMany({

@@ -36,7 +36,7 @@ function SubmitButton({ label, waiting = false }: { label: string; waiting?: boo
       disabled={pending || waiting}
       className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
     >
-      {pending ? "Saving…" : label}
+      {pending ? "Ukladám…" : label}
     </button>
   );
 }
@@ -50,7 +50,7 @@ export default function RecipeForm({
   initial,
   recipeId,
   sourceType = "manual",
-  submitLabel = "Save recipe",
+  submitLabel = "Uložiť recept",
   onSaved,
   secondaryAction,
   botCheckKey,
@@ -103,24 +103,24 @@ export default function RecipeForm({
           className="space-y-2 rounded-lg border border-olive-300 bg-olive-50 px-4 py-3 text-sm text-olive-900 dark:border-olive-700 dark:bg-olive-950 dark:text-olive-100"
         >
           <p className="font-medium">
-            This looks very similar to “{dup.match.title}” ({Math.round(dup.score * 100)}% match).
+            Tento recept je veľmi podobný receptu „{dup.match.title}“ (zhoda {Math.round(dup.score * 100)} %).
           </p>
           {dup.sameTitle ? (
             <p>
-              It also has the same name. Please{" "}
+              Má aj rovnaký názov. Prosím,{" "}
               <Link href={`/recipes/${dup.match.id}`} target="_blank" className="underline">
-                check the existing recipe
+                pozrite si existujúci recept
               </Link>{" "}
-              and, if this really is a different version, give it a name that tells them apart
-              (e.g. “{title} bez čierneho korenia”), then save again.
+              a ak je to naozaj iná verzia, dajte jej názov, podľa ktorého ich rozlíšite
+              (napr. „{title} bez čierneho korenia“), a uložte znova.
             </p>
           ) : (
             <>
               <p>
                 <Link href={`/recipes/${dup.match.id}`} target="_blank" className="underline">
-                  Open it to check
+                  Otvorte ho a skontrolujte
                 </Link>
-                . If it really is a different version, make sure the name tells them apart, then save anyway.
+                . Ak je to naozaj iná verzia, nech ich názov rozlíši, a potom ho uložte aj tak.
               </p>
               <button
                 type="submit"
@@ -128,7 +128,7 @@ export default function RecipeForm({
                 value="1"
                 className="rounded-lg border border-olive-400 px-3 py-1.5 font-medium hover:bg-olive-100 dark:hover:bg-olive-900"
               >
-                Save anyway, it&apos;s a different recipe
+                Uložiť aj tak, je to iný recept
               </button>
             </>
           )}
@@ -145,12 +145,12 @@ export default function RecipeForm({
       <div className="space-y-2">
         <RecipeImage
           src={shownImage}
-          alt={title || "Recipe image"}
+          alt={title || "Fotka receptu"}
           className="aspect-video w-full rounded-xl"
         />
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <label className="cursor-pointer rounded-lg border border-stone-300 px-3 py-1.5 font-medium hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800">
-            {shownImage ? "Change photo" : "Add photo"}
+            {shownImage ? "Zmeniť fotku" : "Pridať fotku"}
             <input
               type="file"
               name="photo"
@@ -168,7 +168,7 @@ export default function RecipeForm({
               onClick={() => chooseFile(null)}
               className="text-stone-500 hover:underline"
             >
-              Keep the current photo instead
+              Ponechať pôvodnú fotku
             </button>
           )}
           {!newFile && imagePath && (
@@ -180,7 +180,7 @@ export default function RecipeForm({
                 checked={removeImage}
                 onChange={(e) => setRemoveImage(e.target.checked)}
               />
-              Remove photo
+              Odstrániť fotku
             </label>
           )}
         </div>
@@ -188,7 +188,7 @@ export default function RecipeForm({
 
       <div className="space-y-1">
         <label className={labelClass} htmlFor="title">
-          Title
+          Názov
         </label>
         <input
           id="title"
@@ -197,14 +197,14 @@ export default function RecipeForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className={inputClass}
-          placeholder="Grandma's apple pie"
+          placeholder="Babkin jablkový koláč"
         />
       </div>
 
       <div className="space-y-1">
         <label className={labelClass} htmlFor="ingredients">
-          Ingredients{" "}
-          <span className="text-stone-400">(one per line; a line ending with “:” like “Cesto:” starts a section)</span>
+          Suroviny{" "}
+          <span className="text-stone-400">(každá na samostatný riadok; riadok končiaci „:“, napr. „Cesto:“, začína časť)</span>
         </label>
         <textarea
           id="ingredients"
@@ -213,13 +213,13 @@ export default function RecipeForm({
           onChange={(e) => setIngredients(e.target.value)}
           rows={8}
           className={`${inputClass} font-mono text-sm`}
-          placeholder={"Cesto:\n2 cups flour\n1 tsp salt\nPlnka:\n3 apples, peeled and sliced"}
+          placeholder={"Cesto:\n300 g hladkej múky\n1 lyžička soli\nPlnka:\n3 jablká, olúpané a nakrájané"}
         />
       </div>
 
       <div className="space-y-1">
         <label className={labelClass} htmlFor="instructions">
-          Instructions <span className="text-stone-400">(one step per line)</span>
+          Postup <span className="text-stone-400">(každý krok na samostatný riadok)</span>
         </label>
         <textarea
           id="instructions"
@@ -228,7 +228,7 @@ export default function RecipeForm({
           onChange={(e) => setInstructions(e.target.value)}
           rows={8}
           className={inputClass}
-          placeholder={"Preheat the oven to 180°C.\nMix the dry ingredients.\nBake for 45 minutes."}
+          placeholder={"Rúru predhrejeme na 180 °C.\nZmiešame suché suroviny.\nPečieme 45 minút."}
         />
       </div>
 
@@ -242,7 +242,7 @@ export default function RecipeForm({
             href={recipeId ? `/recipes/${recipeId}` : "/"}
             className="rounded-lg px-4 py-2.5 font-medium text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
           >
-            Cancel
+            Zrušiť
           </Link>
         )}
       </div>

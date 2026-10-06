@@ -19,12 +19,12 @@ export default async function TrashPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="font-display text-3xl">Trash</h1>
-        <p className="mt-1 text-sm text-stone-500">Restore anytime, or delete forever.</p>
+        <h1 className="font-display text-3xl">Kôš</h1>
+        <p className="mt-1 text-sm text-stone-500">Recepty môžete kedykoľvek obnoviť alebo natrvalo vymazať.</p>
       </div>
 
       {recipes.length === 0 ? (
-        <p className="py-16 text-center text-stone-500">Trash is empty.</p>
+        <p className="py-16 text-center text-stone-500">Kôš je prázdny.</p>
       ) : (
         <ul className="space-y-3">
           {recipes.map((recipe) => (
@@ -42,7 +42,7 @@ export default async function TrashPage() {
                 <p className="font-display truncate text-lg">{recipe.title}</p>
                 {recipe.deletedAt && (
                   <p className="text-xs text-stone-500">
-                    Deleted {recipe.deletedAt.toLocaleDateString()}
+                    Vymazané {recipe.deletedAt.toLocaleDateString("sk-SK")}
                   </p>
                 )}
               </div>
@@ -50,8 +50,8 @@ export default async function TrashPage() {
                 <input type="hidden" name="id" value={recipe.id} />
                 <button
                   type="submit"
-                  title="Restore"
-                  aria-label="Restore"
+                  title="Obnoviť"
+                  aria-label="Obnoviť"
                   className={`${btn} text-stone-500 hover:bg-stone-200/70 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100`}
                 >
                   <RestoreIcon />
@@ -61,8 +61,8 @@ export default async function TrashPage() {
                 <input type="hidden" name="id" value={recipe.id} />
                 <button
                   type="submit"
-                  title="Delete forever"
-                  aria-label="Delete forever"
+                  title="Vymazať natrvalo"
+                  aria-label="Vymazať natrvalo"
                   className={`${btn} text-brick-600 hover:bg-brick-50 dark:hover:bg-brick-950/40`}
                 >
                   <XIcon />

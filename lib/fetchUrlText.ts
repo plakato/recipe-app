@@ -3,7 +3,7 @@
 // cleanest signal, so we surface it first, then fall back to visible text.
 // Server-only (uses fetch against arbitrary URLs).
 
-import { safeFetch } from "@/lib/safeFetch";
+import { BlockedUrlError, safeFetch } from "@/lib/safeFetch";
 
 const MAX_CHARS = 12000;
 
@@ -207,10 +207,10 @@ export async function fetchUrlText(url: string): Promise<FetchedPage> {
   try {
     parsed = new URL(url);
   } catch {
-    throw new Error("That doesn't look like a valid URL.");
+    throw new Error("Toto nevyzerá ako platná adresa stránky.");
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("Only http(s) URLs are supported.");
+    throw new Error("Podporujeme len adresy http(s).");
   }
 
   let res: Response;
@@ -225,13 +225,13 @@ export async function fetchUrlText(url: string): Promise<FetchedPage> {
       },
     });
   } catch (err) {
-    if (err instanceof Error && /reachable|resolve|redirects|supported/.test(err.message)) {
+    if (err instanceof BlockedUrlError) {
       throw err;
     }
-    throw new Error("Could not reach that URL.");
+    throw new Error("Stránku sa nepodarilo načítať.");
   }
   if (!res.ok) {
-    throw new Error(`The page returned HTTP ${res.status}.`);
+    throw new Error(`Stránka vrátila chybu HTTP ${res.status}.`);
   }
 
   const html = await res.text();

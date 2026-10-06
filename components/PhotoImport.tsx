@@ -11,7 +11,7 @@ import type { RecipeDraft } from "@/lib/recipes";
 const LANGS = [
   { code: "Slovak", label: "Slovenčina" },
   { code: "Czech", label: "Čeština" },
-  { code: "English", label: "English" },
+  { code: "English", label: "Angličtina" },
 ];
 
 const selectClass =
@@ -69,14 +69,14 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
     return (
       <div className="space-y-4">
         <div className="rounded-lg border border-olive-200 bg-olive-50 px-4 py-3 text-sm text-olive-900 dark:border-olive-900/50 dark:bg-olive-950/30 dark:text-olive-200">
-          Read from your photo. <strong>Check everything below</strong> —
-          handwriting and photos are easy to misread — then save.
+          Prečítané z vašej fotky. <strong>Všetko nižšie skontrolujte</strong> —
+          rukopis a fotky sa ľahko prečítajú zle — a potom uložte.
         </div>
         <RecipeForm
           action={createRecipe}
           initial={draft}
           sourceType="photo"
-          submitLabel="Save recipe"
+          submitLabel="Uložiť recept"
         />
         <button
           type="button"
@@ -86,7 +86,7 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
           }}
           className="text-sm text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
         >
-          ← Try a different photo
+          ← Skúsiť inú fotku
         </button>
       </div>
     );
@@ -110,13 +110,13 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
           onClick={() => inputRef.current?.click()}
           className="flex-1 rounded-xl border-2 border-dashed border-stone-300 px-6 py-10 text-center text-stone-500 transition hover:border-olive-400 hover:text-stone-700 dark:border-stone-700 dark:hover:text-stone-300"
         >
-          {file ? "📷 Choose a different photo" : "📷 Take or choose a photo"}
+          {file ? "📷 Vybrať inú fotku" : "📷 Odfotiť alebo vybrať fotku"}
         </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400">
-          Recipe language:
+          Jazyk receptu:
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
@@ -135,14 +135,14 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={previewUrl}
-          alt="Selected recipe"
+          alt="Vybraný recept"
           className="max-h-96 w-full rounded-xl object-contain"
         />
       )}
       {isHeic && (
         <p className="text-sm text-stone-500">
-          📎 {file?.name} selected (HEIC — no preview, but it will be converted
-          and read).
+          📎 Vybraná fotka {file?.name} (HEIC — bez náhľadu, ale prevedieme ju
+          a prečítame).
         </p>
       )}
 
@@ -161,12 +161,12 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
         disabled={loading || !file || (needsBotCheck && !botToken)}
         className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
       >
-        {loading ? "Reading the photo…" : "Read recipe from photo"}
+        {loading ? "Čítam fotku…" : "Prečítať recept z fotky"}
       </button>
 
       {loading && (
         <p className="text-sm text-stone-500">
-          Sending the photo to the AI. Free models can take several seconds.
+          Posielam fotku umelej inteligencii. Môže to trvať aj niekoľko desiatok sekúnd.
         </p>
       )}
     </div>

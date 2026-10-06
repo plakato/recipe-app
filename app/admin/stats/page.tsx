@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 // Daily usage statistics, for accounts marked isAdmin (scripts/set-admin.ts).
 // Everyone else gets "not found", so the page isn't even revealed.
 const usd = (n: number) => `$${n.toFixed(n > 0 && n < 0.01 ? 4 : 2)}`;
-const int = (n: number) => n.toLocaleString("en-US");
+const int = (n: number) => n.toLocaleString("sk-SK");
 const both = (s: { accounts: number; demo: number }) =>
   s.accounts + s.demo === 0 ? "–" : s.demo ? `${s.accounts} + ${s.demo} demo` : String(s.accounts);
 
@@ -25,16 +25,16 @@ function Card({ label, value, hint }: { label: string; value: string; hint?: str
 }
 
 function ModelTable({ models }: { models: DayStats["models"] }) {
-  if (models.length === 0) return <p className="text-sm text-stone-500">No AI calls.</p>;
+  if (models.length === 0) return <p className="text-sm text-stone-500">Žiadne volania AI.</p>;
   return (
     <table className="w-full text-sm">
       <thead>
         <tr className="border-b border-stone-200 dark:border-stone-800">
           <th className={th}>Model</th>
-          <th className={`${th} text-right`}>Calls</th>
-          <th className={`${th} text-right`}>Tokens in</th>
-          <th className={`${th} text-right`}>Tokens out</th>
-          <th className={`${th} text-right`}>Cost</th>
+          <th className={`${th} text-right`}>Volania</th>
+          <th className={`${th} text-right`}>Tokeny dnu</th>
+          <th className={`${th} text-right`}>Tokeny von</th>
+          <th className={`${th} text-right`}>Cena</th>
         </tr>
       </thead>
       <tbody>
@@ -65,35 +65,35 @@ export default async function StatsPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="font-display text-3xl">Usage statistics</h1>
-        <p className="mt-1 text-sm text-stone-500">Last 30 days · days in {TIME_ZONE} time · “demo” = visitors trying it without an account</p>
+        <h1 className="font-display text-3xl">Štatistiky používania</h1>
+        <p className="mt-1 text-sm text-stone-500">Posledných 30 dní · dni podľa času {TIME_ZONE} · „demo“ = návštevníci, ktorí to skúšajú bez účtu</p>
       </div>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card label="Cost today" value={usd(today?.costUsd ?? 0)} hint={`${int(today?.calls ?? 0)} AI calls`} />
-        <Card label="Imports today" value={int((today?.imports.accounts ?? 0) + (today?.imports.demo ?? 0))} hint={`${today?.imports.demo ?? 0} from demos`} />
-        <Card label="Recipe changes today" value={int(edits(today))} hint={`${today?.demosStarted ?? 0} demos started`} />
-        <Card label="Cost, 30 days" value={usd(month.costUsd)} hint={`${int(month.promptTokens + month.completionTokens)} tokens`} />
+        <Card label="Cena dnes" value={usd(today?.costUsd ?? 0)} hint={`${int(today?.calls ?? 0)} volaní AI`} />
+        <Card label="Importy dnes" value={int((today?.imports.accounts ?? 0) + (today?.imports.demo ?? 0))} hint={`z toho ${today?.imports.demo ?? 0} z dema`} />
+        <Card label="Zmeny receptov dnes" value={int(edits(today))} hint={`spustené demá: ${today?.demosStarted ?? 0}`} />
+        <Card label="Cena za 30 dní" value={usd(month.costUsd)} hint={`${int(month.promptTokens + month.completionTokens)} tokenov`} />
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Day by day</h2>
+        <h2 className="text-lg font-semibold">Deň po dni</h2>
         {days.length === 0 ? (
-          <p className="text-sm text-stone-500">Nothing recorded yet.</p>
+          <p className="text-sm text-stone-500">Zatiaľ nič zaznamenané.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-stone-200 dark:border-stone-800">
-                  <th className={th}>Day</th>
-                  <th className={th}>Imports</th>
-                  <th className={th}>Created</th>
-                  <th className={th}>Edited</th>
-                  <th className={th}>Deleted</th>
-                  <th className={th}>Demos</th>
-                  <th className={`${th} text-right`}>AI calls</th>
-                  <th className={`${th} text-right`}>Tokens in / out</th>
-                  <th className={`${th} text-right`}>Cost</th>
+                  <th className={th}>Deň</th>
+                  <th className={th}>Importy</th>
+                  <th className={th}>Vytvorené</th>
+                  <th className={th}>Upravené</th>
+                  <th className={th}>Vymazané</th>
+                  <th className={th}>Demá</th>
+                  <th className={`${th} text-right`}>Volania AI</th>
+                  <th className={`${th} text-right`}>Tokeny dnu / von</th>
+                  <th className={`${th} text-right`}>Cena</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,7 +117,7 @@ export default async function StatsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Per model, 30 days</h2>
+        <h2 className="text-lg font-semibold">Podľa modelu, 30 dní</h2>
         <ModelTable models={month.models} />
       </section>
     </div>

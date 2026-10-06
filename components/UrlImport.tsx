@@ -42,8 +42,8 @@ function MultiReview({ drafts, onRestart }: { drafts: RecipeDraft[]; onRestart: 
   return (
     <div className="space-y-5">
       <div className={notice}>
-        This page has <strong>{drafts.length} recipes</strong>. Check each one — AI can miss or
-        misread things — then save it or skip it.
+        Na tejto stránke je <strong>{drafts.length} receptov</strong>. Každý skontrolujte — AI môže
+        niečo vynechať alebo zle prečítať — a potom ho uložte alebo preskočte.
       </div>
 
       <ol className="flex flex-wrap gap-2 text-sm">
@@ -57,7 +57,7 @@ function MultiReview({ drafts, onRestart }: { drafts: RecipeDraft[]; onRestart: 
                   href={`/recipes/${s.saved}`}
                   className={`${base} border-olive-200 bg-olive-50 text-olive-800 dark:border-olive-900 dark:bg-olive-950/40 dark:text-olive-200`}
                 >
-                  <Check className="h-4 w-4" /> {d.title || `Recipe ${i + 1}`}
+                  <Check className="h-4 w-4" /> {d.title || `Recept ${i + 1}`}
                 </Link>
               </li>
             );
@@ -74,7 +74,7 @@ function MultiReview({ drafts, onRestart }: { drafts: RecipeDraft[]; onRestart: 
                     : "border-stone-200 text-stone-600 hover:border-stone-400 dark:border-stone-700 dark:text-stone-400"
                 } ${s.skipped ? "line-through opacity-60" : ""}`}
               >
-                {d.title || `Recipe ${i + 1}`}
+                {d.title || `Recept ${i + 1}`}
               </button>
             </li>
           );
@@ -84,35 +84,35 @@ function MultiReview({ drafts, onRestart }: { drafts: RecipeDraft[]; onRestart: 
       {done ? (
         <div className="space-y-4 py-4">
           <p className="text-lg font-semibold">
-            Done — {savedCount} of {drafts.length} saved.
+            Hotovo — uložené {savedCount} z {drafts.length}.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
               href="/"
               className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white hover:bg-olive-700"
             >
-              See your recipes
+              Zobraziť vaše recepty
             </Link>
             <button
               type="button"
               onClick={onRestart}
               className="rounded-lg px-4 py-2.5 font-medium text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
             >
-              Import another link
+              Importovať ďalší odkaz
             </button>
           </div>
         </div>
       ) : (
         <>
           <p className="text-sm font-medium text-stone-500">
-            Recipe {current + 1} of {drafts.length}
+            Recept {current + 1} z {drafts.length}
           </p>
           <RecipeForm
             key={current}
             action={createRecipe}
             initial={drafts[current]}
             sourceType="url"
-            submitLabel={nextOpen(status, current) === -1 ? "Save recipe" : "Save and next"}
+            submitLabel={nextOpen(status, current) === -1 ? "Uložiť recept" : "Uložiť a ďalší"}
             onSaved={onSaved}
             secondaryAction={
               <button
@@ -120,7 +120,7 @@ function MultiReview({ drafts, onRestart }: { drafts: RecipeDraft[]; onRestart: 
                 onClick={() => settle(current, { skipped: true })}
                 className="rounded-lg px-4 py-2.5 font-medium text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
               >
-                Skip this one
+                Preskočiť
               </button>
             }
           />
@@ -162,21 +162,21 @@ export default function UrlImport() {
     return (
       <div className="space-y-4">
         <div className={notice}>
-          Imported from the link. <strong>Check everything below</strong> —
-          AI can miss or misread things — then save.
+          Importované z odkazu. <strong>Všetko nižšie skontrolujte</strong> —
+          AI môže niečo vynechať alebo zle prečítať — a potom uložte.
         </div>
         <RecipeForm
           action={createRecipe}
           initial={drafts[0]}
           sourceType="url"
-          submitLabel="Save recipe"
+          submitLabel="Uložiť recept"
         />
         <button
           type="button"
           onClick={restart}
           className="text-sm text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
         >
-          ← Try a different link
+          ← Skúsiť iný odkaz
         </button>
       </div>
     );
@@ -189,7 +189,7 @@ export default function UrlImport() {
           className="block text-sm font-medium text-stone-700 dark:text-stone-300"
           htmlFor="url"
         >
-          Recipe URL
+          Adresa stránky s receptom
         </label>
         <input
           id="url"
@@ -217,13 +217,13 @@ export default function UrlImport() {
         disabled={loading || !url.trim()}
         className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
       >
-        {loading ? "Reading the page…" : "Import recipe"}
+        {loading ? "Čítam stránku…" : "Importovať recept"}
       </button>
 
       {loading && (
         <p className="text-sm text-stone-500">
-          Fetching the page, asking the AI to find every recipe on it and
-          matching each one with its photo. This can take up to a minute.
+          Načítavam stránku, AI na nej hľadá všetky recepty a ku každému
+          priraďuje fotku. Môže to trvať aj minútu.
         </p>
       )}
     </div>

@@ -4,6 +4,9 @@ Running list of things we've decided to do later, so they don't get lost.
 
 ## Roadmap to a public app (agreed 2026-09-30)
 
+The app's interface is in Slovak (2026-10-06); the prompts to the AI models
+stay in English. Scripts' console output is English.
+
 Focus: photo import that works flawlessly, safely open to everyone. Adding by
 link is paused (`URL_IMPORT_ENABLED` in `lib/features.ts`); the 132 link
 recipes are hidden, not deleted. In order:

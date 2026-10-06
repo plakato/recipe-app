@@ -9,6 +9,10 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
+// Errors about the address itself (not allowed, unreachable, too many
+// redirects). Their messages are safe to show to the person who entered it.
+export class BlockedUrlError extends Error {}
+
 const MAX_REDIRECTS = 5;
 
 function ipv4ToInt(ip: string): number {
@@ -58,20 +62,20 @@ export function isPrivateAddress(ip: string): boolean {
 // Throws if the URL's host resolves (in whole or part) to a private address.
 export async function assertPublicUrl(url: URL): Promise<void> {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new Error("Only http(s) URLs are supported.");
+    throw new BlockedUrlError("Podporujeme len adresy http(s).");
   }
   const host = url.hostname.replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) {
-    throw new Error("That address isn't reachable from here.");
+    throw new BlockedUrlError("Táto adresa nie je odtiaľto dostupná.");
   }
   const addresses = isIP(host)
     ? [{ address: host }]
     : await lookup(host, { all: true }).catch(() => []);
   if (addresses.length === 0) {
-    throw new Error("Could not resolve that address.");
+    throw new BlockedUrlError("Túto adresu sa nepodarilo nájsť.");
   }
   if (addresses.some((a) => isPrivateAddress(a.address))) {
-    throw new Error("That address isn't reachable from here.");
+    throw new BlockedUrlError("Táto adresa nie je odtiaľto dostupná.");
   }
 }
 
@@ -88,5 +92,5 @@ export async function safeFetch(input: string | URL, init: RequestInit = {}): Pr
     }
     return res;
   }
-  throw new Error("Too many redirects.");
+  throw new BlockedUrlError("Príliš veľa presmerovaní.");
 }

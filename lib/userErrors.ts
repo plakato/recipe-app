@@ -12,21 +12,17 @@ export type ErrorCode =
   | "unknown";
 
 export const USER_MESSAGES: Record<ErrorCode, string> = {
-  busy:
-    "Our recipe reader is very busy right now. Please try again in a few minutes — sorry about the wait!",
-  "no-recipe":
-    "We couldn't find a recipe here. Try a sharp, well-lit photo that shows the whole recipe.",
+  busy: "Čítačka receptov je práve veľmi vyťažená. Skúste to prosím o pár minút — ospravedlňujeme sa za čakanie!",
+  "no-recipe": "Nenašli sme tu recept. Skúste ostrú, dobre osvetlenú fotku, na ktorej je celý recept.",
   "limit-account":
-    "You've reached today's limit for adding recipes with AI. It resets within 24 hours — thanks for your patience!",
+    "Dosiahli ste dnešný limit pridávania receptov pomocou AI. Obnoví sa do 24 hodín — ďakujeme za trpezlivosť!",
   "limit-visitor":
-    "That's the limit for trying it without an account. Sign up for free to add more recipes.",
-  "limit-ip":
-    "Lots of recipes have been added from your network today. Please try again tomorrow — sorry!",
-  "limit-everyone":
-    "The recipe reader has reached its limit for today. Please try again tomorrow — sorry!",
+    "To je limit na vyskúšanie bez účtu. Zaregistrujte sa zadarmo a môžete pridať ďalšie recepty.",
+  "limit-ip": "Z vašej siete dnes pribudlo veľa receptov. Skúste to prosím zajtra — prepáčte!",
+  "limit-everyone": "Čítačka receptov dnes dosiahla svoj limit. Skúste to prosím zajtra — prepáčte!",
   "limit-demo":
-    "The demo is very popular today, so we can't start a new one right now. Please try again tomorrow — or sign up to start your own cookbook.",
-  unknown: "Something went wrong while reading the recipe. Please try again — sorry about that!",
+    "Ukážka je dnes veľmi obľúbená, takže teraz nemôžeme spustiť ďalšiu. Skúste to prosím zajtra — alebo sa zaregistrujte a založte si vlastnú kuchárku.",
+  unknown: "Pri čítaní receptu sa niečo pokazilo. Skúste to prosím znova — prepáčte!",
 };
 
 // An error whose message is safe to show to the user.

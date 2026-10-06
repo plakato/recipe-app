@@ -34,7 +34,7 @@ export default async function RecipeDetailPage({
   const instructions = groupSections(parseList(recipe.instructions));
   const isPhoto = recipe.sourceType === "photo" && !!recipe.imagePath;
   const sourceHref = recipe.sourceUrl ?? (isPhoto ? recipe.imagePath : null);
-  const sourceLabel = recipe.sourceUrl ? "Open the original page" : "Open the original photo";
+  const sourceLabel = recipe.sourceUrl ? "Otvoriť pôvodnú stránku" : "Otvoriť pôvodnú fotku";
 
   return (
     <article className="mx-auto max-w-4xl space-y-8">
@@ -52,7 +52,7 @@ export default async function RecipeDetailPage({
             {recipe.title}
           </h1>
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 sm:p-4">
-            <Link href="/" title="All recipes" aria-label="All recipes" className={heroBtn}>
+            <Link href="/" title="Všetky recepty" aria-label="Všetky recepty" className={heroBtn}>
               <BackIcon />
             </Link>
             <div className="flex items-center gap-2">
@@ -81,7 +81,7 @@ export default async function RecipeDetailPage({
 
       <section className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="h-fit rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5 dark:bg-stone-900 dark:ring-white/10">
-          <h2 className="font-display mb-4 text-2xl">Ingredients</h2>
+          <h2 className="font-display mb-4 text-2xl">Suroviny</h2>
           {ingredients.length ? (
             <div className="space-y-5">
               {ingredients.map((section, si) => (
@@ -103,12 +103,12 @@ export default async function RecipeDetailPage({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-stone-500">None listed.</p>
+            <p className="text-sm text-stone-500">Neuvedené.</p>
           )}
         </div>
 
         <div className="px-1">
-          <h2 className="font-display mb-4 text-2xl">Steps</h2>
+          <h2 className="font-display mb-4 text-2xl">Postup</h2>
           {instructions.length ? (
             <div className="space-y-7">
               {instructions.map((section, si) => (
@@ -132,7 +132,7 @@ export default async function RecipeDetailPage({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-stone-500">None listed.</p>
+            <p className="text-sm text-stone-500">Neuvedené.</p>
           )}
         </div>
       </section>

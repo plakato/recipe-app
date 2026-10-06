@@ -42,7 +42,7 @@ export default function RecipeImage({ src, alt, className = "", imgClassName = "
   return (
     <div
       className={`flex items-center justify-center bg-gradient-to-br ${bg} ${className}`}
-      aria-label="No image yet"
+      aria-label="Zatiaľ bez fotky"
       role="img"
     >
       <span className="text-5xl opacity-80 drop-shadow-sm">{emoji}</span>

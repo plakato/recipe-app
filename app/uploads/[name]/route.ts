@@ -27,14 +27,14 @@ export async function GET(
 ) {
   const { name } = await params;
   if (!(await getSessionUser()) && !(await isShowcasePhoto(name))) {
-    return new NextResponse("Sign in required.", { status: 401 });
+    return new NextResponse("Najprv sa prihláste.", { status: 401 });
   }
   // Only plain "<uuid>.<ext>" names: no path separators, no traversal.
   if (!/^[a-zA-Z0-9-]+\.[a-z0-9]+$/.test(name)) {
-    return new NextResponse("Not found.", { status: 404 });
+    return new NextResponse("Nenašlo sa.", { status: 404 });
   }
   const type = TYPES[path.extname(name).slice(1).toLowerCase()];
-  if (!type) return new NextResponse("Not found.", { status: 404 });
+  if (!type) return new NextResponse("Nenašlo sa.", { status: 404 });
   try {
     const buf = await readFile(path.join(UPLOAD_DIR, name));
     return new NextResponse(new Uint8Array(buf), {
@@ -45,7 +45,7 @@ export async function GET(
       },
     });
   } catch {
-    return new NextResponse("Not found.", { status: 404 });
+    return new NextResponse("Nenašlo sa.", { status: 404 });
   }
 }
 

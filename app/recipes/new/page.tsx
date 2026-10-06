@@ -10,16 +10,16 @@ const options = [
   {
     href: "/recipes/import/photo",
     Icon: CameraIcon,
-    title: ["From a", "photo"],
-    hint: "Cookbook page, handwritten card or screenshot",
+    title: ["Z", "fotky"],
+    hint: "Stránka z kuchárky, ručne písaný recept alebo snímka obrazovky",
     block: "bg-olive-100 hover:bg-olive-200 text-olive-950 dark:bg-olive-900/50 dark:hover:bg-olive-900/70 dark:text-olive-100",
     icon: "text-olive-200 dark:text-olive-800",
   },
   {
     href: "/recipes/import/url",
     Icon: LinkIcon,
-    title: ["From a", "link"],
-    hint: "Paste the address of any recipe page",
+    title: ["Z", "odkazu"],
+    hint: "Vložte adresu ľubovoľnej stránky s receptom",
     block: "bg-stone-200/70 hover:bg-stone-200 text-stone-900 dark:bg-stone-800/70 dark:hover:bg-stone-800 dark:text-stone-100",
     icon: "text-stone-300 dark:text-stone-700",
   },
@@ -30,7 +30,7 @@ export default function NewRecipePage() {
   if (!URL_IMPORT_ENABLED) redirect("/recipes/import/photo");
   return (
     <div className="mx-auto max-w-3xl py-2 sm:py-10">
-      <h1 className="font-display mb-6 text-3xl sm:mb-8 sm:text-5xl">Add a recipe</h1>
+      <h1 className="font-display mb-6 text-3xl sm:mb-8 sm:text-5xl">Pridať recept</h1>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {options.map(({ href, Icon, title, hint, block, icon }) => (
           <Link

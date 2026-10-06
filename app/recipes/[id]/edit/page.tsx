@@ -27,13 +27,13 @@ export default async function EditRecipePage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="font-display text-3xl">Edit recipe</h1>
+      <h1 className="font-display text-3xl">Upraviť recept</h1>
       <RecipeForm
         action={updateRecipe}
         initial={recipeToDraft(recipe)}
         recipeId={recipe.id}
         sourceType={recipe.sourceType}
-        submitLabel="Save changes"
+        submitLabel="Uložiť zmeny"
         botCheckKey={viewer.signedIn ? null : turnstileSiteKey()}
       />
     </div>

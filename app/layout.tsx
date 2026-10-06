@@ -21,8 +21,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Family Recipes",
-  description: "Our family recipe collection",
+  title: "Recepty",
+  description: "Naša rodinná zbierka receptov",
   // Not in search engines for now (roadmap step 2; reconsider later).
   robots: { index: false, follow: false },
 };
@@ -40,7 +40,7 @@ export default async function RootLayout({
   after(runHousekeeping);
   return (
     <html
-      lang="en"
+      lang="sk"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) add
@@ -51,15 +51,15 @@ export default async function RootLayout({
       >
         <header className="sticky top-0 z-20 border-b border-black/5 bg-[var(--background)]/85 backdrop-blur dark:border-stone-800/60">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-            <Link href="/" title="All recipes" aria-label="All recipes" className="text-stone-900 transition hover:text-olive-600 dark:text-stone-100">
+            <Link href="/" title="Všetky recepty" aria-label="Všetky recepty" className="text-stone-900 transition hover:text-olive-600 dark:text-stone-100">
               <CookingPot className="h-7 w-7" strokeWidth={2} />
             </Link>
             {user ? (
               <div className="flex items-center gap-2">
                 <Link
                   href="/recipes/new"
-                  title="Add a recipe"
-                  aria-label="Add a recipe"
+                  title="Pridať recept"
+                  aria-label="Pridať recept"
                   className="flex h-9 w-9 items-center justify-center rounded-lg bg-olive-600 text-white transition hover:bg-olive-700"
                 >
                   <PlusIcon />
@@ -72,8 +72,8 @@ export default async function RootLayout({
                 {showcase && (
                   <Link
                     href="/recipes/new"
-                    title="Add a recipe"
-                    aria-label="Add a recipe"
+                    title="Pridať recept"
+                    aria-label="Pridať recept"
                     className="flex h-9 w-9 items-center justify-center rounded-lg bg-olive-600 text-white transition hover:bg-olive-700"
                   >
                     <PlusIcon />
@@ -83,7 +83,7 @@ export default async function RootLayout({
                   href="/login"
                   className="rounded-lg bg-stone-100 px-3.5 py-2 text-sm font-medium text-stone-900 transition hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
                 >
-                  Sign in
+                  Prihlásiť sa
                 </Link>
               </div>
             )}
@@ -95,14 +95,14 @@ export default async function RootLayout({
             role="note"
             className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-stone-900/95 px-4 py-2.5 text-center text-sm text-stone-100 backdrop-blur"
           >
-            Unless you sign in, you&rsquo;re in <strong>demo mode</strong> — the changes you make
-            won&rsquo;t be saved.{" "}
+            Kým sa neprihlásite, ste v <strong>režime demo</strong> — zmeny, ktoré urobíte, sa
+            neuložia natrvalo.{" "}
             <Link href="/login" className="font-semibold text-olive-300 underline-offset-2 hover:underline">
-              Sign in
+              Prihlásiť sa
             </Link>
             {" · "}
             <Link href="/signup" className="font-semibold text-olive-300 underline-offset-2 hover:underline">
-              Sign up
+              Zaregistrovať sa
             </Link>
           </div>
         )}

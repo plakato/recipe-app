@@ -23,12 +23,12 @@ export default async function Home() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
         <CookingPot className="h-14 w-14 text-stone-300" strokeWidth={1.5} />
-        <p className="font-display text-3xl">Nothing cooking yet.</p>
+        <p className="font-display text-3xl">Zatiaľ tu nič nevarí.</p>
         <Link
           href="/recipes/new"
           className="flex items-center gap-2 rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white hover:bg-olive-700"
         >
-          <PlusIcon /> Add your first recipe
+          <PlusIcon /> Pridajte svoj prvý recept
         </Link>
       </div>
     );

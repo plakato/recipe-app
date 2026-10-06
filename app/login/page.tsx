@@ -6,9 +6,9 @@ import AuthCard, { fieldClass, labelClass } from "@/components/AuthCard";
 export const dynamic = "force-dynamic";
 
 const ERRORS: Record<string, string> = {
-  missing: "Please enter your email and password.",
-  invalid: "Wrong email or password.",
-  locked: "Too many attempts. Please wait a minute and try again.",
+  missing: "Zadajte prosím e-mail a heslo.",
+  invalid: "Nesprávny e-mail alebo heslo.",
+  locked: "Príliš veľa pokusov. Počkajte prosím minútu a skúste to znova.",
 };
 
 export default async function LoginPage({
@@ -22,28 +22,28 @@ export default async function LoginPage({
   if (current && !current.isGuest) redirect("/");
   const { error, next } = await searchParams;
   return (
-    <AuthCard title="Sign in" error={error ? ERRORS[error] ?? "Sign-in failed." : null}>
+    <AuthCard title="Prihlásenie" error={error ? ERRORS[error] ?? "Prihlásenie sa nepodarilo." : null}>
       <form method="post" action="/api/auth/login" className="space-y-4">
         {next && <input type="hidden" name="next" value={next} />}
         <div>
-          <label htmlFor="email" className={labelClass}>Email</label>
+          <label htmlFor="email" className={labelClass}>E-mail</label>
           <input id="email" name="email" type="email" required autoComplete="email" autoFocus className={fieldClass} />
         </div>
         <div>
-          <label htmlFor="password" className={labelClass}>Password</label>
+          <label htmlFor="password" className={labelClass}>Heslo</label>
           <input id="password" name="password" type="password" required autoComplete="current-password" className={fieldClass} />
         </div>
         <button
           type="submit"
           className="w-full rounded-lg bg-olive-600 px-4 py-2.5 font-medium text-white hover:bg-olive-700"
         >
-          Sign in
+          Prihlásiť sa
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-stone-500">
-        Got an invite?{" "}
+        Máte pozvánku?{" "}
         <Link href="/signup" className="text-olive-700 hover:underline dark:text-olive-400">
-          Create an account
+          Vytvorte si účet
         </Link>
       </p>
     </AuthCard>

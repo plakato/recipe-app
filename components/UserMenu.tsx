@@ -44,7 +44,7 @@ export default function UserMenu({
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Account menu"
+        aria-label="Menu účtu"
         title={guest ? "Demo" : email}
         className={`flex h-9 items-center justify-center rounded-lg bg-stone-100 text-sm font-semibold text-stone-900 transition hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700 ${
           guest ? "px-3" : "w-9"
@@ -58,24 +58,24 @@ export default function UserMenu({
           className="absolute right-0 mt-2 w-60 origin-top-right rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-black/5 dark:bg-stone-900 dark:ring-white/10"
         >
           <p className="px-3 pb-2 pt-1 text-xs text-stone-500 dark:text-stone-400">
-            {guest ? "Your demo copy — kept for a day unless you sign up." : <span className="block truncate">{email}</span>}
+            {guest ? "Vaša demo kópia — uchováme ju deň, ak sa nezaregistrujete." : <span className="block truncate">{email}</span>}
           </p>
           {guest && (
             <Link href="/signup" role="menuitem" className={item} onClick={() => setOpen(false)}>
-              <UserPlus className="h-4 w-4" /> Sign up to keep it
+              <UserPlus className="h-4 w-4" /> Zaregistrovať sa a ponechať si ju
             </Link>
           )}
           {admin && (
             <Link href="/admin/stats" role="menuitem" className={item} onClick={() => setOpen(false)}>
-              <ChartColumn className="h-4 w-4" /> Statistics
+              <ChartColumn className="h-4 w-4" /> Štatistiky
             </Link>
           )}
           <Link href="/trash" role="menuitem" className={item} onClick={() => setOpen(false)}>
-            <TrashIcon className="h-4 w-4" /> Trash
+            <TrashIcon className="h-4 w-4" /> Kôš
           </Link>
           <form method="post" action="/api/auth/logout">
             <button type="submit" role="menuitem" className={item}>
-              <LogoutIcon className="h-4 w-4" /> {guest ? "Leave the demo" : "Sign out"}
+              <LogoutIcon className="h-4 w-4" /> {guest ? "Ukončiť demo" : "Odhlásiť sa"}
             </button>
           </form>
         </div>
