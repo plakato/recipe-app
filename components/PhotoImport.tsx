@@ -6,17 +6,6 @@ import Turnstile from "@/components/Turnstile";
 import { createRecipe, importRecipeFromPhoto } from "@/app/actions";
 import type { RecipeDraft } from "@/lib/recipes";
 
-// Language of the recipe text — sent to the model to improve reading accuracy,
-// which matters most for handwriting.
-const LANGS = [
-  { code: "Slovak", label: "Slovenčina" },
-  { code: "Czech", label: "Čeština" },
-  { code: "English", label: "Angličtina" },
-];
-
-const selectClass =
-  "rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-olive-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100";
-
 // botCheckKey: set for visitors (demo). The invisible bot check runs while
 // they pick a photo; reading starts only once it has passed, and their demo
 // begins with that first reading (app/actions.ts → importRecipeFromPhoto).
@@ -27,7 +16,6 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
   const [needsBotCheck, setNeedsBotCheck] = useState(!!botCheckKey);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [language, setLanguage] = useState("Slovak");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<RecipeDraft | null>(null);
@@ -49,7 +37,6 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
     setError(null);
     const formData = new FormData();
     formData.append("photo", file);
-    formData.append("language", language);
     if (needsBotCheck && botToken) formData.append("cf-turnstile-response", botToken);
     const result = await importRecipeFromPhoto(formData);
     setLoading(false);
@@ -112,23 +99,6 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
         >
           {file ? "📷 Vybrať inú fotku" : "📷 Odfotiť alebo vybrať fotku"}
         </button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400">
-          Jazyk receptu:
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className={selectClass}
-          >
-            {LANGS.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
 
       {previewUrl && !isHeic && (

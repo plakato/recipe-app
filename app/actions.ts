@@ -141,7 +141,6 @@ export async function importRecipeFromPhoto(
   // AI calls below are recorded for this person (statistics).
   enterUsage({ userId: slot.userId, isGuest: slot.isGuest });
   after(runHousekeeping);
-  const language = String(formData.get("language") ?? "").trim() || undefined;
   try {
     const saved = await saveUploadedImage(file);
     if (!saved) {
@@ -151,8 +150,9 @@ export async function importRecipeFromPhoto(
         error: "Tento typ obrázka nepodporujeme alebo je príliš veľký (najviac 8 MB).",
       };
     }
-    // Free models first; the paid one only as a budget-capped fallback.
-    const draft = await extractRecipeFromImage(saved.dataUrl, language);
+    // Free models first; the paid one only as a budget-capped fallback. The
+    // model works out the recipe's language itself.
+    const draft = await extractRecipeFromImage(saved.dataUrl);
     return {
       ok: true,
       draft: { ...draft, imagePath: saved.imagePath },
