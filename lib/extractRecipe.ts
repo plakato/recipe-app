@@ -6,7 +6,8 @@
 // imported into a client component.
 
 import type { RecipeDraft } from "@/lib/recipes";
-import { paidBudgetLeft, recordPaidCall } from "@/lib/aiBudget";
+import { paidBudgetLeft, recordModelCall } from "@/lib/aiBudget";
+import { withUsage } from "@/lib/usageContext";
 import { AppError } from "@/lib/userErrors";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -153,11 +154,17 @@ async function callModel(model: string, messages: ChatMessage[]): Promise<string
     if (res.ok) {
       const data = (await res.json()) as {
         choices?: { message?: { content?: string } }[];
-        usage?: { cost?: number };
+        usage?: { cost?: number; prompt_tokens?: number; completion_tokens?: number };
       };
-      // Free models cost nothing; paid calls count against the budget.
-      // OpenRouter reports the cost in credits (1 credit = $1).
-      if (!model.endsWith(":free")) await recordPaidCall(model, data.usage?.cost ?? 0.01);
+      // Every call is recorded (statistics; paid ones also count against the
+      // budget). Free models cost nothing; if a paid call's cost is missing,
+      // assume a cent rather than nothing.
+      await recordModelCall({
+        model,
+        costUsd: data.usage?.cost ?? (model.endsWith(":free") ? 0 : 0.01),
+        promptTokens: data.usage?.prompt_tokens ?? 0,
+        completionTokens: data.usage?.completion_tokens ?? 0,
+      });
       const content = data.choices?.[0]?.message?.content;
       if (content) return content;
       // Free models sometimes return an empty completion — retry before failing.
@@ -200,8 +207,16 @@ async function runExtraction(
 }
 
 // Shared model loop: try each model in turn, parse its answer with `parse`,
-// and return the first non-empty result.
-async function runModels(
+// and return the first non-empty result. Calls are recorded as "read-recipe".
+function runModels(
+  messages: ChatMessage[],
+  parse: (parsed: unknown) => RecipeDraft[],
+  modelOverride?: string,
+): Promise<RecipeDraft[]> {
+  return withUsage({ purpose: "read-recipe" }, () => tryModels(messages, parse, modelOverride));
+}
+
+async function tryModels(
   messages: ChatMessage[],
   parse: (parsed: unknown) => RecipeDraft[],
   modelOverride?: string,
@@ -370,10 +385,14 @@ export function parseImageChoices(
 // shows each recipe. One request for the whole page, however many recipes it
 // has. Returns an index per recipe (-1 = none shows it), or null if no model
 // gave a usable answer.
-export async function chooseRecipeImages(
+export function chooseRecipeImages(
   dishes: string[],
   imageDataUrls: string[],
 ): Promise<number[] | null> {
+  return withUsage({ purpose: "choose-photos" }, () => askForImages(dishes, imageDataUrls));
+}
+
+async function askForImages(dishes: string[], imageDataUrls: string[]): Promise<number[] | null> {
   if (imageDataUrls.length === 0) return dishes.map(() => -1);
   const list = dishes.map((d, i) => `${i + 1}. ${d}`).join("\n");
   const content: ContentPart[] = [

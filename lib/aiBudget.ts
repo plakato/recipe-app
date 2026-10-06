@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import type { ErrorCode } from "@/lib/userErrors";
+import { currentUsage } from "@/lib/usageContext";
 
 const num = (value: string | undefined, fallback: number) => {
   const n = Number(value);
@@ -60,7 +61,9 @@ export async function startImport({
   ]);
   const limit = importLimitHit({ account, ip: ipCount, everyone }, anonymous);
   if (limit) return { limit };
-  const row = await prisma.aiUsage.create({ data: { kind: "import", userId, ip } });
+  const row = await prisma.aiUsage.create({
+    data: { kind: "import", userId, ip, isGuest: anonymous },
+  });
   return { id: row.id };
 }
 
@@ -76,15 +79,36 @@ export async function paidBudgetLeft(): Promise<boolean> {
   const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const spent = (since: Date) =>
     prisma.aiUsage
-      .aggregate({ where: { kind: "paid", createdAt: { gte: since } }, _sum: { costUsd: true } })
+      .aggregate({
+        // Every model call records its cost (free ones 0); "paid" rows are
+        // from before every call was recorded.
+        where: { kind: { in: ["call", "paid"] }, createdAt: { gte: since } },
+        _sum: { costUsd: true },
+      })
       .then((r) => r._sum.costUsd ?? 0);
   const [month, day] = await Promise.all([spent(monthStart), spent(dayStart)]);
   return month < LIMITS.paidUsdPerMonth && day < LIMITS.paidUsdPerDay;
 }
 
-// Record what a paid-model call cost (OpenRouter reports it; 1 credit = $1).
-export async function recordPaidCall(model: string, costUsd: number): Promise<void> {
+// Record one AI model call: tokens and cost (OpenRouter reports the cost in
+// credits, 1 credit = $1; free models cost 0), plus who it was for and why
+// (lib/usageContext.ts). Feeds the paid budget and the daily statistics.
+export async function recordModelCall(call: {
+  model: string;
+  costUsd: number;
+  promptTokens: number;
+  completionTokens: number;
+}): Promise<void> {
+  const ctx = currentUsage();
   await prisma.aiUsage
-    .create({ data: { kind: "paid", model, costUsd } })
-    .catch((err) => console.warn("Could not record paid AI call:", err));
+    .create({
+      data: {
+        kind: "call",
+        ...call,
+        purpose: ctx.purpose,
+        userId: ctx.userId,
+        isGuest: ctx.isGuest ?? false,
+      },
+    })
+    .catch((err) => console.warn("Could not record AI call:", err));
 }

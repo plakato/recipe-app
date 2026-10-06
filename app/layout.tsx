@@ -62,7 +62,7 @@ export default async function RootLayout({
                 >
                   <PlusIcon />
                 </Link>
-                <UserMenu email={user.email} guest={user.isGuest} />
+                <UserMenu email={user.email} guest={user.isGuest} admin={user.isAdmin} />
               </div>
             ) : (
               <div className="flex items-center gap-2">

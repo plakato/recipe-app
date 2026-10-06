@@ -5,13 +5,21 @@
 // (a temporary guest account) it offers signing up to keep the copy instead.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { ChartColumn, UserPlus } from "lucide-react";
 import { LogoutIcon, TrashIcon } from "@/components/Icons";
 
 const item =
   "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-stone-700 transition hover:bg-olive-50 hover:text-olive-800 dark:text-stone-200 dark:hover:bg-stone-800 dark:hover:text-olive-300";
 
-export default function UserMenu({ email, guest = false }: { email: string; guest?: boolean }) {
+export default function UserMenu({
+  email,
+  guest = false,
+  admin = false,
+}: {
+  email: string;
+  guest?: boolean;
+  admin?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -55,6 +63,11 @@ export default function UserMenu({ email, guest = false }: { email: string; gues
           {guest && (
             <Link href="/signup" role="menuitem" className={item} onClick={() => setOpen(false)}>
               <UserPlus className="h-4 w-4" /> Sign up to keep it
+            </Link>
+          )}
+          {admin && (
+            <Link href="/admin/stats" role="menuitem" className={item} onClick={() => setOpen(false)}>
+              <ChartColumn className="h-4 w-4" /> Statistics
             </Link>
           )}
           <Link href="/trash" role="menuitem" className={item} onClick={() => setOpen(false)}>

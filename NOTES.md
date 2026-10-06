@@ -60,7 +60,13 @@ recipes are hidden, not deleted. In order:
 6. **Dish pictures, automatically.** Crop the dish photo from the page when
    there is one, otherwise generate one (once, stored, within the budget).
    The scan stays attached as the source photo.
-7. **Daily usage statistics.** A daily summary of AI use: tokens and cost per
+7. ~~**Daily usage statistics.**~~ — DONE 2026-10-06: every AI call is
+   recorded with model, tokens, cost, purpose and account/demo
+   (`AiUsage` kind "call", via `lib/usageContext.ts`); recipe changes in
+   `Activity`. Page `/admin/stats` (accounts marked with
+   `scripts/set-admin.ts <email>`), report `scripts/usage-report.ts [days]`.
+   Not yet: failed (busy) model attempts aren't counted; a daily email.
+   Was: **Daily usage statistics.** A daily summary of AI use: tokens and cost per
    model (free and paid), how many imports and edits, from accounts vs.
    demo visitors. Today `AiUsage` records imports and paid-call costs only;
    this needs token counts for every model call (OpenRouter's `usage`) and

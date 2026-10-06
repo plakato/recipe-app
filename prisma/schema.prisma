@@ -24,6 +24,8 @@ model User {
   // The account whose recipes visitors browse and the demo copies (at most
   // one; set with scripts/set-showcase.ts). No personal data in config.
   isShowcase     Boolean   @default(false)
+  // May open the statistics page (/admin/stats); set with scripts/set-admin.ts.
+  isAdmin        Boolean   @default(false)
   guestExpiresAt DateTime?
   recipes   Recipe[]
   sessions  Session[]
@@ -63,19 +65,37 @@ model Recipe {
   @@index([deletedAt])
 }
 
-// AI usage, for the limits in lib/aiBudget.ts. One "import" row per import a
-// person starts (daily quotas), one "paid" row per paid-model call with its
-// cost in USD (monthly/daily budget).
+// AI usage, for the limits in lib/aiBudget.ts and the statistics in
+// lib/stats.ts. Kinds: "import" — one per import a person starts (daily
+// quotas); "call" — one per AI model request, with tokens and cost in USD
+// (free models cost 0; the paid budget sums these); "guest" — a demo started;
+// "paid" — older paid-call rows (before "call" existed).
 model AiUsage {
-  id        String   @id @default(cuid())
-  kind      String // "import" | "paid"
-  userId    String?
-  ip        String?
-  model     String?
-  costUsd   Float    @default(0)
-  createdAt DateTime @default(now())
+  id               String   @id @default(cuid())
+  kind             String
+  userId           String?
+  isGuest          Boolean  @default(false) // made from a demo
+  ip               String?
+  model            String?
+  purpose          String? // "call": "read-recipe" | "choose-photos"
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  costUsd          Float    @default(0)
+  createdAt        DateTime @default(now())
 
   @@index([kind, createdAt])
   @@index([userId, createdAt])
   @@index([ip, createdAt])
+}
+
+// Recipe activity for the daily statistics: "created" | "edited" |
+// "deleted" (to Trash) | "restored" | "erased" (deleted for good).
+model Activity {
+  id        String   @id @default(cuid())
+  kind      String
+  userId    String
+  isGuest   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
