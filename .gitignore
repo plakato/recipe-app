@@ -56,3 +56,4 @@ next-env.d.ts
 /recipe_photos
 /shadow*.db
 /screenshots
+/test_photos
