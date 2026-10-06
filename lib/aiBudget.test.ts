@@ -33,3 +33,15 @@ describe("importLimitHit", () => {
     expect(importLimitHit(counts(0, 0, 200), false, limits)).toBe("limit-everyone");
   });
 });
+
+describe("signupLimitHit", async () => {
+  const { signupLimitHit } = await import("./signupLimits");
+  const limits = { perIp: 5, everyone: 100 };
+  it("allows a few accounts per network per day", () => {
+    expect(signupLimitHit({ ip: 4, everyone: 10 }, limits)).toBe(false);
+    expect(signupLimitHit({ ip: 5, everyone: 10 }, limits)).toBe(true);
+  });
+  it("caps everyone together", () => {
+    expect(signupLimitHit({ ip: 0, everyone: 100 }, limits)).toBe(true);
+  });
+});

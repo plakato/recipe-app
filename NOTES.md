@@ -55,7 +55,12 @@ recipes are hidden, not deleted. In order:
    above. The first save/edit/delete warns "your changes are kept only for
    this visit — sign up to keep them" and creates a temporary private copy
    (deleted ~a day after last use). Signing up turns it into a real account.
-4. **Open sign-up for everyone.** — Turnstile DONE 2026-10-06
+4. ~~**Open sign-up for everyone.**~~ — DONE 2026-10-06: no invite code;
+   hidden bot-trap field; 5 sign-ups per IP / 100 per day
+   (`lib/signupLimits.ts`); new accounts get a copy of the showcase recipes
+   (demo visitors who sign up keep their demo copy). Still later: a
+   password-reset email (today only `scripts/set-password.ts`).
+   Turnstile DONE 2026-10-06
    (`lib/turnstile.ts`, `components/Turnstile.tsx`) on sign-up and demo
    start; the first photo import needs none (only accounts/demos import, and
    both passed it). Live site key `0x4AAAAAAFPFuzUJRKzzW--3` (public); the

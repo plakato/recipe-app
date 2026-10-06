@@ -41,9 +41,9 @@ export default async function LoginPage({
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-stone-500">
-        Máte pozvánku?{" "}
+        Nemáte účet?{" "}
         <Link href="/signup" className="text-olive-700 hover:underline dark:text-olive-400">
-          Vytvorte si účet
+          Zaregistrujte sa
         </Link>
       </p>
     </AuthCard>

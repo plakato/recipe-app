@@ -9,8 +9,7 @@ import { turnstileSiteKey } from "@/lib/turnstile";
 export const dynamic = "force-dynamic";
 
 const ERRORS: Record<string, string> = {
-  closed: "Registrácia teraz nie je otvorená.",
-  invite: "Kód pozvánky nie je správny.",
+  limit: "Z vašej siete dnes vzniklo veľa nových účtov. Skúste to prosím zajtra — prepáčte!",
   email: "Zadajte prosím platnú e-mailovú adresu.",
   short: `Heslo musí mať aspoň ${MIN_PASSWORD_LENGTH} znakov.`,
   mismatch: "Heslá sa nezhodujú.",
@@ -31,10 +30,14 @@ export default async function SignupPage({
   const siteKey = turnstileSiteKey();
   return (
     <AuthCard title="Vytvorte si účet" error={error ? ERRORS[error] ?? "Registrácia sa nepodarila." : null}>
+      <p className="mb-4 text-sm text-stone-600 dark:text-stone-400">
+        Začnete s kópiou našich rodinných receptov — môžete ich upravovať aj mazať.
+      </p>
       <form method="post" action="/api/auth/signup" className="space-y-4">
-        <div>
-          <label htmlFor="invite" className={labelClass}>Kód pozvánky</label>
-          <input id="invite" name="invite" type="text" required autoComplete="off" className={fieldClass} />
+        {/* Bot trap: hidden from people (and screen readers); bots fill it in. */}
+        <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+          <label htmlFor="website">Web</label>
+          <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
         </div>
         <div>
           <label htmlFor="name" className={labelClass}>Meno</label>

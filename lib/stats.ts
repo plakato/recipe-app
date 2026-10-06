@@ -18,6 +18,7 @@ export type DayStats = {
   day: string; // YYYY-MM-DD in the stats time zone
   imports: Split;
   demosStarted: number;
+  signups: number;
   activity: Record<ActivityKind, Split>;
   models: ModelStats[]; // most expensive first, then most used
   calls: number;
@@ -49,6 +50,7 @@ const emptyDay = (day: string): DayStats => ({
   day,
   imports: split(),
   demosStarted: 0,
+  signups: 0,
   activity: Object.fromEntries(ACTIVITY_KINDS.map((k) => [k, split()])) as Record<ActivityKind, Split>,
   models: [],
   calls: 0,
@@ -74,6 +76,7 @@ export function summarize(usage: UsageRow[], activity: ActivityRow[], timeZone =
     const d = day(row.createdAt);
     if (row.kind === "import") d.imports[row.isGuest ? "demo" : "accounts"]++;
     else if (row.kind === "guest") d.demosStarted++;
+    else if (row.kind === "signup") d.signups++;
     else if (row.kind === "call" || row.kind === "paid") {
       const name = row.model ?? "unknown";
       const perModel = models.get(d.day)!;
@@ -107,6 +110,7 @@ export function total(days: DayStats[]): DayStats {
     sum.imports.accounts += d.imports.accounts;
     sum.imports.demo += d.imports.demo;
     sum.demosStarted += d.demosStarted;
+    sum.signups += d.signups;
     for (const k of ACTIVITY_KINDS) {
       sum.activity[k].accounts += d.activity[k].accounts;
       sum.activity[k].demo += d.activity[k].demo;

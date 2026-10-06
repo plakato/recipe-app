@@ -31,7 +31,6 @@ OPENROUTER_API_KEY="sk-or-v1-..."                         # your OpenRouter key
 OPENROUTER_MODEL="google/gemma-4-31b-it:free"             # free, vision-capable
 OPENROUTER_MODEL_FALLBACK="google/gemma-4-26b-a4b-it:free"  # used if primary is busy
 OPENROUTER_MODEL_HQ="google/gemini-2.5-flash"            # paid fallback when free models are busy (~$0.0015/photo), capped: AI_PAID_USD_PER_MONTH (default 5)
-INVITE_CODE="something-secret"                            # required to create an account on /signup
 TURNSTILE_SITE_KEY="0x4AAAA…"                             # optional: Cloudflare Turnstile (invisible bot check on sign-up + demo start)
 TURNSTILE_SECRET_KEY="…"                                  #   keep secret; for local dev use Cloudflare's test keys (see lib/turnstile.ts)
 BACKUP_REMOTE="gdrive:RecipeAppBackup"                    # optional; rclone remote:folder for scripts/backup.sh
@@ -63,8 +62,11 @@ so the extractor retries on 429 and falls back to the second model.
 ## Accounts
 
 Email + password sign-in, one recipe collection per user. Sign-up (`/signup`)
-requires the `INVITE_CODE` from `.env`, so only family can join. The **first**
-account created adopts the recipes that existed before accounts did.
+is open to everyone, protected by Cloudflare Turnstile (invisible), a hidden
+bot-trap field and limits per IP address and per day (`lib/signupLimits.ts`,
+`SIGNUPS_PER_IP_DAY` / `SIGNUPS_ALL_DAY`). New accounts start with a copy of
+the showcase account's recipes. The **first** account created adopts the
+recipes that existed before accounts did.
 
 - Passwords are hashed with scrypt (`lib/password.ts`); sessions are database
   rows referenced by an httpOnly cookie (`lib/auth.ts`), 30 days.

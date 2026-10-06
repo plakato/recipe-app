@@ -13,7 +13,7 @@ const both = (s: { accounts: number; demo: number }) => `${s.accounts} (+${s.dem
   console.log(`Usage, last ${days} day(s), ${TIME_ZONE} time\n`);
   for (const d of [...stats, ...(stats.length > 1 ? [total(stats)] : [])]) {
     console.log(`== ${d.day}`);
-    console.log(`  imports ${both(d.imports)}, demos started ${d.demosStarted}`);
+    console.log(`  imports ${both(d.imports)}, demos started ${d.demosStarted}, sign-ups ${d.signups}`);
     console.log(`  recipes: ${ACTIVITY_KINDS.map((k) => `${k} ${both(d.activity[k])}`).join(", ")}`);
     console.log(`  AI: ${d.calls} calls, ${d.promptTokens} tokens in / ${d.completionTokens} out, ${usd(d.costUsd)}`);
     for (const m of d.models) {

@@ -37,6 +37,7 @@ describe("summarize", () => {
       row("import", "2026-10-06T08:00:00Z"),
       row("import", "2026-10-06T09:00:00Z", true),
       row("guest", "2026-10-06T09:00:00Z"),
+      row("signup", "2026-10-06T10:00:00Z"),
       call("gemma:free", 0, "2026-10-06T08:00:01Z"),
       call("gemini", 0.0015, "2026-10-06T08:00:05Z"),
       call("gemini", 0.0015, "2026-10-06T09:00:05Z", true),
@@ -55,6 +56,7 @@ describe("summarize", () => {
     const d = days[0];
     expect(d.imports).toEqual({ accounts: 1, demo: 1 });
     expect(d.demosStarted).toBe(1);
+    expect(d.signups).toBe(1);
     expect(d.activity.created).toEqual({ accounts: 1, demo: 0 });
     expect(d.activity.edited).toEqual({ accounts: 0, demo: 2 });
     expect(d.calls).toBe(3);

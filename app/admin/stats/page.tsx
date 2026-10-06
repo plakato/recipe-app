@@ -72,7 +72,7 @@ export default async function StatsPage() {
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card label="Cena dnes" value={usd(today?.costUsd ?? 0)} hint={`${int(today?.calls ?? 0)} volaní AI`} />
         <Card label="Importy dnes" value={int((today?.imports.accounts ?? 0) + (today?.imports.demo ?? 0))} hint={`z toho ${today?.imports.demo ?? 0} z dema`} />
-        <Card label="Zmeny receptov dnes" value={int(edits(today))} hint={`spustené demá: ${today?.demosStarted ?? 0}`} />
+        <Card label="Zmeny receptov dnes" value={int(edits(today))} hint={`demá: ${today?.demosStarted ?? 0} · registrácie: ${today?.signups ?? 0}`} />
         <Card label="Cena za 30 dní" value={usd(month.costUsd)} hint={`${int(month.promptTokens + month.completionTokens)} tokenov`} />
       </section>
 
@@ -91,6 +91,7 @@ export default async function StatsPage() {
                   <th className={th}>Upravené</th>
                   <th className={th}>Vymazané</th>
                   <th className={th}>Demá</th>
+                  <th className={th}>Registrácie</th>
                   <th className={`${th} text-right`}>Volania AI</th>
                   <th className={`${th} text-right`}>Tokeny dnu / von</th>
                   <th className={`${th} text-right`}>Cena</th>
@@ -105,6 +106,7 @@ export default async function StatsPage() {
                     <td className={td}>{both(d.activity.edited)}</td>
                     <td className={td}>{both({ accounts: d.activity.deleted.accounts + d.activity.erased.accounts, demo: d.activity.deleted.demo + d.activity.erased.demo })}</td>
                     <td className={td}>{d.demosStarted || "–"}</td>
+                    <td className={td}>{d.signups || "–"}</td>
                     <td className={`${td} text-right`}>{int(d.calls)}</td>
                     <td className={`${td} text-right`}>{int(d.promptTokens)} / {int(d.completionTokens)}</td>
                     <td className={`${td} text-right font-medium`}>{usd(d.costUsd)}</td>

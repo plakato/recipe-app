@@ -4,6 +4,8 @@ import { createSession, getSessionUser } from "@/lib/auth";
 import { hashPassword, isValidEmail, MIN_PASSWORD_LENGTH, normalizeEmail } from "@/lib/password";
 import { redirectWithError, isSameOrigin, siteUrl } from "@/lib/auth-forms";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { canSignUp, recordSignup } from "@/lib/signupLimits";
+import { copyShowcaseRecipes } from "@/lib/demo";
 import { clientIp, requestHost } from "@/lib/clientIp";
 
 // The placeholder owner that held every recipe before accounts existed. The
@@ -21,19 +23,19 @@ export async function POST(request: Request) {
     host: await requestHost(),
   });
   if (!human) return redirectWithError(request, "/signup", "bot");
+  // Bot trap: a field people never see (hidden on the page), so only bots
+  // fill it in.
+  if (String(form.get("website") ?? "").trim()) {
+    return redirectWithError(request, "/signup", "bot");
+  }
+  // Sign-up is open to everyone, with a daily limit per network and overall.
+  const ip = await clientIp();
+  if (!(await canSignUp(ip))) return redirectWithError(request, "/signup", "limit");
   const email = normalizeEmail(String(form.get("email") ?? ""));
   const name = String(form.get("name") ?? "").trim().slice(0, 80);
   const password = String(form.get("password") ?? "");
   const confirm = String(form.get("confirm") ?? "");
-  const invite = String(form.get("invite") ?? "").trim();
 
-  const expectedInvite = process.env.INVITE_CODE;
-  if (!expectedInvite) {
-    return redirectWithError(request, "/signup", "closed");
-  }
-  if (invite !== expectedInvite) {
-    return redirectWithError(request, "/signup", "invite");
-  }
   if (!isValidEmail(email)) {
     return redirectWithError(request, "/signup", "email");
   }
@@ -66,6 +68,12 @@ export async function POST(request: Request) {
       : await prisma.user.create({
           data: { email, name: name || null, password: hashed },
         });
+
+  // A brand-new account starts with its own copy of the showcase recipes
+  // (edit or delete them freely). A demo visitor keeps their demo copy; the
+  // legacy owner already has the recipes.
+  if (!guest && user.id !== legacy?.id) await copyShowcaseRecipes(user.id);
+  await recordSignup(user.id, ip);
 
   const cookie = await createSession(user.id);
   const res = NextResponse.redirect(siteUrl(request, "/"), 303);

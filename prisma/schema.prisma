@@ -11,7 +11,8 @@ datasource db {
 }
 
 // A user owns recipes. Accounts are email + password (lib/auth.ts); sign-up is
-// gated by an invite code so only family can join. Each user sees only their own
+// open to everyone (bot check + limits) and starts with a copy of the
+// showcase recipes. Each user sees only their own
 // recipes.
 model User {
   id        String   @id @default(cuid())
