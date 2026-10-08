@@ -57,3 +57,4 @@ next-env.d.ts
 /shadow*.db
 /screenshots
 /test_photos
+/dish-image-review

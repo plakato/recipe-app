@@ -17,7 +17,7 @@ type ContentPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } };
 
-type ChatMessage = {
+export type ChatMessage = {
   role: "system" | "user";
   content: string | ContentPart[];
 };
@@ -357,6 +357,29 @@ export function extractRecipesFromImage(
     toDrafts,
     modelOverride,
   );
+}
+
+// Ask the free models (the paid one only if all are busy, within the budget)
+// for a JSON answer; `parse` returns null for an unusable one, which moves on
+// to the next model. Returns null if no model gave a usable answer.
+export async function askModelsForJson<T>(
+  messages: ChatMessage[],
+  parse: (parsed: unknown) => T | null,
+): Promise<T | null> {
+  const models = freeModels();
+  const paid = paidFallback(models);
+  const errors: unknown[] = [];
+  for (const model of [...models, ...(paid ? [paid] : [])]) {
+    if (model === paid && !(errors.every(isBusy) && (await paidBudgetLeft()))) break;
+    try {
+      const result = parse(extractJsonObject(await callModel(model, messages)));
+      if (result !== null) return result;
+      errors.push(new Error(`Unusable answer from ${model}`));
+    } catch (err) {
+      errors.push(err);
+    }
+  }
+  return null;
 }
 
 // Read the model's {"photos": [n, ...]} answer: one 1-based image number per

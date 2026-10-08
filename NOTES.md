@@ -81,6 +81,16 @@ recipes are hidden, not deleted. In order:
 6. **Dish pictures, automatically.** Crop the dish photo from the page when
    there is one, otherwise generate one (once, stored, within the budget).
    The scan stays attached as the source photo.
+   - 2026-10-08 started: `lib/dishImage.ts` — a free text model guesses the
+     dish from title/ingredients/method and writes an English picture prompt
+     (works well), then a free image model draws it. Providers: Cloudflare
+     Workers AI (FLUX, free 10k neurons/day ≈ 170 pictures; needs
+     `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_AI_TOKEN`), else Pollinations
+     without a key (watermarked, weak "sana" model, often 402 — not good
+     enough for the app). Try it without touching recipes:
+     `scripts/generate-dish-images.ts --limit 20` → `dish-image-review/`.
+     Not yet: a separate field for the dish picture (the scan stays in
+     `imagePath`), generating on import, cropping a dish photo from the page.
 7. ~~**Daily usage statistics.**~~ — DONE 2026-10-06: every AI call is
    recorded with model, tokens, cost, purpose and account/demo
    (`AiUsage` kind "call", via `lib/usageContext.ts`); recipe changes in

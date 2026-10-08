@@ -6,7 +6,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 export type UsageContext = {
   userId?: string;
   isGuest?: boolean;
-  purpose?: "read-recipe" | "choose-photos";
+  purpose?: "read-recipe" | "choose-photos" | "describe-dish" | "draw-dish";
 };
 
 const store = new AsyncLocalStorage<UsageContext>();

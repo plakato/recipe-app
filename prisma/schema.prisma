@@ -78,7 +78,7 @@ model AiUsage {
   isGuest          Boolean  @default(false) // made from a demo
   ip               String?
   model            String?
-  purpose          String? // "call": "read-recipe" | "choose-photos"
+  purpose          String? // "call": "read-recipe" | "choose-photos" | "describe-dish" | "draw-dish"
   promptTokens     Int      @default(0)
   completionTokens Int      @default(0)
   costUsd          Float    @default(0)
