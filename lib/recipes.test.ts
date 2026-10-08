@@ -6,6 +6,8 @@ import {
   linesToList,
   listToLines,
   recipeToDraft,
+  isUploadPath,
+  recipeUploads,
 } from "@/lib/recipes";
 
 describe("parseList", () => {
@@ -62,6 +64,7 @@ describe("recipeToDraft", () => {
       sourceType: "manual",
       sourceUrl: null,
       imagePath: "/uploads/x.jpg",
+      scanPaths: '["/uploads/scan.jpg"]',
       deletedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -73,7 +76,25 @@ describe("recipeToDraft", () => {
       instructions: ["Mix", "Bake"],
       sourceUrl: undefined,
       imagePath: "/uploads/x.jpg",
+      scanPaths: ["/uploads/scan.jpg"],
     });
+  });
+});
+
+describe("uploads", () => {
+  it("accepts only stored upload paths", () => {
+    expect(isUploadPath("/uploads/0a03638f-016b-48b4.jpg")).toBe(true);
+    expect(isUploadPath("/uploads/../.env")).toBe(false);
+    expect(isUploadPath("https://example.com/a.jpg")).toBe(false);
+    expect(isUploadPath("/uploads/a/b.jpg")).toBe(false);
+  });
+
+  it("lists a recipe's picture and scans", () => {
+    expect(recipeUploads({ imagePath: "/uploads/a.jpg", scanPaths: '["/uploads/b.jpg"]' })).toEqual([
+      "/uploads/a.jpg",
+      "/uploads/b.jpg",
+    ]);
+    expect(recipeUploads({ imagePath: null, scanPaths: null })).toEqual([]);
   });
 });
 

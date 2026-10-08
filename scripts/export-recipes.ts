@@ -31,6 +31,7 @@ function safeName(title: string, id: string): string {
     ...r,
     ingredients: parseList(r.ingredients),
     instructions: parseList(r.instructions),
+    scanPaths: parseList(r.scanPaths),
   }));
   await writeFile(
     path.join(outDir, "recipes.json"),
@@ -40,7 +41,8 @@ function safeName(title: string, id: string): string {
   for (const r of json) {
     const meta = [
       r.sourceUrl && `- Source: ${r.sourceUrl}`,
-      r.imagePath && `- Photo: ${r.imagePath}`,
+      r.imagePath && `- Picture: ${r.imagePath}`,
+      r.scanPaths.length > 0 && `- Read from: ${r.scanPaths.join(", ")}`,
       r.deletedAt && `- IN TRASH since ${r.deletedAt.toISOString()}`,
     ].filter(Boolean);
     const md = [

@@ -8,6 +8,7 @@ import DeleteButton from "@/components/DeleteButton";
 import { turnstileSiteKey } from "@/lib/turnstile";
 import { BackIcon, EditIcon, LinkIcon, PhotoIcon } from "@/components/Icons";
 import { visibleRecipes } from "@/lib/features";
+import { isBeingDrawn } from "@/lib/dishImage";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +33,12 @@ export default async function RecipeDetailPage({
 
   const ingredients = groupSections(parseList(recipe.ingredients));
   const instructions = groupSections(parseList(recipe.instructions));
-  const isPhoto = recipe.sourceType === "photo" && !!recipe.imagePath;
-  const sourceHref = recipe.sourceUrl ?? (isPhoto ? recipe.imagePath : null);
+  // Photo recipes keep the photos they were read from (the scans); the picture
+  // shown is the dish, cropped from them or generated.
+  const scans = parseList(recipe.scanPaths);
+  const sourceHref = recipe.sourceUrl ?? scans[0] ?? null;
   const sourceLabel = recipe.sourceUrl ? "Otvoriť pôvodnú stránku" : "Otvoriť pôvodnú fotku";
+  const drawing = isBeingDrawn(recipe);
 
   return (
     <article className="mx-auto max-w-4xl space-y-8">
@@ -51,6 +55,11 @@ export default async function RecipeDetailPage({
           <h1 className="font-display absolute inset-x-0 bottom-0 p-5 text-3xl font-medium leading-tight text-white drop-shadow sm:p-8 sm:text-5xl">
             {recipe.title}
           </h1>
+          {drawing && (
+            <p className="absolute inset-x-0 top-1/3 text-center text-sm text-stone-600 dark:text-stone-300">
+              Kreslíme obrázok jedla… o chvíľu obnovte stránku.
+            </p>
+          )}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 sm:p-4">
             <Link href="/" title="Všetky recepty" aria-label="Všetky recepty" className={heroBtn}>
               <BackIcon />
@@ -136,6 +145,26 @@ export default async function RecipeDetailPage({
           )}
         </div>
       </section>
+
+      {scans.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-stone-500">
+            {scans.length > 1 ? "Pôvodné fotky" : "Pôvodná fotka"}
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            {scans.map((p, i) => (
+              <a key={p} href={p} target="_blank" rel="noopener noreferrer" title={`Fotka ${i + 1}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p}
+                  alt={`Pôvodná fotka ${i + 1}`}
+                  className="h-32 w-auto rounded-lg border border-stone-200 object-cover dark:border-stone-700"
+                />
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </article>
   );
 }

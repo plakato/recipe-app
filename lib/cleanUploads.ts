@@ -6,6 +6,7 @@
 import { readdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
+import { recipeUploads } from "@/lib/recipes";
 import { UPLOAD_DIR } from "@/lib/saveImage";
 
 // A draft may sit in the review form for a while before it's saved, so only
@@ -51,10 +52,10 @@ export async function removeUnusedUploads({
   );
   // Every recipe, all users, Trash included.
   const rows = await prisma.recipe.findMany({
-    where: { imagePath: { not: null } },
-    select: { imagePath: true },
+    where: { OR: [{ imagePath: { not: null } }, { scanPaths: { not: null } }] },
+    select: { imagePath: true, scanPaths: true },
   });
-  const referenced = new Set(rows.map((r) => path.basename(r.imagePath!)));
+  const referenced = new Set(rows.flatMap(recipeUploads).map((p) => path.basename(p)));
 
   const unused = unusedUploads(files, referenced, Date.now(), graceMs);
   if (!dryRun) {

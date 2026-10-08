@@ -8,19 +8,26 @@ import { requireUser } from "@/lib/auth";
 import type { User } from "@prisma/client";
 import { userForChange } from "@/lib/demoSession";
 import { enterUsage } from "@/lib/usageContext";
-import { linesToList, type RecipeDraft } from "@/lib/recipes";
+import { isUploadPath, linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { pickRecipeImages } from "@/lib/pickImage";
 import { runHousekeeping } from "@/lib/housekeeping";
 import { refundImport, startImport } from "@/lib/aiBudget";
 import { clientIp } from "@/lib/clientIp";
 import { AppError, USER_MESSAGES, toUserMessage } from "@/lib/userErrors";
-import { extractRecipeFromImage, extractRecipesFromText } from "@/lib/extractRecipe";
-import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
+import { cropShowsDish, extractRecipesFromPhotos, extractRecipesFromText } from "@/lib/extractRecipe";
+import {
+  cropPhoto,
+  saveImageBuffer,
+  saveUploadedImage,
+  smallDataUrl,
+  uploadFilePath,
+} from "@/lib/saveImage";
+import { generateRecipePicture } from "@/lib/dishImage";
 import { access, unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
 import { findDuplicate, type DuplicateVerdict } from "@/lib/similarity";
-import { URL_IMPORT_ENABLED, visibleRecipes } from "@/lib/features";
+import { MAX_PHOTOS, URL_IMPORT_ENABLED, visibleRecipes } from "@/lib/features";
 
 // Read the recipe fields shared by create and update out of submitted FormData.
 function readRecipeFields(formData: FormData) {
@@ -41,11 +48,21 @@ function readRecipeFields(formData: FormData) {
   };
 }
 
-// Result of an AI import attempt, returned to the client for review before
-// anything is saved. The user always edits/confirms in the form afterward.
-export type ImportResult =
-  | { ok: true; draft: RecipeDraft }
-  | { ok: false; error: string };
+// The scans of an imported recipe (photo import), from the form's hidden
+// field: only stored upload paths, at most a few. Set once, when the recipe is
+// created; editing never changes them.
+function readScanPaths(formData: FormData): string | null {
+  let list: unknown;
+  try {
+    list = JSON.parse(String(formData.get("scanPaths") ?? "[]"));
+  } catch {
+    return null;
+  }
+  const paths = Array.isArray(list)
+    ? list.filter((p): p is string => typeof p === "string" && isUploadPath(p)).slice(0, MAX_PHOTOS)
+    : [];
+  return paths.length ? JSON.stringify(paths) : null;
+}
 
 // Reserve one AI import for the signed-in person against the daily limits
 // (lib/aiBudget.ts). Checks the session for real — the proxy only checks that
@@ -123,40 +140,65 @@ export async function importRecipesFromUrl(url: string): Promise<UrlImportResult
   }
 }
 
-// Photo import (Phase 3): save the uploaded photo, send it to a vision model,
-// and hand the draft (with the photo as its image) back for review.
-export async function importRecipeFromPhoto(
-  formData: FormData,
-): Promise<ImportResult> {
-  const file = formData.get("photo");
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Najprv prosím vyberte fotku." };
+// Photo import: one or more photos taken together (a recipe over two pages,
+// a page plus a picture of the dish, a page with two recipes…). Saves the
+// photos, reads every recipe from them in one model request, crops each
+// recipe's dish picture, and hands the drafts back to review one by one.
+export type PhotoImportResult =
+  | { ok: true; drafts: RecipeDraft[] }
+  | { ok: false; error: string };
+
+export async function importRecipesFromPhotos(formData: FormData): Promise<PhotoImportResult> {
+  const files = formData.getAll("photo").filter((f): f is File => f instanceof File && f.size > 0);
+  if (files.length === 0) return { ok: false, error: "Najprv prosím vyberte fotku." };
+  if (files.length > MAX_PHOTOS) {
+    return { ok: false, error: `Naraz najviac ${MAX_PHOTOS} fotiek, prosím.` };
   }
   // A visitor's demo starts here, at their first change (lib/demoSession.ts).
   const who = await userForChange(formData);
   if (!who) redirect("/login");
   if ("error" in who) return { ok: false, error: who.error };
+  // One import, however many photos (they are read in one request).
   const slot = await reserveImport(who.user);
   if ("error" in slot) return { ok: false, error: slot.error };
   // AI calls below are recorded for this person (statistics).
   enterUsage({ userId: slot.userId, isGuest: slot.isGuest });
+  // Photos of drafts that are never saved are tidied up later.
   after(runHousekeeping);
   try {
-    const saved = await saveUploadedImage(file);
-    if (!saved) {
-      await refundImport(slot.id);
-      return {
-        ok: false,
-        error: "Tento typ obrázka nepodporujeme alebo je príliš veľký (najviac 8 MB).",
-      };
+    const photos: NonNullable<Awaited<ReturnType<typeof saveUploadedImage>>>[] = [];
+    for (const file of files) {
+      const saved = await saveUploadedImage(file);
+      if (!saved) {
+        await refundImport(slot.id);
+        return {
+          ok: false,
+          error: `Fotku ${file.name} nevieme otvoriť: tento typ nepodporujeme alebo je príliš veľká (najviac 8 MB).`,
+        };
+      }
+      photos.push(saved);
     }
     // Free models first; the paid one only as a budget-capped fallback. The
     // model works out the recipe's language itself.
-    const draft = await extractRecipeFromImage(saved.dataUrl);
-    return {
-      ok: true,
-      draft: { ...draft, imagePath: saved.imagePath },
-    };
+    const recipes = await extractRecipesFromPhotos(photos.map((p) => p.dataUrl));
+    const drafts = await Promise.all(
+      recipes.map(async (r): Promise<RecipeDraft> => {
+        let crop = r.dish ? await cropPhoto(photos[r.dish.photo].buf, r.dish.box) : null;
+        // A box in the wrong place (text, another photo): no picture rather
+        // than a wrong one — a generated one replaces it after saving.
+        if (crop && !(await cropShowsDish(await smallDataUrl(crop), r.title))) crop = null;
+        // The scans: the photos with its text and its dish (all, if unsure).
+        const used = [...new Set([...r.photos, ...(r.dish ? [r.dish.photo] : [])])].sort();
+        return {
+          title: r.title,
+          ingredients: r.ingredients,
+          instructions: r.instructions,
+          imagePath: crop ? await saveImageBuffer(crop, "jpg") : undefined,
+          scanPaths: (used.length ? used : photos.map((_, i) => i)).map((i) => photos[i].imagePath),
+        };
+      }),
+    );
+    return { ok: true, drafts };
   } catch (err) {
     return { ok: false, error: await importFailed(slot.id, err) };
   }
@@ -236,11 +278,14 @@ async function resolveImage(
   return { imagePath: current };
 }
 
-// Delete an image file once no recipe (including Trash) references it.
-// Split imports share one photo between several recipes, hence the check.
+// Delete an image file once no recipe (including Trash) references it, as a
+// picture or a scan. Several recipes can share one photo (a page with two
+// recipes, demo copies), hence the check.
 async function deleteImageIfUnused(imagePath: string | null) {
   if (!imagePath) return;
-  const stillUsed = await prisma.recipe.count({ where: { imagePath } });
+  const stillUsed = await prisma.recipe.count({
+    where: { OR: [{ imagePath }, { scanPaths: { contains: JSON.stringify(imagePath) } }] },
+  });
   if (stillUsed === 0) await unlink(uploadFilePath(imagePath)).catch(() => {});
 }
 
@@ -257,9 +302,14 @@ export async function createRecipe(
   const image = await resolveImage(formData, fields.imagePath);
   if ("error" in image) return { error: image.error };
   const recipe = await prisma.recipe.create({
-    data: { ...fields, imagePath: image.imagePath, userId },
+    data: { ...fields, imagePath: image.imagePath, scanPaths: readScanPaths(formData), userId },
   });
   await logActivity("created", user);
+  // A photo recipe without a dish picture gets a generated one, after the
+  // response (it takes ~30 s); the recipe page shows it once it is there.
+  if (fields.sourceType === "photo" && !image.imagePath) {
+    after(() => generateRecipePicture(recipe.id, { userId, isGuest: user.isGuest }));
+  }
   revalidatePath("/");
   if (formData.get("stay") === "1") return { saved: { id: recipe.id } };
   redirect(`/recipes/${recipe.id}`);

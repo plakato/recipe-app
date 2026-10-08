@@ -673,3 +673,33 @@ const PAGES_SCHEMA: JsonSchema = {
     additionalProperties: false,
   },
 };
+
+// Is this cropped picture really the dish (not text or another photo)? Models
+// sometimes draw the box in the wrong place. The crop is sent small. true when
+// no model could answer (most crops are right).
+export async function cropShowsDish(cropDataUrl: string, title: string): Promise<boolean> {
+  const answer = await withUsage({ purpose: "choose-photos" }, () =>
+    askModelsForJson(
+      [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                `This picture was cut from a cookbook or magazine page for the recipe "${title}". ` +
+                "Does it mainly show a photo of food — that dish finished, or being cooked — rather than text, a person, a logo or an unrelated photo? " +
+                'Answer with JSON only: {"dish": true} or {"dish": false}.',
+            },
+            { type: "image_url", image_url: { url: cropDataUrl } },
+          ],
+        },
+      ],
+      (parsed) => {
+        const v = (parsed as Record<string, unknown> | null)?.dish;
+        return typeof v === "boolean" ? v : null;
+      },
+    ),
+  );
+  return answer ?? true;
+}

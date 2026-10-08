@@ -56,7 +56,8 @@ model Recipe {
   instructions String // JSON-encoded string[] — ordered steps
   sourceType   String    @default("manual") // "url" | "photo" | "voice" | "manual"
   sourceUrl    String?
-  imagePath    String? // stored photo path, if any
+  imagePath    String? // the picture shown (dish photo or generated), if any
+  scanPaths    String? // JSON string[] — the photos the recipe was read from (photo import)
   copiedFromId String? // the showcase recipe this is a copy of (demo / starter copies)
   deletedAt    DateTime? // soft delete — set instead of erasing (Trash)
   createdAt    DateTime  @default(now())

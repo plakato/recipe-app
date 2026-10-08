@@ -7,14 +7,18 @@
 // - Cloudflare Workers AI, when CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_AI_TOKEN
 //   are set (free: 10,000 neurons a day, about 170 FLUX.1 schnell pictures).
 //   CLOUDFLARE_IMAGE_MODEL picks the model (default flux-1-schnell).
-// - Pollinations, which needs no key; without POLLINATIONS_API_KEY it is
-//   rate-limited (one request per ~15 s), weaker and watermarked.
+// - Pollinations, only when DISH_IMAGE_POLLINATIONS=on: without a key
+//   (POLLINATIONS_API_KEY) it is rate-limited, weak and watermarked — not
+//   good enough to show (tried 2026-10-08).
 //
 // Server-only (reads API keys).
 
 import { askModelsForJson } from "@/lib/extractRecipe";
 import { recordModelCall } from "@/lib/aiBudget";
-import { withUsage } from "@/lib/usageContext";
+import { prisma } from "@/lib/prisma";
+import { parseList } from "@/lib/recipes";
+import { saveImageBuffer } from "@/lib/saveImage";
+import { withUsage, type UsageContext } from "@/lib/usageContext";
 
 export type DishSource = { title: string; ingredients: string[]; instructions: string[] };
 
@@ -127,7 +131,7 @@ const pollinations: Provider = {
 function providers(): Provider[] {
   const list: Provider[] = [];
   if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_AI_TOKEN) list.push(cloudflare);
-  if (process.env.DISH_IMAGE_POLLINATIONS !== "off") list.push(pollinations);
+  if (process.env.DISH_IMAGE_POLLINATIONS === "on") list.push(pollinations);
   return list;
 }
 
@@ -148,5 +152,46 @@ export function drawDish(prompt: string, seed = Math.floor(Math.random() * 1e9))
       }
     }
     throw new Error(`No image provider could draw the dish. ${errors.join(" | ")}`);
+  });
+}
+
+// Can pictures be drawn at all (an image provider is set up)?
+export function canDrawDishes(): boolean {
+  return providers().length > 0;
+}
+
+// A photo recipe saved moments ago without a picture: one is being drawn
+// (generateRecipePicture runs after the save), so the page can say so.
+export function isBeingDrawn(recipe: { sourceType: string; imagePath: string | null; createdAt: Date }): boolean {
+  return (
+    recipe.sourceType === "photo" &&
+    !recipe.imagePath &&
+    canDrawDishes() &&
+    Date.now() - recipe.createdAt.getTime() < 3 * 60 * 1000
+  );
+}
+
+// Give a recipe without a picture a generated one: once, stored with the
+// recipe. Runs after the response (app/actions.ts → createRecipe); failures
+// only leave the placeholder, so they are logged, never thrown.
+export async function generateRecipePicture(recipeId: string, who: UsageContext): Promise<void> {
+  if (!canDrawDishes()) return;
+  await withUsage(who, async () => {
+    try {
+      const recipe = await prisma.recipe.findUnique({ where: { id: recipeId } });
+      if (!recipe || recipe.imagePath) return;
+      const described = await describeDish({
+        title: recipe.title,
+        ingredients: parseList(recipe.ingredients),
+        instructions: parseList(recipe.instructions),
+      });
+      if (!described) return;
+      const drawn = await drawDish(described.prompt);
+      const imagePath = await saveImageBuffer(drawn.buf, "jpg");
+      // Only if the person hasn't added a picture of their own meanwhile.
+      await prisma.recipe.updateMany({ where: { id: recipeId, imagePath: null }, data: { imagePath } });
+    } catch (err) {
+      console.warn(`Could not draw a picture for recipe ${recipeId}:`, err);
+    }
   });
 }

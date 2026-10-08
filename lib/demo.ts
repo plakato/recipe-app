@@ -39,6 +39,7 @@ export async function copyShowcaseRecipes(toUserId: string): Promise<Map<string,
       sourceType: r.sourceType,
       sourceUrl: r.sourceUrl,
       imagePath: r.imagePath,
+      scanPaths: r.scanPaths,
       copiedFromId: r.id,
       createdAt: r.createdAt, // keep the same order as the original
     })),

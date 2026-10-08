@@ -97,8 +97,19 @@ recipes are hidden, not deleted. In order:
      8,000 tokens. The free Gemma pool was rate-limited (429) on almost
      every try today; adding our own Google AI Studio key to OpenRouter
      (settings/integrations) might give the free models our own quota.
-   - Not yet in the app: several photos per upload, the 1-of-N review, the
-     dish crop as the card picture (scan kept as the source).
+   - 2026-10-08 in the app: up to 5 photos per upload (camera one by one or
+     several from the gallery), one model request, then the 1-of-N review
+     (`components/MultiReview.tsx`, shared with link import). The dish crop
+     is the card picture (`imagePath`); the photos it was read from are kept
+     in `Recipe.scanPaths` (JSON list; migration copied the old photo
+     recipes' photo there) and shown under the recipe and in the review form.
+     Each crop is checked by a vision model ("does it show the dish?",
+     ~$0.0004) — gemini-3.5-flash-lite put the box on text twice. A photo
+     recipe saved without a picture gets a generated one after the save
+     (`generateRecipePicture`, ~50 s; Cloudflare keys needed, else nothing).
+     Tested end to end in the browser (butter chicken, two-recipe page).
+   - Deploying: the `scan_paths` migration, and Hermes' .env needs
+     `OPENROUTER_MODEL_HQ`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_TOKEN`.
 6. **Dish pictures, automatically.** Crop the dish photo from the page when
    there is one, otherwise generate one (once, stored, within the budget).
    The scan stays attached as the source photo.
@@ -112,8 +123,9 @@ recipes are hidden, not deleted. In order:
      `scripts/generate-dish-images.ts` (3 recipes by default; more only once
      the 3 look good) → `dish-image-review/`. It uses the recipe's text, never
      the photo again.
-     Not yet: a separate field for the dish picture (the scan stays in
-     `imagePath`), generating on import, cropping a dish photo from the page.
+     Pollinations is off unless `DISH_IMAGE_POLLINATIONS=on`. Cropping and
+     generating on import: see step 5. Not yet: pictures for the existing
+     photo recipes (they still show their scan; the script can do them).
 7. ~~**Daily usage statistics.**~~ — DONE 2026-10-06: every AI call is
    recorded with model, tokens, cost, purpose and account/demo
    (`AiUsage` kind "call", via `lib/usageContext.ts`); recipe changes in

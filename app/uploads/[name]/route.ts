@@ -49,12 +49,19 @@ export async function GET(
   }
 }
 
-// Is this photo used by one of the public showcase recipes?
+// Is this photo (picture or scan) used by one of the public showcase recipes?
 async function isShowcasePhoto(name: string): Promise<boolean> {
   const showcase = await getShowcaseUserId();
   if (!showcase) return false;
+  const file = `/uploads/${name}`;
   const used = await prisma.recipe.count({
-    where: { userId: showcase, deletedAt: null, ...visibleRecipes, imagePath: `/uploads/${name}` },
+    where: {
+      userId: showcase,
+      deletedAt: null,
+      ...visibleRecipes,
+      // A picture, or one of the scans (a JSON list of paths).
+      OR: [{ imagePath: file }, { scanPaths: { contains: JSON.stringify(file) } }],
+    },
   });
   return used > 0;
 }

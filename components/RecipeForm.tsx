@@ -141,6 +141,9 @@ export default function RecipeForm({
         <input type="hidden" name="sourceUrl" value={initial.sourceUrl} />
       )}
       <input type="hidden" name="imagePath" value={imagePath} />
+      {!recipeId && !!initial?.scanPaths?.length && (
+        <input type="hidden" name="scanPaths" value={JSON.stringify(initial.scanPaths)} />
+      )}
 
       <div className="space-y-2">
         <RecipeImage
@@ -185,6 +188,24 @@ export default function RecipeForm({
           )}
         </div>
       </div>
+
+      {!recipeId && !!initial?.scanPaths?.length && (
+        <div className="space-y-1">
+          <p className={labelClass}>Prečítané z fotiek — porovnajte s textom nižšie</p>
+          <div className="flex flex-wrap gap-2">
+            {initial.scanPaths.map((p, i) => (
+              <a key={p} href={p} target="_blank" rel="noopener noreferrer" title={`Fotka ${i + 1}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p}
+                  alt={`Fotka ${i + 1}`}
+                  className="h-24 w-auto rounded-lg border border-stone-200 object-cover dark:border-stone-700"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-1">
         <label className={labelClass} htmlFor="title">

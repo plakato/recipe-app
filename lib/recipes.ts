@@ -36,8 +36,11 @@ export type RecipeDraft = {
   instructions: string[];
   sourceUrl?: string;
   // Local path under /public (e.g. "/uploads/abc.jpg"), or a placeholder shown
-  // when empty. Populated by URL import (downloaded) or later by AI generation.
+  // when empty. The dish photo (downloaded, cropped from a page photo) or a
+  // generated picture.
   imagePath?: string;
+  // Photo import: the photos the recipe was read from ("/uploads/…").
+  scanPaths?: string[];
 };
 
 // Convert a stored Recipe row into a draft for the edit form.
@@ -48,7 +51,18 @@ export function recipeToDraft(recipe: Recipe): RecipeDraft {
     instructions: parseList(recipe.instructions),
     sourceUrl: recipe.sourceUrl ?? undefined,
     imagePath: recipe.imagePath ?? undefined,
+    scanPaths: parseList(recipe.scanPaths),
   };
+}
+
+// A stored upload path as the app writes it: "/uploads/<random name>.<ext>".
+export function isUploadPath(value: string): boolean {
+  return /^\/uploads\/[a-zA-Z0-9-]+\.[a-z0-9]+$/.test(value);
+}
+
+// Every upload a recipe uses: its picture and its scans.
+export function recipeUploads(recipe: { imagePath: string | null; scanPaths: string | null }): string[] {
+  return [...(recipe.imagePath ? [recipe.imagePath] : []), ...parseList(recipe.scanPaths)];
 }
 
 // Recipes with several components (dough, filling, glaze…) keep one flat list

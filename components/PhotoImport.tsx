@@ -1,48 +1,84 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import RecipeForm from "@/components/RecipeForm";
+import MultiReview from "@/components/MultiReview";
 import Turnstile from "@/components/Turnstile";
-import { createRecipe, importRecipeFromPhoto } from "@/app/actions";
+import { createRecipe, importRecipesFromPhotos } from "@/app/actions";
+import { MAX_PHOTOS } from "@/lib/features";
 import type { RecipeDraft } from "@/lib/recipes";
 
+const MAX_BYTES = 8 * 1024 * 1024; // per photo, as on the server (lib/saveImage.ts)
+
+type Picked = { file: File; url: string | null };
+
+const pickButton =
+  "flex-1 rounded-xl border-2 border-dashed border-stone-300 px-4 py-8 text-center text-stone-500 transition hover:border-olive-400 hover:text-stone-700 disabled:opacity-50 dark:border-stone-700 dark:hover:text-stone-300";
+
+// Photo import: one or more photos taken together — a recipe over several
+// pages, a page plus a picture of the dish, a page with several recipes.
 // botCheckKey: set for visitors (demo). The invisible bot check runs while
-// they pick a photo; reading starts only once it has passed, and their demo
-// begins with that first reading (app/actions.ts → importRecipeFromPhoto).
+// they pick photos; reading starts only once it has passed, and their demo
+// begins with that first reading (app/actions.ts → importRecipesFromPhotos).
 export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: string | null }) {
   const [botToken, setBotToken] = useState<string | null>(null);
   const [botAttempt, setBotAttempt] = useState(0);
   // After the first reading the visitor is signed in to their demo.
   const [needsBotCheck, setNeedsBotCheck] = useState(!!botCheckKey);
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Picked[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [draft, setDraft] = useState<RecipeDraft | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  // HEIC files often can't be previewed by the browser; note it instead.
-  const isHeic = !!file && /\.hei[cf]$/i.test(file.name);
+  const [drafts, setDrafts] = useState<RecipeDraft[] | null>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
-  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
-    const picked = e.target.files?.[0] ?? null;
-    setFile(picked);
+  // Free the previews when leaving the page.
+  const pickedRef = useRef(picked);
+  useEffect(() => {
+    pickedRef.current = picked;
+  }, [picked]);
+  useEffect(() => () => pickedRef.current.forEach((p) => p.url && URL.revokeObjectURL(p.url)), []);
+
+  function add(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // the same photo can be picked again after removing it
+    if (!files.length) return;
     setError(null);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(picked ? URL.createObjectURL(picked) : null);
+    const tooBig = files.find((f) => f.size > MAX_BYTES);
+    if (tooBig) setError(`Fotka ${tooBig.name} je príliš veľká (najviac 8 MB).`);
+    const usable = files.filter((f) => f.size <= MAX_BYTES);
+    const room = MAX_PHOTOS - picked.length;
+    if (usable.length > room) setError(`Naraz najviac ${MAX_PHOTOS} fotiek.`);
+    setPicked([
+      ...picked,
+      ...usable.slice(0, Math.max(0, room)).map((file) => ({
+        file,
+        // HEIC often can't be previewed by the browser; show its name instead.
+        url: /\.hei[cf]$/i.test(file.name) ? null : URL.createObjectURL(file),
+      })),
+    ]);
+  }
+
+  function remove(i: number) {
+    const p = picked[i];
+    if (p.url) URL.revokeObjectURL(p.url);
+    setPicked(picked.filter((_, j) => j !== i));
+    setError(null);
   }
 
   async function handleExtract() {
-    if (!file) return;
+    if (!picked.length) return;
     setLoading(true);
     setError(null);
     const formData = new FormData();
-    formData.append("photo", file);
+    for (const p of picked) formData.append("photo", p.file);
     if (needsBotCheck && botToken) formData.append("cf-turnstile-response", botToken);
-    const result = await importRecipeFromPhoto(formData);
+    const result = await importRecipesFromPhotos(formData);
     setLoading(false);
     if (result.ok) {
       setNeedsBotCheck(false);
-      setDraft(result.draft);
+      setDrafts(result.drafts);
     } else {
       setError(result.error);
       // The token was used: get a fresh one for the next try.
@@ -51,69 +87,106 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
     }
   }
 
-  // After extraction, review in the normal form (pre-filled, photo attached).
-  if (draft) {
+  const restart = () => {
+    picked.forEach((p) => p.url && URL.revokeObjectURL(p.url));
+    setPicked([]);
+    setDrafts(null);
+    setError(null);
+  };
+
+  // Several recipes on the photos: review them one by one.
+  if (drafts && drafts.length > 1) {
+    return (
+      <MultiReview
+        drafts={drafts}
+        sourceType="photo"
+        intro={
+          <>
+            Na fotkách sú <strong>{drafts.length} recepty</strong>. Každý skontrolujte — fotky sa
+            ľahko prečítajú zle — a potom ho uložte alebo preskočte.
+          </>
+        }
+        restartLabel="Pridať ďalšie fotky"
+        onRestart={restart}
+      />
+    );
+  }
+
+  // One recipe: review it in the normal form (pre-filled, pictures attached).
+  if (drafts) {
     return (
       <div className="space-y-4">
         <div className="rounded-lg border border-olive-200 bg-olive-50 px-4 py-3 text-sm text-olive-900 dark:border-olive-900/50 dark:bg-olive-950/30 dark:text-olive-200">
-          Prečítané z vašej fotky. <strong>Všetko nižšie skontrolujte</strong> —
+          Prečítané z vašich fotiek. <strong>Všetko nižšie skontrolujte</strong> —
           rukopis a fotky sa ľahko prečítajú zle — a potom uložte.
         </div>
         <RecipeForm
           action={createRecipe}
-          initial={draft}
+          initial={drafts[0]}
           sourceType="photo"
           submitLabel="Uložiť recept"
         />
         <button
           type="button"
-          onClick={() => {
-            setDraft(null);
-            setError(null);
-          }}
+          onClick={restart}
           className="text-sm text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
         >
-          ← Skúsiť inú fotku
+          ← Skúsiť iné fotky
         </button>
       </div>
     );
   }
 
+  const full = picked.length >= MAX_PHOTOS;
   return (
     <div className="space-y-4">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*,.heic,.heif"
-        // On phones this offers the camera directly.
-        capture="environment"
-        onChange={onPick}
-        className="hidden"
-      />
+      {/* On phones the first opens the camera; the second the photo library. */}
+      <input ref={cameraRef} type="file" accept="image/*,.heic,.heif" capture="environment" onChange={add} className="hidden" />
+      <input ref={galleryRef} type="file" accept="image/*,.heic,.heif" multiple onChange={add} className="hidden" />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="flex-1 rounded-xl border-2 border-dashed border-stone-300 px-6 py-10 text-center text-stone-500 transition hover:border-olive-400 hover:text-stone-700 dark:border-stone-700 dark:hover:text-stone-300"
-        >
-          {file ? "📷 Vybrať inú fotku" : "📷 Odfotiť alebo vybrať fotku"}
+      <div className="flex flex-wrap gap-3">
+        <button type="button" onClick={() => cameraRef.current?.click()} disabled={full || loading} className={pickButton}>
+          📷 {picked.length ? "Odfotiť ďalšiu" : "Odfotiť"}
+        </button>
+        <button type="button" onClick={() => galleryRef.current?.click()} disabled={full || loading} className={pickButton}>
+          🖼️ Vybrať z galérie
         </button>
       </div>
+      <p className="text-sm text-stone-500">
+        Ak recept pokračuje na ďalšej strane alebo máte aj fotku hotového jedla, pridajte všetky
+        fotky naraz (najviac {MAX_PHOTOS}). Keď je na stránke viac receptov a jeden z nich je na
+        fotke jedla, prečítame len ten.
+      </p>
 
-      {previewUrl && !isHeic && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={previewUrl}
-          alt="Vybraný recept"
-          className="max-h-96 w-full rounded-xl object-contain"
-        />
-      )}
-      {isHeic && (
-        <p className="text-sm text-stone-500">
-          📎 Vybraná fotka {file?.name} (HEIC — bez náhľadu, ale prevedieme ju
-          a prečítame).
-        </p>
+      {picked.length > 0 && (
+        <ol className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+          {picked.map((p, i) => (
+            <li key={p.url ?? `${p.file.name}-${i}`} className="relative">
+              {p.url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.url} alt={`Fotka ${i + 1}`} className="aspect-[3/4] w-full rounded-lg object-cover" />
+              ) : (
+                <div className="flex aspect-[3/4] w-full items-center justify-center break-all rounded-lg bg-stone-100 p-2 text-center text-xs text-stone-500 dark:bg-stone-800">
+                  {p.file.name}
+                </div>
+              )}
+              <span className="absolute left-1.5 top-1.5 rounded bg-black/60 px-1.5 text-xs font-medium text-white">
+                {i + 1}
+              </span>
+              {!loading && (
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  title="Odstrániť"
+                  aria-label={`Odstrániť fotku ${i + 1}`}
+                  className="absolute right-1.5 top-1.5 rounded bg-black/60 p-0.5 text-white hover:bg-black/80"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ol>
       )}
 
       {error && (
@@ -128,15 +201,19 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
       <button
         type="button"
         onClick={handleExtract}
-        disabled={loading || !file || (needsBotCheck && !botToken)}
+        disabled={loading || !picked.length || (needsBotCheck && !botToken)}
         className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
       >
-        {loading ? "Čítam fotku…" : "Prečítať recept z fotky"}
+        {loading
+          ? "Čítam fotky…"
+          : picked.length > 1
+            ? `Prečítať recept z ${picked.length} fotiek`
+            : "Prečítať recept z fotky"}
       </button>
 
       {loading && (
         <p className="text-sm text-stone-500">
-          Posielam fotku umelej inteligencii. Môže to trvať aj niekoľko desiatok sekúnd.
+          Posielam fotky umelej inteligencii. Môže to trvať aj minútu.
         </p>
       )}
     </div>

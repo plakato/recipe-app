@@ -89,11 +89,11 @@ const MAX_DIMENSION = 3000;
 
 export async function saveUploadedImage(
   file: File,
-): Promise<{ imagePath: string; dataUrl: string } | null> {
+): Promise<{ imagePath: string; dataUrl: string; buf: Buffer } | null> {
   const prepared = await preparePhoto(Buffer.from(await file.arrayBuffer()), file.type, file.name);
   if (!prepared) return null;
   const imagePath = await saveBuffer(prepared.buf, prepared.ext);
-  return { imagePath, dataUrl: prepared.dataUrl };
+  return { imagePath, dataUrl: prepared.dataUrl, buf: prepared.buf };
 }
 
 // Turn uploaded photo bytes into what we store and send to the model: HEIC
@@ -153,6 +153,13 @@ export async function preparePhoto(
   const ext = isJpeg ? "jpg" : EXT_BY_TYPE[type] ?? "jpg";
   const outType = isJpeg ? "image/jpeg" : type;
   return { buf, ext, dataUrl: `data:${outType};base64,${buf.toString("base64")}` };
+}
+
+// A small JPEG data: URL of an image, for a quick look by a vision model.
+export async function smallDataUrl(buf: Buffer, size = 768): Promise<string> {
+  const { default: sharp } = await import("sharp");
+  const small = await sharp(buf).resize(size, size, { fit: "inside" }).jpeg({ quality: 80 }).toBuffer();
+  return `data:image/jpeg;base64,${small.toString("base64")}`;
 }
 
 // Cut the dish picture out of a page photo. box is [ymin, xmin, ymax, xmax]

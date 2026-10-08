@@ -13,8 +13,8 @@
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
-import { extractRecipesFromPhotos, type PageRecipe } from "@/lib/extractRecipe";
-import { cropPhoto, preparePhoto } from "@/lib/saveImage";
+import { cropShowsDish, extractRecipesFromPhotos, type PageRecipe } from "@/lib/extractRecipe";
+import { cropPhoto, preparePhoto, smallDataUrl } from "@/lib/saveImage";
 
 const SET = path.resolve("test_photos");
 const OUT = path.resolve("photo-import-review");
@@ -67,7 +67,8 @@ async function runCase(name: string, model?: string): Promise<CaseResult> {
       recipes.map(async (r, i) => {
         if (!r.dish) return { ...r, crop: null };
         const buf = await cropPhoto(prepared[r.dish.photo].buf, r.dish.box);
-        if (!buf) return { ...r, crop: null };
+        // As in the app: a crop that doesn't show the dish is dropped.
+        if (!buf || !(await cropShowsDish(await smallDataUrl(buf), r.title))) return { ...r, crop: null };
         const crop = `dish-${i + 1}.jpg`;
         await writeFile(path.join(dir, crop), buf);
         return { ...r, crop };
