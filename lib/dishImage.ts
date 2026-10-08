@@ -85,7 +85,7 @@ const cloudflare: Provider = {
       res = await fetch(url, {
         method: "POST",
         headers: { ...auth, "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, steps: 6, seed }),
+        body: JSON.stringify({ prompt, steps: 6 }),
       });
     }
     if (!res.ok) {
