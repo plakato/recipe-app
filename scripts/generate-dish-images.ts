@@ -4,7 +4,7 @@
 // of the dish, prompt, picture, scan) into the output folder for review.
 //
 // Run: npx tsx --env-file=.env scripts/generate-dish-images.ts [--user <email>]
-//        [--limit 3] [--out dish-image-review] [--title <part of a title>]
+//        [--limit 3] [--out dish-image-review] [--title <part of a title>[|<another>…]]
 // Without --user it takes the showcase account's recipes.
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -38,7 +38,7 @@ async function main() {
       userId,
       deletedAt: null,
       ...visibleRecipes,
-      ...(title ? { title: { contains: title } } : {}),
+      ...(title ? { OR: title.split("|").map((t) => ({ title: { contains: t.trim() } })) } : {}),
     },
     orderBy: { createdAt: "asc" },
     take: limit,
