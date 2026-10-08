@@ -25,9 +25,10 @@ const DESCRIBE_PROMPT = `You are a food stylist preparing a photo shoot. You get
 
 Return ONLY a JSON object: {"dish": string, "prompt": string}
 - "dish": the dish's name in English, e.g. "Slovak potato dumplings with sheep cheese (bryndzové halušky)".
-- "prompt": one English paragraph (40–80 words) for an image model: the finished dish as served — its shape, texture, colour, the toppings and garnish that the recipe has, the plate, bowl, pan or baking dish it is served in, and the portion (e.g. a slice cut from a cake, a bowl of soup). Then: overhead or 45° view, natural daylight, simple home kitchen table, realistic food photography.
+- "prompt": one English paragraph (30–60 words) for an image model. Start with the kind of dish and what it is served in (e.g. "A bowl of clear soup", "A slice of layered cake on a plate"). Then name only the 3–5 things most visible on top, with their shape and colour (e.g. "thin julienned carrot strips"), and the garnish the recipe has. Then: overhead or 45° view, natural daylight, simple home kitchen table, realistic food photography.
 
 Rules:
+- Decide the kind of dish from the method and the amounts, not only the title or the section headings: a lot of broth, stock, water or milk compared to the solid ingredients (e.g. 600 ml stock for a few hundred grams of meat and vegetables) means a soup or a stew, even when the title doesn't say so or the liquid is listed under "sauce".
 - Describe what the recipe makes, not its ingredients raw or the steps of making it.
 - Only show what the recipe has: no invented sides, sauces or garnishes.
 - A sauce, dressing, filling, spread or glaze is shown the way it is eaten, on what the recipe says it is for (e.g. cheese sauce over pasta, a cream filling inside the cake it fills).
