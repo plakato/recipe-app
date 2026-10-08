@@ -4,7 +4,7 @@
 // of the dish, prompt, picture, scan) into the output folder for review.
 //
 // Run: npx tsx --env-file=.env scripts/generate-dish-images.ts [--user <email>]
-//        [--limit 20] [--out dish-image-review] [--title <part of a title>]
+//        [--limit 3] [--out dish-image-review] [--title <part of a title>]
 // Without --user it takes the showcase account's recipes.
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -28,7 +28,7 @@ async function main() {
   const userId = raw.includes("--user") ? await userIdForScript(raw) : await getShowcaseUserId();
   if (!userId) throw new Error("No showcase account; pass --user <email>.");
   const argv = stripUserArg(raw);
-  const limit = Number(arg(argv, "--limit") ?? 20);
+  const limit = Number(arg(argv, "--limit") ?? 3);
   const out = path.resolve(arg(argv, "--out") ?? "dish-image-review");
   const title = arg(argv, "--title");
   await mkdir(out, { recursive: true });

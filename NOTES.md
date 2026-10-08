@@ -88,7 +88,9 @@ recipes are hidden, not deleted. In order:
      `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_AI_TOKEN`), else Pollinations
      without a key (watermarked, weak "sana" model, often 402 — not good
      enough for the app). Try it without touching recipes:
-     `scripts/generate-dish-images.ts --limit 20` → `dish-image-review/`.
+     `scripts/generate-dish-images.ts` (3 recipes by default; more only once
+     the 3 look good) → `dish-image-review/`. It uses the recipe's text, never
+     the photo again.
      Not yet: a separate field for the dish picture (the scan stays in
      `imagePath`), generating on import, cropping a dish photo from the page.
 7. ~~**Daily usage statistics.**~~ — DONE 2026-10-06: every AI call is
@@ -106,6 +108,11 @@ recipes are hidden, not deleted. In order:
    ChatGPT connection over our database (read-only MCP server with sign-in).
 
 ## Deferred features
+
+- **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.)
+
+- **Recipes with photos of the instructions.** Recipes whose method is (also)
+  shown in step-by-step photos — import and show them. (Requested 2026-10-08.)
 
 - **Photo/voice: "reading finished" notification.**
   AI reading of a photo (and extraction in general) is slow on free models
