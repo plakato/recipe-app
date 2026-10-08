@@ -90,8 +90,21 @@ const MAX_DIMENSION = 3000;
 export async function saveUploadedImage(
   file: File,
 ): Promise<{ imagePath: string; dataUrl: string } | null> {
-  const type = (file.type ?? "").split(";")[0].trim();
-  let buf = Buffer.from(await file.arrayBuffer());
+  const prepared = await preparePhoto(Buffer.from(await file.arrayBuffer()), file.type, file.name);
+  if (!prepared) return null;
+  const imagePath = await saveBuffer(prepared.buf, prepared.ext);
+  return { imagePath, dataUrl: prepared.dataUrl };
+}
+
+// Turn uploaded photo bytes into what we store and send to the model: HEIC
+// converted, rotated upright, downscaled, re-encoded. null if unusable.
+export async function preparePhoto(
+  input: Buffer,
+  fileType: string | undefined,
+  fileName: string | undefined,
+): Promise<{ buf: Buffer; ext: string; dataUrl: string } | null> {
+  const type = (fileType ?? "").split(";")[0].trim();
+  let buf = input;
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return null;
 
   // iPhone photos are often HEIC/HEIF. Browsers can't display them and sharp's
@@ -100,7 +113,7 @@ export async function saveUploadedImage(
   const isHeic =
     type === "image/heic" ||
     type === "image/heif" ||
-    /\.hei[cf]$/i.test(file.name ?? "");
+    /\.hei[cf]$/i.test(fileName ?? "");
   if (isHeic) {
     try {
       const { default: convert } = await import("heic-convert");
@@ -139,7 +152,35 @@ export async function saveUploadedImage(
 
   const ext = isJpeg ? "jpg" : EXT_BY_TYPE[type] ?? "jpg";
   const outType = isJpeg ? "image/jpeg" : type;
-  const imagePath = await saveBuffer(buf, ext);
-  const dataUrl = `data:${outType};base64,${buf.toString("base64")}`;
-  return { imagePath, dataUrl };
+  return { buf, ext, dataUrl: `data:${outType};base64,${buf.toString("base64")}` };
+}
+
+// Cut the dish picture out of a page photo. box is [ymin, xmin, ymax, xmax]
+// on a 0–1000 scale (as the model gives it), padded a little since models
+// draw boxes tight. Returns a JPEG, or null if the crop fails.
+export async function cropPhoto(
+  photo: Buffer,
+  box: [number, number, number, number],
+): Promise<Buffer | null> {
+  try {
+    const { default: sharp } = await import("sharp");
+    const { width = 0, height = 0 } = await sharp(photo).metadata();
+    if (!width || !height) return null;
+    const pad = 10;
+    const [y0, x0, y1, x1] = box.map((v, i) =>
+      Math.min(1000, Math.max(0, v + (i < 2 ? -pad : pad))),
+    );
+    const left = Math.round((x0 / 1000) * width);
+    const top = Math.round((y0 / 1000) * height);
+    const w = Math.round(((x1 - x0) / 1000) * width);
+    const h = Math.round(((y1 - y0) / 1000) * height);
+    if (w < 50 || h < 50) return null;
+    return await sharp(photo)
+      .extract({ left, top, width: Math.min(w, width - left), height: Math.min(h, height - top) })
+      .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+  } catch {
+    return null;
+  }
 }

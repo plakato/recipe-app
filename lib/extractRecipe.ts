@@ -15,7 +15,7 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // A content part can be plain text or an image (for photo import in Phase 3).
 type ContentPart =
   | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } };
+  | { type: "image_url"; image_url: { url: string; detail?: "high" } };
 
 export type ChatMessage = {
   role: "system" | "user";
@@ -125,7 +125,15 @@ function isBusy(e: unknown): boolean {
 
 // Call one model. Retries on 429 (free-tier rate limit) and 503 with a short
 // backoff, since free models are frequently busy. Throws on other errors.
-async function callModel(model: string, messages: ChatMessage[]): Promise<string> {
+// A JSON schema for the answer ("structured output"): models that support it
+// can only return valid JSON of that shape. Others get plain JSON mode.
+type JsonSchema = { name: string; schema: Record<string, unknown> };
+
+async function callModel(
+  model: string,
+  messages: ChatMessage[],
+  schema?: JsonSchema,
+): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY is not set in .env");
@@ -146,16 +154,32 @@ async function callModel(model: string, messages: ChatMessage[]): Promise<string
         model,
         messages,
         temperature: 0.2,
+        // A recipe answer needs a few thousand tokens. The cap stops a model
+        // stuck repeating itself (one ran to 65k tokens, $0.16, on 2026-10-08).
+        max_tokens: 8000,
         // Ask for a JSON object where supported; harmless where ignored.
-        response_format: { type: "json_object" },
+        response_format: schema
+          ? { type: "json_schema", json_schema: { ...schema, strict: true } }
+          : { type: "json_object" },
       }),
     });
 
     if (res.ok) {
       const data = (await res.json()) as {
-        choices?: { message?: { content?: string } }[];
-        usage?: { cost?: number; prompt_tokens?: number; completion_tokens?: number };
+        choices?: { message?: { content?: string }; finish_reason?: string }[];
+        usage?: {
+          cost?: number;
+          prompt_tokens?: number;
+          completion_tokens?: number;
+          completion_tokens_details?: { reasoning_tokens?: number };
+        };
       };
+      if (data.choices?.[0]?.finish_reason === "length") {
+        const tail = (data.choices[0].message?.content ?? "").slice(-300);
+        console.warn(
+          `${model} hit the length cap (${data.usage?.completion_tokens_details?.reasoning_tokens ?? "?"} reasoning tokens). Answer ends: ${tail}`,
+        );
+      }
       // Every call is recorded (statistics; paid ones also count against the
       // budget). Free models cost nothing; if a paid call's cost is missing,
       // assume a cent rather than nothing.
@@ -208,19 +232,23 @@ async function runExtraction(
 
 // Shared model loop: try each model in turn, parse its answer with `parse`,
 // and return the first non-empty result. Calls are recorded as "read-recipe".
-function runModels(
+function runModels<T = RecipeDraft>(
   messages: ChatMessage[],
-  parse: (parsed: unknown) => RecipeDraft[],
+  parse: (parsed: unknown) => T[],
   modelOverride?: string,
-): Promise<RecipeDraft[]> {
-  return withUsage({ purpose: "read-recipe" }, () => tryModels(messages, parse, modelOverride));
+  schema?: JsonSchema,
+): Promise<T[]> {
+  return withUsage({ purpose: "read-recipe" }, () =>
+    tryModels(messages, parse, modelOverride, schema),
+  );
 }
 
-async function tryModels(
+async function tryModels<T>(
   messages: ChatMessage[],
-  parse: (parsed: unknown) => RecipeDraft[],
+  parse: (parsed: unknown) => T[],
   modelOverride?: string,
-): Promise<RecipeDraft[]> {
+  schema?: JsonSchema,
+): Promise<T[]> {
   const models = [...new Set([modelOverride, ...freeModels()].filter(Boolean) as string[])];
   const paid = paidFallback(models);
 
@@ -232,7 +260,7 @@ async function tryModels(
     if (model === paid && !(errors.every(isBusy) && (await paidBudgetLeft()))) break;
     if (model === paid) console.warn(`Free models busy; reading the recipe with paid ${paid}.`);
     try {
-      const content = await callModel(model, messages);
+      const content = await callModel(model, messages, schema);
       const drafts = parse(extractJsonObject(content));
       if (drafts.length === 0) {
         throw new Error("Model did not find a recipe in the material.");
@@ -455,3 +483,193 @@ async function askForImages(dishes: string[], imageDataUrls: string[]): Promise<
   }
   return null;
 }
+
+// ---- Photo import: one or more photos taken together (roadmap step 5) ----
+
+// [ymin, xmin, ymax, xmax] on a 0–1000 scale of the photo it is on.
+export type Box = [number, number, number, number];
+
+export type PageRecipe = RecipeDraft & {
+  // 0-based indexes of the photos holding this recipe's text.
+  photos: number[];
+  // Where the recipe's dish is pictured, for cropping (null: nowhere).
+  dish: { photo: number; box: Box } | null;
+};
+
+const PAGES_SYSTEM_PROMPT = `You read cooking recipes from photos that a person took together to save them: magazine or cookbook pages, handwritten cards or notes. One recipe may continue over several photos (e.g. two pages), one photo may hold several recipes, and some photos only show a picture of a dish.
+
+Return ONLY a JSON object (no markdown, no commentary):
+{"pictures": number[],           // photos that are mainly a picture of a dish, with little or no recipe text
+ "recipes": [
+  {
+    "title": string,
+    "ingredients": string[],     // each item its own string, e.g. "2 cups flour"
+    "instructions": string[],    // each step its own string, in order
+    "tips": string[],            // practical tips for this recipe; [] if none
+    "photos": number[],          // the photo numbers holding this recipe's text
+    "dish": {"photo": number, "box": [ymin, xmin, ymax, xmax]} | null
+  }
+]}
+
+Which recipes:
+- A recipe that continues on another photo is ONE recipe: join its parts in order.
+- Include a recipe only if its ingredients or method can be read. Skip recipes cut off at the edge of the photo or only partly visible, and mere mentions or names of dishes.
+- Return every recipe; for each, say in "dish" where its dish is pictured — a full-page picture of the dish (matched by its caption) is the best choice.
+
+Text:
+- Keep the recipe in its ORIGINAL language (do not translate). Transcribe printed or handwritten text as accurately as you can.
+- Join words that the page splits at the end of a line (e.g. "mari-" + "nády" → "marinády"), and lines that continue one ingredient (e.g. "1–2 lžičky srirachy" + "+ navíc k podávání" is one item).
+- If the recipe has separate components (e.g. dough, filling, glaze, sauce, "for serving"), keep ONE list but put a heading line ending in a colon before each component's items, in the recipe's language, e.g. "Cesto:", "Plnka:", "K podávání:". Do the same in instructions when the steps are grouped by component. Never invent components.
+- Leave out everything that is not the recipe itself: introductions, stories and history of the dish, advertising, author and photo credits, page numbers, links, QR codes, servings/time/difficulty labels.
+- "tips": only practical advice for making, serving, storing or varying THIS recipe (e.g. "Serve right away; it separates when reheated."), in the recipe's language. A box of advice about another topic belongs to no recipe.
+- Ignore crossed-out or struck-through words: the author deleted them, so leave them out and do not guess a replacement.
+- Never invent quantities; use "" or [] for what is unknown.
+
+"dish": the printed photo that best shows this recipe's dish, finished or (if nothing better) being cooked — matched by caption, name and contents; never a photo of people, a logo, an ad, or another recipe's dish. "box" is a tight box around that picture of the dish on that photo, as [ymin, xmin, ymax, xmax] from 0 to 1000 (0,0 = top-left), excluding text, people and other dishes. null if no photo shows this dish.
+
+If there is no recipe, return {"pictures": [], "recipes": []}.`;
+
+function asBox(value: unknown): Box | null {
+  if (!Array.isArray(value) || value.length !== 4) return null;
+  const n = value.map(Number);
+  if (!n.every((x) => Number.isFinite(x))) return null;
+  const [y0, x0, y1, x1] = n.map((x) => Math.min(1000, Math.max(0, x)));
+  // At least a tenth of the photo's width and height, else not a usable picture.
+  return y1 - y0 >= 100 && x1 - x0 >= 100 ? [y0, x0, y1, x1] : null;
+}
+
+// Parse the {"pictures":[...],"recipes":[...]} answer for `photoCount` photos
+// (numbered from 1 in the prompt). Tips go at the end of the method under a
+// "Tipy:" heading. When the person added a photo that is mainly a picture of a
+// dish, they took it for that recipe: only the recipes pictured on such photos
+// are kept, not others that happen to share their page (decided here, since
+// models don't follow that rule reliably). A photo counts as such a picture
+// when the model lists it in "pictures" or a dish fills half of it.
+// A component heading printed in capitals without its colon ("K PODÁVÁNÍ",
+// "NA GRILOVANÉ KUŘE") gets one, so the app shows it as a heading.
+function withHeadingColons(lines: string[]): string[] {
+  return lines.map((l) =>
+    l.length <= 40 && !/[\d:]/.test(l) && /\p{Lu}/u.test(l) && l === l.toUpperCase() ? `${l}:` : l,
+  );
+}
+
+export function toPageRecipes(parsed: unknown, photoCount: number): PageRecipe[] {
+  const obj = (parsed ?? {}) as Record<string, unknown>;
+  const list = Array.isArray(obj.recipes) ? obj.recipes : [];
+  const photoIndex = (v: unknown) => {
+    const n = Number(v);
+    return Number.isInteger(n) && n >= 1 && n <= photoCount ? n - 1 : null;
+  };
+  const pictures = new Set(
+    (Array.isArray(obj.pictures) ? obj.pictures : [])
+      .map(photoIndex)
+      .filter((n): n is number => n !== null),
+  );
+  const recipes = list
+    .map((item): PageRecipe => {
+      const r = (item ?? {}) as Record<string, unknown>;
+      const raw = toDraft(r);
+      const draft = {
+        ...raw,
+        ingredients: withHeadingColons(raw.ingredients),
+        instructions: withHeadingColons(raw.instructions),
+      };
+      const tips = asStringArray(r.tips);
+      const photos = Array.isArray(r.photos)
+        ? [...new Set(r.photos.map(photoIndex).filter((n): n is number => n !== null))]
+        : [];
+      const d = (r.dish ?? null) as Record<string, unknown> | null;
+      const dishPhoto = d ? photoIndex(d.photo) : null;
+      const box = d ? asBox(d.box) : null;
+      return {
+        ...draft,
+        instructions: tips.length ? [...draft.instructions, "Tipy:", ...tips] : draft.instructions,
+        photos,
+        dish: dishPhoto !== null && box ? { photo: dishPhoto, box } : null,
+      };
+    })
+    .filter((d) => d.title || d.ingredients.length > 0);
+  // A lone recipe with no dish found, and a photo without its text (or any
+  // recipe's): that photo is the dish picture.
+  const textPhotos = new Set(recipes.flatMap((r) => r.photos));
+  const spare = [...Array(photoCount).keys()].find((i) => pictures.has(i) || !textPhotos.has(i));
+  if (recipes.length === 1 && !recipes[0].dish && spare !== undefined) {
+    recipes[0].dish = { photo: spare, box: [0, 0, 1000, 1000] };
+  }
+  // A dish filling at least half of its photo also makes that photo a picture
+  // (models often leave "pictures" empty).
+  for (const r of recipes) {
+    if (!r.dish) continue;
+    const [y0, x0, y1, x1] = r.dish.box;
+    if ((y1 - y0) * (x1 - x0) >= 500_000) pictures.add(r.dish.photo);
+  }
+  const pictured = recipes.filter((r) => r.dish && pictures.has(r.dish.photo));
+  return pictured.length > 0 ? pictured : recipes;
+}
+
+// Read every recipe from photos taken together (data: URLs, in the order the
+// person picked them), with the photos each one is on and where its dish is
+// pictured.
+export function extractRecipesFromPhotos(
+  imageDataUrls: string[],
+  modelOverride?: string,
+): Promise<PageRecipe[]> {
+  const content: ContentPart[] = [
+    {
+      type: "text",
+      text: `Read the recipes from ${
+        imageDataUrls.length === 1 ? "this photo" : `these ${imageDataUrls.length} photos`
+      }.`,
+    },
+  ];
+  imageDataUrls.forEach((url, i) => {
+    content.push({ type: "text", text: `Photo ${i + 1}:` });
+    content.push({ type: "image_url", image_url: { url, detail: "high" } });
+  });
+  return runModels(
+    [
+      { role: "system", content: PAGES_SYSTEM_PROMPT },
+      { role: "user", content },
+    ],
+    (parsed) => toPageRecipes(parsed, imageDataUrls.length),
+    modelOverride,
+    PAGES_SCHEMA,
+  );
+}
+
+const strings = { type: "array", items: { type: "string" } };
+const PAGES_SCHEMA: JsonSchema = {
+  name: "recipes_from_photos",
+  schema: {
+    type: "object",
+    properties: {
+      pictures: { type: "array", items: { type: "integer" } },
+      recipes: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            ingredients: strings,
+            instructions: strings,
+            tips: strings,
+            photos: { type: "array", items: { type: "integer" } },
+            dish: {
+              type: ["object", "null"],
+              properties: {
+                photo: { type: "integer" },
+                box: { type: "array", items: { type: "integer" } },
+              },
+              required: ["photo", "box"],
+              additionalProperties: false,
+            },
+          },
+          required: ["title", "ingredients", "instructions", "tips", "photos", "dish"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["pictures", "recipes"],
+    additionalProperties: false,
+  },
+};

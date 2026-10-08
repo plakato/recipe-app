@@ -5,6 +5,7 @@ import {
   parseImageChoices,
   toDraft,
   toDrafts,
+  toPageRecipes,
 } from "@/lib/extractRecipe";
 import { paidBudgetLeft, recordModelCall } from "@/lib/aiBudget";
 
@@ -184,5 +185,65 @@ describe("paid model fallback", () => {
     expect(recordModelCall).toHaveBeenCalledWith(
       expect.objectContaining({ model: "free-a:free", promptTokens: 1200, completionTokens: 80 }),
     );
+  });
+});
+
+describe("toPageRecipes", () => {
+  const orange = {
+    title: "Pečené kuře na pomerančích",
+    ingredients: ["1 kuře"],
+    instructions: ["Upečte."],
+    tips: ["Nechte odpočinout."],
+    photos: [1, 2],
+    dish: { photo: 2, box: [100, 150, 600, 600] },
+  };
+  const mandarin = {
+    title: "Křupavé mandarinkové kuře",
+    ingredients: ["700g kuřecích řízků"],
+    instructions: ["Osmažte."],
+    photos: [1],
+    dish: { photo: 1, box: [100, 100, 270, 330] },
+  };
+
+  it("keeps only the recipes pictured on a photo that is mainly a dish", () => {
+    const recipes = toPageRecipes({ pictures: [2], recipes: [mandarin, orange] }, 2);
+    expect(recipes.map((r) => r.title)).toEqual(["Pečené kuře na pomerančích"]);
+  });
+
+  it("treats a photo that a dish fills by half as a picture", () => {
+    const full = { ...orange, dish: { photo: 2, box: [10, 0, 999, 999] } };
+    const recipes = toPageRecipes({ pictures: [], recipes: [mandarin, full] }, 2);
+    expect(recipes.map((r) => r.title)).toEqual(["Pečené kuře na pomerančích"]);
+  });
+
+  it("gives a lone recipe the photo without recipe text as its dish", () => {
+    const noDish = { ...orange, photos: [1], dish: null };
+    const [r] = toPageRecipes({ pictures: [], recipes: [noDish] }, 2);
+    expect(r.dish).toEqual({ photo: 1, box: [0, 0, 1000, 1000] });
+  });
+
+  it("adds the colon to headings printed in capitals", () => {
+    const caps = { ...orange, ingredients: ["NA GRILOVANÉ KUŘE", "3 stroužky česneku", "K PODÁVÁNÍ", "hrst koriandru"] };
+    const [r] = toPageRecipes({ recipes: [caps] }, 2);
+    expect(r.ingredients).toEqual(["NA GRILOVANÉ KUŘE:", "3 stroužky česneku", "K PODÁVÁNÍ:", "hrst koriandru"]);
+  });
+
+  it("keeps every recipe when no photo is mainly a dish", () => {
+    const recipes = toPageRecipes({ pictures: [], recipes: [mandarin, orange] }, 2);
+    expect(recipes).toHaveLength(2);
+  });
+
+  it("uses 0-based photo indexes and puts tips under a heading", () => {
+    const [r] = toPageRecipes({ recipes: [orange] }, 2);
+    expect(r.photos).toEqual([0, 1]);
+    expect(r.dish).toEqual({ photo: 1, box: [100, 150, 600, 600] });
+    expect(r.instructions).toEqual(["Upečte.", "Tipy:", "Nechte odpočinout."]);
+  });
+
+  it("drops dish boxes that are out of range or too small", () => {
+    const tiny = { ...orange, dish: { photo: 2, box: [100, 100, 150, 150] } };
+    const badPhoto = { ...orange, dish: { photo: 5, box: [0, 0, 1000, 1000] } };
+    expect(toPageRecipes({ recipes: [tiny] }, 2)[0].dish).toBeNull();
+    expect(toPageRecipes({ recipes: [badPhoto] }, 2)[0].dish).toBeNull();
   });
 });

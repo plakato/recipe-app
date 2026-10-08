@@ -78,6 +78,27 @@ recipes are hidden, not deleted. In order:
    Patricia's photo recipes plus new photos of different kinds she will add
    (incl. pages with a dish photo to crop). Also: automatic language
    detection, progress + "done" feedback (see below).
+   - 2026-10-08 started: `extractRecipesFromPhotos` (lib/extractRecipe.ts)
+     reads all photos taken together in one request: joins a recipe over
+     pages, returns each recipe's text photos and a box around its dish
+     picture (cropped by `cropPhoto`, lib/saveImage.ts), keeps tips under
+     "Tipy:", drops intros/ads/credits and cut-off recipes. A photo that is
+     mainly the dish picks the recipe(s) to keep — decided in code
+     (`toPageRecipes`), models don't follow that rule. Structured output
+     (JSON schema) — Gemini broke plain JSON on 3 of 5 cases.
+     Test set: `scripts/test-photo-set.ts <folder|file>…` →
+     `photo-import-review/` (costs printed; ~$0.003 per case on paid).
+     5 cases checked 2026-10-08 (two-recipes-per-image, kure pomeranc,
+     butter chicken, IMG_8147, banh mi): all right recipes + dish crops.
+   - Paid fallback switched to `google/gemini-3.5-flash-lite` (.env
+     OPENROUTER_MODEL_HQ; **also change it in Hermes' .env**): gemini-2.5-flash
+     misread small print when given several photos (invented ingredients)
+     and once looped to 65k tokens ($0.16) — every call is now capped at
+     8,000 tokens. The free Gemma pool was rate-limited (429) on almost
+     every try today; adding our own Google AI Studio key to OpenRouter
+     (settings/integrations) might give the free models our own quota.
+   - Not yet in the app: several photos per upload, the 1-of-N review, the
+     dish crop as the card picture (scan kept as the source).
 6. **Dish pictures, automatically.** Crop the dish photo from the page when
    there is one, otherwise generate one (once, stored, within the budget).
    The scan stays attached as the source photo.
