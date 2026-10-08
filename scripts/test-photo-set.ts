@@ -10,11 +10,18 @@
 //   <case>: a folder name in test_photos/ (e.g. "butter chicken") or a path to
 //   one image (e.g. test_photos/one-image-recipes/IMG_8147.HEIC).
 // Without a case it lists the cases.
+//
+// Save the reviewed results into an account (no AI calls; the recipes come
+// from photo-import-review/, as they were read; a recipe of the same title is
+// skipped, so it can be re-run):
+//   npx tsx --env-file=.env scripts/test-photo-set.ts --save --user <email> [<case>…]
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
-import { cropShowsDish, extractRecipesFromPhotos, type PageRecipe } from "@/lib/extractRecipe";
-import { cropPhoto, preparePhoto, smallDataUrl } from "@/lib/saveImage";
+import { extractRecipesFromPhotos, type PageRecipe } from "@/lib/extractRecipe";
+import { cropDish } from "@/lib/dishCrop";
+import { preparePhoto, saveImageBuffer } from "@/lib/saveImage";
+import { stripUserArg, userIdForScript } from "@/lib/script-user";
 
 const SET = path.resolve("test_photos");
 const OUT = path.resolve("photo-import-review");
@@ -65,10 +72,10 @@ async function runCase(name: string, model?: string): Promise<CaseResult> {
     const recipes = await extractRecipesFromPhotos(prepared.map((p) => p.dataUrl), model);
     result.recipes = await Promise.all(
       recipes.map(async (r, i) => {
-        if (!r.dish) return { ...r, crop: null };
-        const buf = await cropPhoto(prepared[r.dish.photo].buf, r.dish.box);
-        // As in the app: a crop that doesn't show the dish is dropped.
-        if (!buf || !(await cropShowsDish(await smallDataUrl(buf), r.title))) return { ...r, crop: null };
+        // As in the app: checked, looked for again if wrong, else dropped.
+        const others = recipes.filter((o) => o !== r).map((o) => o.title);
+        const buf = await cropDish(r, prepared, others);
+        if (!buf) return { ...r, crop: null };
         const crop = `dish-${i + 1}.jpg`;
         await writeFile(path.join(dir, crop), buf);
         return { ...r, crop };
@@ -140,8 +147,48 @@ article{display:grid;grid-template-columns:300px 1fr;gap:16px;background:#fff;bo
   );
 }
 
+// Store the recipes of the saved results (all, or the named cases) as photo
+// recipes of this account: the dish crop as the picture, the photos as scans.
+async function save(userId: string, names: string[]) {
+  const wanted = new Set(names.map(slug));
+  for (const d of (await readdir(OUT)).sort()) {
+    if (wanted.size && !wanted.has(d)) continue;
+    const json = await readFile(path.join(OUT, d, "result.json"), "utf8").catch(() => null);
+    if (!json) continue;
+    const r = JSON.parse(json) as CaseResult;
+    const photoPaths = await Promise.all(
+      r.photos.map(async (p) => saveImageBuffer(await readFile(path.join(OUT, d, p)), "jpg")),
+    );
+    for (const x of r.recipes) {
+      const existing = await prisma.recipe.findFirst({ where: { userId, title: x.title, deletedAt: null } });
+      if (existing) {
+        console.log(`${r.name}: "${x.title}" already there, skipped`);
+        continue;
+      }
+      const used = [...new Set([...x.photos, ...(x.dish ? [x.dish.photo] : [])])].sort();
+      const recipe = await prisma.recipe.create({
+        data: {
+          userId,
+          title: x.title,
+          ingredients: JSON.stringify(x.ingredients),
+          instructions: JSON.stringify(x.instructions),
+          sourceType: "photo",
+          imagePath: x.crop ? await saveImageBuffer(await readFile(path.join(OUT, d, x.crop)), "jpg") : null,
+          scanPaths: JSON.stringify((used.length ? used : r.photos.map((_, i) => i)).map((i) => photoPaths[i])),
+        },
+      });
+      console.log(`${r.name}: "${x.title}" saved (${recipe.id})${x.crop ? "" : ", no picture"}`);
+    }
+  }
+}
+
 async function main() {
-  const argv = process.argv.slice(2);
+  const raw = process.argv.slice(2);
+  if (raw.includes("--save")) {
+    const userId = await userIdForScript(raw);
+    return save(userId, stripUserArg(raw).filter((a) => a !== "--save"));
+  }
+  const argv = raw;
   const mi = argv.indexOf("--model");
   const model = mi >= 0 ? argv[mi + 1] : undefined;
   const cases = mi >= 0 ? [...argv.slice(0, mi), ...argv.slice(mi + 2)] : argv;

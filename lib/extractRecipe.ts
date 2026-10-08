@@ -688,7 +688,8 @@ export async function cropShowsDish(cropDataUrl: string, title: string): Promise
               type: "text",
               text:
                 `This picture was cut from a cookbook or magazine page for the recipe "${title}". ` +
-                "Does it mainly show a photo of food — that dish finished, or being cooked — rather than text, a person, a logo or an unrelated photo? " +
+                "Is it a photo of food — that dish finished, or being cooked — and not text, a person, a logo or an unrelated photo? " +
+                "Answer false also when lines of printed text (a title, a caption, the recipe) take up more than a thin strip of it. " +
                 'Answer with JSON only: {"dish": true} or {"dish": false}.',
             },
             { type: "image_url", image_url: { url: cropDataUrl } },
@@ -702,4 +703,36 @@ export async function cropShowsDish(cropDataUrl: string, title: string): Promise
     ),
   );
   return answer ?? true;
+}
+
+// A second try at finding a recipe's dish on one photo, when the first box
+// was in the wrong place: only the box is asked for, with the other recipes
+// on the photo named so their pictures aren't taken. null: not found.
+export function locateDish(photoDataUrl: string, title: string, others: string[]): Promise<Box | null> {
+  return withUsage({ purpose: "choose-photos" }, () =>
+    askModelsForJson(
+      [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                `This is a photo of a cookbook or magazine page with the recipe "${title}"` +
+                (others.length ? ` (it also has ${others.map((o) => `"${o}"`).join(", ")})` : "") +
+                `. Find the printed photo of food that belongs to "${title}" — usually right above or next to its title — not text and not another recipe's photo. ` +
+                `Answer with JSON only: {"box": [ymin, xmin, ymax, xmax]} from 0 to 1000 (0,0 = top-left), a tight box around that food photo only: it ends where the photo ends, before the recipe's title and text. Or {"box": null} if there is none.`,
+            },
+            { type: "image_url", image_url: { url: photoDataUrl, detail: "high" } },
+          ],
+        },
+      ],
+      (parsed) => {
+        const o = (parsed ?? {}) as Record<string, unknown>;
+        if (o.box === null) return { box: null };
+        const box = asBox(o.box);
+        return box ? { box } : null;
+      },
+    ),
+  ).then((a) => a?.box ?? null);
 }

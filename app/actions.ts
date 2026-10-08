@@ -15,14 +15,9 @@ import { runHousekeeping } from "@/lib/housekeeping";
 import { refundImport, startImport } from "@/lib/aiBudget";
 import { clientIp } from "@/lib/clientIp";
 import { AppError, USER_MESSAGES, toUserMessage } from "@/lib/userErrors";
-import { cropShowsDish, extractRecipesFromPhotos, extractRecipesFromText } from "@/lib/extractRecipe";
-import {
-  cropPhoto,
-  saveImageBuffer,
-  saveUploadedImage,
-  smallDataUrl,
-  uploadFilePath,
-} from "@/lib/saveImage";
+import { extractRecipesFromPhotos, extractRecipesFromText } from "@/lib/extractRecipe";
+import { cropDish } from "@/lib/dishCrop";
+import { saveImageBuffer, saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
 import { generateRecipePicture } from "@/lib/dishImage";
 import { access, unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
@@ -183,10 +178,10 @@ export async function importRecipesFromPhotos(formData: FormData): Promise<Photo
     const recipes = await extractRecipesFromPhotos(photos.map((p) => p.dataUrl));
     const drafts = await Promise.all(
       recipes.map(async (r): Promise<RecipeDraft> => {
-        let crop = r.dish ? await cropPhoto(photos[r.dish.photo].buf, r.dish.box) : null;
-        // A box in the wrong place (text, another photo): no picture rather
-        // than a wrong one — a generated one replaces it after saving.
-        if (crop && !(await cropShowsDish(await smallDataUrl(crop), r.title))) crop = null;
+        // No dish photo that passes the check: no picture rather than a
+        // wrong one — a generated one replaces it after saving.
+        const others = recipes.filter((o) => o !== r).map((o) => o.title);
+        const crop = await cropDish(r, photos, others);
         // The scans: the photos with its text and its dish (all, if unsure).
         const used = [...new Set([...r.photos, ...(r.dish ? [r.dish.photo] : [])])].sort();
         return {
