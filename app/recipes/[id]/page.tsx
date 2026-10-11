@@ -6,7 +6,8 @@ import { groupSections, parseList } from "@/lib/recipes";
 import RecipeImage from "@/components/RecipeImage";
 import DeleteButton from "@/components/DeleteButton";
 import { turnstileSiteKey } from "@/lib/turnstile";
-import { BackIcon, EditIcon, LinkIcon, PhotoIcon } from "@/components/Icons";
+import { BackIcon, EditIcon, LinkIcon } from "@/components/Icons";
+import ScanViewer from "@/components/ScanViewer";
 import { visibleRecipes } from "@/lib/features";
 import { isBeingDrawn } from "@/lib/dishImage";
 
@@ -36,8 +37,6 @@ export default async function RecipeDetailPage({
   // Photo recipes keep the photos they were read from (the scans); the picture
   // shown is the dish, cropped from them or generated.
   const scans = parseList(recipe.scanPaths);
-  const sourceHref = recipe.sourceUrl ?? scans[0] ?? null;
-  const sourceLabel = recipe.sourceUrl ? "Otvoriť pôvodnú stránku" : "Otvoriť pôvodnú fotku";
   const drawing = isBeingDrawn(recipe);
 
   return (
@@ -65,17 +64,19 @@ export default async function RecipeDetailPage({
               <BackIcon />
             </Link>
             <div className="flex items-center gap-2">
-              {sourceHref && (
+              {recipe.sourceUrl ? (
                 <a
-                  href={sourceHref}
+                  href={recipe.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title={sourceLabel}
-                  aria-label={sourceLabel}
+                  title="Otvoriť pôvodnú stránku"
+                  aria-label="Otvoriť pôvodnú stránku"
                   className={heroBtn}
                 >
-                  {recipe.sourceUrl ? <LinkIcon /> : <PhotoIcon />}
+                  <LinkIcon />
                 </a>
+              ) : (
+                scans.length > 0 && <ScanViewer scans={scans} className={heroBtn} />
               )}
               {/* Owners edit their recipe. Visitors get the same buttons: their demo
                   starts on save/delete (background bot check), on their own copy. */}
@@ -146,25 +147,6 @@ export default async function RecipeDetailPage({
         </div>
       </section>
 
-      {scans.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-stone-500">
-            {scans.length > 1 ? "Pôvodné fotky" : "Pôvodná fotka"}
-          </h2>
-          <div className="flex flex-wrap gap-3">
-            {scans.map((p, i) => (
-              <a key={p} href={p} target="_blank" rel="noopener noreferrer" title={`Fotka ${i + 1}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={p}
-                  alt={`Pôvodná fotka ${i + 1}`}
-                  className="h-32 w-auto rounded-lg border border-stone-200 object-cover dark:border-stone-700"
-                />
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
     </article>
   );
 }
