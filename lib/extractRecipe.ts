@@ -554,6 +554,12 @@ function withHeadingColons(lines: string[]): string[] {
 }
 
 export function toPageRecipes(parsed: unknown, photoCount: number): PageRecipe[] {
+  const { recipes, pictures } = readPageRecipes(parsed, photoCount);
+  return keepPictured(recipes, pictures);
+}
+
+// The recipes of the answer, and the photos it says are pictures of a dish.
+function readPageRecipes(parsed: unknown, photoCount: number): { recipes: PageRecipe[]; pictures: Set<number> } {
   const obj = (parsed ?? {}) as Record<string, unknown>;
   const list = Array.isArray(obj.recipes) ? obj.recipes : [];
   const photoIndex = (v: unknown) => {
@@ -596,6 +602,11 @@ export function toPageRecipes(parsed: unknown, photoCount: number): PageRecipe[]
   if (recipes.length === 1 && !recipes[0].dish && spare !== undefined) {
     recipes[0].dish = { photo: spare, box: [0, 0, 1000, 1000] };
   }
+  return { recipes, pictures };
+}
+
+// Only the recipes pictured on a photo of a dish (when there is one).
+function keepPictured(recipes: PageRecipe[], pictures: Set<number>): PageRecipe[] {
   // A dish filling at least half of its photo also makes that photo a picture
   // (models often leave "pictures" empty).
   for (const r of recipes) {
@@ -610,7 +621,7 @@ export function toPageRecipes(parsed: unknown, photoCount: number): PageRecipe[]
 // Read every recipe from photos taken together (data: URLs, in the order the
 // person picked them), with the photos each one is on and where its dish is
 // pictured.
-export function extractRecipesFromPhotos(
+export async function extractRecipesFromPhotos(
   imageDataUrls: string[],
   modelOverride?: string,
 ): Promise<PageRecipe[]> {
@@ -626,15 +637,65 @@ export function extractRecipesFromPhotos(
     content.push({ type: "text", text: `Photo ${i + 1}:` });
     content.push({ type: "image_url", image_url: { url, detail: "high" } });
   });
-  return runModels(
+  let pictures = new Set<number>();
+  const recipes = await runModels(
     [
       { role: "system", content: PAGES_SYSTEM_PROMPT },
       { role: "user", content },
     ],
-    (parsed) => toPageRecipes(parsed, imageDataUrls.length),
+    (parsed) => {
+      const read = readPageRecipes(parsed, imageDataUrls.length);
+      pictures = read.pictures;
+      return read.recipes;
+    },
     modelOverride,
     PAGES_SCHEMA,
   );
+  // A photo the model used for nothing — no recipe's text, no dish — is
+  // usually a full-page picture of a dish it overlooked (it then takes the
+  // small one on the text page): ask which recipe it shows.
+  const used = new Set(recipes.flatMap((r) => [...r.photos, ...(r.dish ? [r.dish.photo] : [])]));
+  for (const photo of imageDataUrls.keys()) {
+    if (used.has(photo)) continue;
+    const shown = await recipeShownOn(imageDataUrls[photo], recipes.map((r) => r.title));
+    if (shown === null) continue;
+    // The page around the picture (edges, a headline) is left out if found.
+    const others = recipes.filter((_, i) => i !== shown).map((r) => r.title);
+    const box = await locateDish(imageDataUrls[photo], recipes[shown].title, others);
+    recipes[shown].dish = { photo, box: box ?? [0, 0, 1000, 1000] };
+    pictures.add(photo);
+  }
+  return keepPictured(recipes, pictures);
+}
+
+// Which of these recipes (by title) is the dish on this photo? Its index, or
+// null for none, text, or no usable answer.
+function recipeShownOn(photoDataUrl: string, titles: string[]): Promise<number | null> {
+  if (titles.length === 0) return Promise.resolve(null);
+  const list = titles.map((t, i) => `${i + 1}. ${t}`).join("\n");
+  return withUsage({ purpose: "choose-photos" }, () =>
+    askModelsForJson(
+      [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                `These recipes were read from cookbook or magazine pages:\n${list}\n\n` +
+                "Is this photo mainly a picture of one of these dishes, finished or being cooked? Match it by the food and by any caption. " +
+                'Answer with JSON only: {"recipe": its number}, or {"recipe": 0} if it shows none of them or is mainly text.',
+            },
+            { type: "image_url", image_url: { url: photoDataUrl } },
+          ],
+        },
+      ],
+      (parsed) => {
+        const n = Number((parsed as Record<string, unknown> | null)?.recipe);
+        return Number.isInteger(n) && n >= 0 && n <= titles.length ? { n } : null;
+      },
+    ),
+  ).then((a) => (a && a.n > 0 ? a.n - 1 : null));
 }
 
 const strings = { type: "array", items: { type: "string" } };
