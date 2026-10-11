@@ -199,7 +199,10 @@ recipes are hidden, not deleted. In order:
   - Service: `systemctl status recipes` (Next.js on 127.0.0.1:3100).
   - Public: Cloudflare Tunnel "recipes" (`systemctl status cloudflared`,
     config `/etc/cloudflared/config.yml`); no inbound ports used.
-  - Update: push to GitHub, then `ssh root@hermes /srv/recipes/deploy.sh`.
+  - Update: push to GitHub, then `scripts/deploy.sh` (runs the server's
+    `/srv/recipes/deploy.sh`, then merges this Mac's recipes and photos into the
+    live site — new and locally newer ones; see lib/sync.ts; `--dry-run` shows
+    the plan). Needs `SYNC_USER=<email>` in .env.
   - Backups: `recipes-backup.timer` nightly 02:30 → gdrive:RecipeAppBackup
     (this Mac's dev copy backs up to gdrive:RecipeAppBackup-mac instead).
   - Still to do: Cloudflare Access in front of the login page, OpenRouter
