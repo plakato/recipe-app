@@ -142,7 +142,7 @@ recipes are hidden, not deleted. In order:
 
 ## Deferred features
 
-- **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.)
+- **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.) Plan (2026-10-11): probably through MCP as a ChatGPT app, so the searching runs on the user's ChatGPT account and its tokens, not ours. Our server only exposes the recipes as tools (list, read, search by words).
 
 - **Recipes with photos of the instructions.** Recipes whose method is (also)
   shown in step-by-step photos — import and show them. (Requested 2026-10-08.)

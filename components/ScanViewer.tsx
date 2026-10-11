@@ -46,14 +46,9 @@ export default function ScanViewer({
         onClick={() => setOpen(0)}
         title={label}
         aria-label={label}
-        className={`relative ${className}`}
+        className={className}
       >
         <PhotoIcon />
-        {count > 1 && (
-          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-semibold text-stone-800">
-            {count}
-          </span>
-        )}
       </button>
       {open !== null &&
         createPortal(
