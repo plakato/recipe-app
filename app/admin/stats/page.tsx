@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { loadBackupStatus } from "@/lib/backupStatus";
 import { ACTIVITY_KINDS, TIME_ZONE, dayKey, loadDailyStats, total, type DayStats } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
@@ -106,7 +107,7 @@ export default async function StatsPage() {
   const user = await requireUser();
   if (!user.isAdmin) notFound();
 
-  const days = await loadDailyStats(30);
+  const [days, backup] = await Promise.all([loadDailyStats(30), loadBackupStatus()]);
   const today = days.find((d) => d.day === dayKey(new Date())) ?? null;
   const month = total(days);
   const edits = (d: DayStats | null) =>
@@ -118,6 +119,13 @@ export default async function StatsPage() {
         <h1 className="font-display text-3xl">Štatistiky používania</h1>
         <p className="mt-1 text-sm text-stone-500">Posledných 30 dní · dni podľa času {TIME_ZONE} · „demo“ = návštevníci, ktorí to skúšajú bez účtu</p>
       </div>
+
+      {backup?.problem && (
+        <p role="alert" className="rounded-lg border border-brick-200 bg-brick-50 px-4 py-3 text-sm text-brick-700 dark:border-brick-900/50 dark:bg-brick-950/30 dark:text-brick-300">
+          <strong>Záloha nefunguje.</strong> {backup.problem} Pozrite{" "}
+          <code className="text-xs">/srv/recipes/app/backups/backup.log</code> na serveri.
+        </p>
+      )}
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card label="Cena dnes" value={usd(today?.costUsd ?? 0)} hint={`${int(today?.calls ?? 0)} volaní AI`} />

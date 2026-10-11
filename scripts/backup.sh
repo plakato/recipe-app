@@ -14,16 +14,22 @@
 set -euo pipefail
 
 PROJECT="$(cd "$(dirname "$0")/.." && pwd)"
-# A setting from the project's .env, or empty. Never fails: the schedulers
-# start this script outside the project, and a missing setting is normal.
 # systemd starts services without HOME; rclone (its config) and nvm need it.
 export HOME="${HOME:-$(getent passwd "$(id -un)" | cut -d: -f6)}"
+# A setting from the project's .env, or empty. Never fails: the schedulers
+# start this script outside the project, and a missing setting is normal.
 envval() { grep -E "^$1=" "$PROJECT/.env" 2>/dev/null | cut -d= -f2- | tr -d '"' || true; }
 # Drive folder; override with BACKUP_REMOTE in .env (e.g. a dev machine uses
 # its own folder so it never overwrites the production backups).
 REMOTE="$(envval BACKUP_REMOTE)"
 REMOTE="${REMOTE:-gdrive:RecipeAppBackup}"
 LOCAL="$PROJECT/backups"
+# The result of every run, for the stats page's warning (lib/backupStatus.ts):
+# last-success holds the time of the last good run, last-failure the time and
+# exit code of the last failed one.
+trap 'code=$?; now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; mkdir -p "$LOCAL";
+  if [ $code -eq 0 ]; then echo "$now" > "$LOCAL/last-success";
+  else echo "$now exit $code" > "$LOCAL/last-failure"; fi' EXIT
 LOG="$LOCAL/backup.log"
 DATE="$(date +%Y-%m-%d)"
 export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"

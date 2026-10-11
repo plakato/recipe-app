@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/lib/auth-constants";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/api/auth/login", "/api/auth/signup", "/robots.txt"];
+const PUBLIC_PATHS = ["/login", "/signup", "/privacy", "/api/auth/login", "/api/auth/signup", "/robots.txt"];
 
 // Pages visitors may open without an account: the recipe list, a recipe and
 // its photos, editing a recipe and adding one from a photo (their demo starts
