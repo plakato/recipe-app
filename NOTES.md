@@ -108,8 +108,8 @@ recipes are hidden, not deleted. In order:
      recipe saved without a picture gets a generated one after the save
      (`generateRecipePicture`, ~50 s; Cloudflare keys needed, else nothing).
      Tested end to end in the browser (butter chicken, two-recipe page).
-   - Deploying: the `scan_paths` migration, and Hermes' .env needs
-     `OPENROUTER_MODEL_HQ`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_TOKEN`.
+   - Deployed 2026-10-11 (scan_paths migration applied; Hermes' .env has
+     `OPENROUTER_MODEL_HQ="google/gemini-3.5-flash-lite"` and the Cloudflare keys).
 6. **Dish pictures, automatically.** Crop the dish photo from the page when
    there is one, otherwise generate one (once, stored, within the budget).
    The scan stays attached as the source photo.
