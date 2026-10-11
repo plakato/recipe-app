@@ -98,8 +98,8 @@ describe("summarize per purpose", () => {
 
   it("counts calls, script calls (no account) and cost per purpose, most used first", () => {
     expect(days[0].purposes).toEqual([
-      { purpose: "choose-photos", calls: 2, scriptCalls: 1, costUsd: 0.0008 },
-      { purpose: "read-recipe", calls: 1, scriptCalls: 0, costUsd: 0.003 },
+      { purpose: "choose-photos", calls: 2, scriptCalls: 1, costUsd: 0.0008, models: [{ model: "gemini", calls: 2, costUsd: 0.0008 }] },
+      { purpose: "read-recipe", calls: 1, scriptCalls: 0, costUsd: 0.003, models: [{ model: "gemini", calls: 1, costUsd: 0.003 }] },
     ]);
     expect(days[1].purposes.map((p) => p.purpose)).toEqual(["unknown"]);
   });
@@ -109,6 +109,9 @@ describe("summarize per purpose", () => {
       ["choose-photos", 2],
       ["read-recipe", 1],
       ["unknown", 1],
+    ]);
+    expect(total(days).purposes.find((p) => p.purpose === "unknown")?.models).toEqual([
+      { model: "gemma:free", calls: 1, costUsd: 0 },
     ]);
   });
 });

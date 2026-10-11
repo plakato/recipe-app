@@ -22,6 +22,7 @@ export type PurposeStats = {
   calls: number;
   scriptCalls: number;
   costUsd: number;
+  models: { model: string; calls: number; costUsd: number }[]; // most used first
 };
 export type DayStats = {
   day: string; // YYYY-MM-DD in the stats time zone
@@ -106,11 +107,12 @@ export function summarize(usage: UsageRow[], activity: ActivityRow[], timeZone =
       }
       const why = row.purpose ?? "unknown";
       const perPurpose = purposes.get(d.day)!;
-      if (!perPurpose.has(why)) perPurpose.set(why, { purpose: why, calls: 0, scriptCalls: 0, costUsd: 0 });
+      if (!perPurpose.has(why)) perPurpose.set(why, { purpose: why, calls: 0, scriptCalls: 0, costUsd: 0, models: [] });
       const p = perPurpose.get(why)!;
       p.calls++;
       if (row.userId === null) p.scriptCalls++;
       p.costUsd += row.costUsd;
+      addModel(p.models, { model: name, calls: 1, costUsd: row.costUsd });
     }
   }
   for (const row of activity) {
@@ -123,6 +125,16 @@ export function summarize(usage: UsageRow[], activity: ActivityRow[], timeZone =
     d.purposes = [...purposes.get(key)!.values()].sort((a, b) => b.calls - a.calls);
   }
   return [...days.values()].sort((a, b) => b.day.localeCompare(a.day));
+}
+
+// Add a model's calls to a purpose's list, keeping it most used first.
+function addModel(list: PurposeStats["models"], m: PurposeStats["models"][number]) {
+  const found = list.find((x) => x.model === m.model);
+  if (found) {
+    found.calls += m.calls;
+    found.costUsd += m.costUsd;
+  } else list.push({ ...m });
+  list.sort((a, b) => b.calls - a.calls);
 }
 
 // Totals over several days (same shape; `day` is the range).
@@ -148,10 +160,11 @@ export function total(days: DayStats[]): DayStats {
       models.set(m.model, t);
     }
     for (const p of d.purposes) {
-      const t = purposes.get(p.purpose) ?? { purpose: p.purpose, calls: 0, scriptCalls: 0, costUsd: 0 };
+      const t = purposes.get(p.purpose) ?? { purpose: p.purpose, calls: 0, scriptCalls: 0, costUsd: 0, models: [] };
       t.calls += p.calls;
       t.scriptCalls += p.scriptCalls;
       t.costUsd += p.costUsd;
+      for (const m of p.models) addModel(t.models, m);
       purposes.set(p.purpose, t);
     }
     sum.calls += d.calls;

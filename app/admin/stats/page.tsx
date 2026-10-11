@@ -35,26 +35,42 @@ const PURPOSES: Record<string, string> = {
 function PurposeTable({ purposes }: { purposes: DayStats["purposes"] }) {
   if (purposes.length === 0) return <p className="text-sm text-stone-500">Žiadne volania AI.</p>;
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-stone-200 dark:border-stone-800">
-          <th className={th}>Na čo</th>
-          <th className={`${th} text-right`}>Volania</th>
-          <th className={`${th} text-right`}>z toho skripty</th>
-          <th className={`${th} text-right`}>Cena</th>
-        </tr>
-      </thead>
-      <tbody>
-        {purposes.map((p) => (
-          <tr key={p.purpose} className="border-b border-stone-100 dark:border-stone-900">
-            <td className="px-3 py-2">{PURPOSES[p.purpose] ?? p.purpose}</td>
-            <td className={`${td} text-right`}>{int(p.calls)}</td>
-            <td className={`${td} text-right`}>{p.scriptCalls ? int(p.scriptCalls) : "–"}</td>
-            <td className={`${td} text-right`}>{usd(p.costUsd)}</td>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[640px] text-sm">
+        <thead>
+          <tr className="border-b border-stone-200 dark:border-stone-800">
+            <th className={th}>Na čo</th>
+            <th className={th}>Modely</th>
+            <th className={`${th} text-right`}>Volania</th>
+            <th className={`${th} text-right`}>z toho skripty</th>
+            <th className={`${th} text-right`}>Cena</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {purposes.map((p) => (
+            <tr key={p.purpose} className="border-b border-stone-100 align-top dark:border-stone-900">
+              <td className="px-3 py-2">{PURPOSES[p.purpose] ?? p.purpose}</td>
+              <td className="px-3 py-2">
+                <ul className="space-y-0.5">
+                  {p.models.map((m) => (
+                    <li key={m.model} className="whitespace-nowrap font-mono text-xs">
+                      {m.model}{" "}
+                      <span className="text-stone-500">
+                        ×{int(m.calls)}
+                        {m.costUsd > 0 ? ` · ${usd(m.costUsd)}` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </td>
+              <td className={`${td} text-right`}>{int(p.calls)}</td>
+              <td className={`${td} text-right`}>{p.scriptCalls ? int(p.scriptCalls) : "–"}</td>
+              <td className={`${td} text-right`}>{usd(p.costUsd)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
