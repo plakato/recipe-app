@@ -228,7 +228,7 @@ export default function RecipeForm({
       <div className="space-y-1">
         <label className={labelClass} htmlFor="ingredients">
           Suroviny{" "}
-          <span className="text-stone-400">(každá na samostatný riadok; skupinu surovín začnite názvom skupiny s dvojbodkou, napr. „Cesto:“)</span>
+          <span className="text-stone-400">(každá na samostatný riadok; skupinu začnite názvom s dvojbodkou, napr. „Cesto:“)</span>
         </label>
         <textarea
           id="ingredients"
