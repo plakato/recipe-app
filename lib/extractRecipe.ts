@@ -735,10 +735,14 @@ const PAGES_SCHEMA: JsonSchema = {
   },
 };
 
+export type Turn = 0 | 90 | 180 | 270;
+
 // Is this cropped picture really the dish (not text or another photo)? Models
-// sometimes draw the box in the wrong place. The crop is sent small. true when
-// no model could answer (most crops are right).
-export async function cropShowsDish(cropDataUrl: string, title: string): Promise<boolean> {
+// sometimes draw the box in the wrong place. Also: how far to turn it
+// clockwise to stand upright, when the page was photographed sideways. The
+// crop is sent small. When no model could answer: a dish, not turned (most
+// crops are right).
+export async function checkCrop(cropDataUrl: string, title: string): Promise<{ dish: boolean; turn: Turn }> {
   const answer = await withUsage({ purpose: "choose-photos" }, () =>
     askModelsForJson(
       [
@@ -751,19 +755,23 @@ export async function cropShowsDish(cropDataUrl: string, title: string): Promise
                 `This picture was cut from a cookbook or magazine page for the recipe "${title}". ` +
                 "Is it a photo of food — that dish finished, or being cooked — and not text, a person, a logo or an unrelated photo? " +
                 "Answer false also when lines of printed text (a title, a caption, the recipe) take up more than a thin strip of it. " +
-                'Answer with JSON only: {"dish": true} or {"dish": false}.',
+                "Also say how many degrees it must be turned clockwise to stand upright: 90, 180 or 270 only when it is clearly sideways or upside down " +
+                "(a glass, bowl, loaf or table standing on its side, text reading sideways); 0 when it is upright or seen from straight above. " +
+                'Answer with JSON only: {"dish": true or false, "turn": 0, 90, 180 or 270}.',
             },
             { type: "image_url", image_url: { url: cropDataUrl } },
           ],
         },
       ],
       (parsed) => {
-        const v = (parsed as Record<string, unknown> | null)?.dish;
-        return typeof v === "boolean" ? v : null;
+        const o = (parsed ?? {}) as Record<string, unknown>;
+        if (typeof o.dish !== "boolean") return null;
+        const turn = Number(o.turn);
+        return { dish: o.dish, turn: ([90, 180, 270].includes(turn) ? turn : 0) as Turn };
       },
     ),
   );
-  return answer ?? true;
+  return answer ?? { dish: true, turn: 0 };
 }
 
 // A second try at finding a recipe's dish on one photo, when the first box
