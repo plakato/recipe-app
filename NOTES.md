@@ -108,6 +108,8 @@ recipes are hidden, not deleted. In order:
      recipe saved without a picture gets a generated one after the save
      (`generateRecipePicture`, ~50 s; Cloudflare keys needed, else nothing).
      Tested end to end in the browser (butter chicken, two-recipe page).
+   - 2026-10-11: whole test set imported (51 recipes); unused full-page dish
+     photos are matched to their recipe; sideways crops are turned upright.
    - Deployed 2026-10-11 (scan_paths migration applied; Hermes' .env has
      `OPENROUTER_MODEL_HQ="google/gemini-3.5-flash-lite"` and the Cloudflare keys).
 6. **Dish pictures, automatically.** Crop the dish photo from the page when
@@ -124,8 +126,8 @@ recipes are hidden, not deleted. In order:
      the 3 look good) → `dish-image-review/`. It uses the recipe's text, never
      the photo again.
      Pollinations is off unless `DISH_IMAGE_POLLINATIONS=on`. Cropping and
-     generating on import: see step 5. Not yet: pictures for the existing
-     photo recipes (they still show their scan; the script can do them).
+     generating on import: see step 5. 2026-10-11: all existing photo
+     recipes have a drawn picture; the scans are behind the photo button.
 7. ~~**Daily usage statistics.**~~ — DONE 2026-10-06: every AI call is
    recorded with model, tokens, cost, purpose and account/demo
    (`AiUsage` kind "call", via `lib/usageContext.ts`); recipe changes in
