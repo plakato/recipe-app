@@ -83,3 +83,32 @@ describe("summarize", () => {
     expect(t.models.find((m) => m.model === "gemini")?.calls).toBe(3);
   });
 });
+
+describe("summarize per purpose", () => {
+  const days = summarize(
+    [
+      { ...call("gemini", 0.003, "2026-10-06T08:00:00Z"), userId: "u1", purpose: "read-recipe" },
+      { ...call("gemini", 0.0004, "2026-10-06T08:00:10Z"), userId: "u1", purpose: "choose-photos" },
+      { ...call("gemini", 0.0004, "2026-10-06T09:00:00Z"), userId: null, purpose: "choose-photos" },
+      call("gemma:free", 0, "2026-10-05T09:00:00Z"),
+    ],
+    [],
+    TZ,
+  );
+
+  it("counts calls, script calls (no account) and cost per purpose, most used first", () => {
+    expect(days[0].purposes).toEqual([
+      { purpose: "choose-photos", calls: 2, scriptCalls: 1, costUsd: 0.0008 },
+      { purpose: "read-recipe", calls: 1, scriptCalls: 0, costUsd: 0.003 },
+    ]);
+    expect(days[1].purposes.map((p) => p.purpose)).toEqual(["unknown"]);
+  });
+
+  it("totals purposes over a range", () => {
+    expect(total(days).purposes.map((p) => [p.purpose, p.calls])).toEqual([
+      ["choose-photos", 2],
+      ["read-recipe", 1],
+      ["unknown", 1],
+    ]);
+  });
+});
