@@ -209,7 +209,7 @@ recipes are hidden, not deleted. In order:
     (this Mac's dev copy backs up to gdrive:RecipeAppBackup-mac instead).
   - Still to do: Cloudflare Access in front of the login page (dashboard
     setting; the OpenRouter monthly spend limit is set, 2026-10-11), firewall (ufw) once
-    SSH-over-Tailscale is confirmed as the only SSH path, own rclone client ID.
+    SSH-over-Tailscale is confirmed as the only SSH path.
 - **Database backups** — on the Hermes server only: `recipes-backup.timer`
   runs `scripts/backup.sh` nightly at 02:30 (SQLite snapshot, photos, JSON/
   Markdown export → gdrive:RecipeAppBackup). Log: `/srv/recipes/app/backups/backup.log`.
@@ -217,9 +217,17 @@ recipes are hidden, not deleted. In order:
   recipes, photos and statistics to the server anyway); turn it back on with
   `scripts/install-backup-schedule.sh` (it uses BACKUP_REMOTE from .env).
   Backups had silently stopped 2026-09-29 → 2026-10-11 (script exited before
-  logging under the schedulers; fixed). Still to do: **create our own Google
-  client ID for rclone** — rclone's shared one is being retired during 2026
-  (https://rclone.org/drive/#making-your-own-client-id).
+  logging under the schedulers; fixed). The stats page warns when the last
+  backup failed or none succeeded for 2 days (`lib/backupStatus.ts`, needs
+  BACKUP_STATUS_DIR in the server's .env).
+  Own Google client ID — DONE 2026-10-11: Google Cloud project "Recipe backup"
+  (consent screen External, published; Desktop app client "rclone hermes",
+  scope drive.file). Its ID/secret are in this Mac's .env (RCLONE_CLIENT_*)
+  for re-approving: `rclone config create gdrive drive client_id=… client_secret=…
+  scope=drive.file --config <tmp>` on the Mac, then copy that file to
+  Hermes' /root/.config/rclone/rclone.conf. With drive.file the new client
+  sees only its own files, so backups now go to **gdrive:RecipeBackup**
+  (BACKUP_REMOTE on the server); the old RecipeAppBackup folder is an archive.
 - ~~Single shared site password~~ → replaced by per-user accounts (email +
   password, invite-only sign-up) on 2026-09-23. Social logins (Google/Facebook)
   deliberately deferred.
