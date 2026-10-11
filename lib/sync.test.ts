@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planSync, syncedFiles, type SyncedRecipe } from "./sync";
+import { newRows, planSync, syncedFiles, type SyncedRecipe } from "./sync";
 
 const recipe = (id: string, updatedAt: string, extra: Partial<SyncedRecipe> = {}): SyncedRecipe => ({
   id,
@@ -55,5 +55,11 @@ describe("syncedFiles", () => {
   it("copes with no files or broken JSON", () => {
     expect(syncedFiles({ imagePath: null, scanPaths: null })).toEqual([]);
     expect(syncedFiles({ imagePath: null, scanPaths: "{" })).toEqual([]);
+  });
+});
+
+describe("newRows", () => {
+  it("keeps only rows the live site doesn't have", () => {
+    expect(newRows([{ id: "a" }, { id: "b" }, { id: "c" }], new Set(["b"])).map((r) => r.id)).toEqual(["a", "c"]);
   });
 });

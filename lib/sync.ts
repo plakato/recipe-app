@@ -3,6 +3,10 @@
 // a replacement: a recipe new here is added, one changed here more recently
 // than there overwrites it, and everything else on the live site is left
 // alone — recipes made only there, and ones edited there since.
+//
+// The usage statistics go along too, so the live site has one set for both
+// machines (they use the same AI account): every AI call made here, and this
+// account's imports and recipe changes. Rows are only ever added, each once.
 
 export type SyncedRecipe = {
   id: string;
@@ -49,4 +53,30 @@ export function syncedFiles(r: Pick<SyncedRecipe, "imagePath" | "scanPaths">): s
   } catch {}
   const all = [r.imagePath, ...(Array.isArray(scans) ? scans : [])];
   return [...new Set(all.filter((p): p is string => typeof p === "string" && p.startsWith("/uploads/")))];
+}
+
+// A usage row as copied: `mine` marks rows of the synced account (they become
+// the live account's); other rows here (scripts, the local test account)
+// arrive without an account. No IP addresses.
+export type SyncedUsage = {
+  id: string;
+  kind: string;
+  mine: boolean;
+  isGuest: boolean;
+  model: string | null;
+  purpose: string | null;
+  promptTokens: number;
+  completionTokens: number;
+  costUsd: number;
+  createdAt: string; // ISO
+};
+export type SyncedActivity = { id: string; kind: string; isGuest: boolean; createdAt: string };
+
+// Usage kinds worth copying: AI calls ("paid" is the older name) and imports.
+// Demo starts and sign-ups here are local tests.
+export const SYNCED_USAGE_KINDS = ["call", "paid", "import"];
+
+// The rows the live site doesn't have yet.
+export function newRows<T extends { id: string }>(rows: T[], liveIds: Set<string>): T[] {
+  return rows.filter((r) => !liveIds.has(r.id));
 }
