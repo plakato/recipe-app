@@ -16,6 +16,8 @@ set -euo pipefail
 PROJECT="$(cd "$(dirname "$0")/.." && pwd)"
 # A setting from the project's .env, or empty. Never fails: the schedulers
 # start this script outside the project, and a missing setting is normal.
+# systemd starts services without HOME; rclone (its config) and nvm need it.
+export HOME="${HOME:-$(getent passwd "$(id -un)" | cut -d: -f6)}"
 envval() { grep -E "^$1=" "$PROJECT/.env" 2>/dev/null | cut -d= -f2- | tr -d '"' || true; }
 # Drive folder; override with BACKUP_REMOTE in .env (e.g. a dev machine uses
 # its own folder so it never overwrites the production backups).
