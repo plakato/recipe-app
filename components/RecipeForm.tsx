@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
+import { Camera } from "lucide-react";
 import type { RecipeDraft } from "@/lib/recipes";
 import { listToLines } from "@/lib/recipes";
 import RecipeImage from "@/components/RecipeImage";
@@ -146,25 +147,27 @@ export default function RecipeForm({
       )}
 
       <div className="space-y-2">
-        <RecipeImage
-          src={shownImage}
-          alt={title || "Fotka receptu"}
-          className="aspect-video w-full rounded-xl"
-        />
+        {/* The whole picture is the button for choosing another one. */}
+        <label className="group relative block cursor-pointer overflow-hidden rounded-xl">
+          <RecipeImage src={shownImage} alt={title || "Fotka receptu"} className="aspect-video w-full" />
+          <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/25">
+            <span className="flex items-center gap-2 rounded-full bg-black/55 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm transition group-hover:bg-black/70">
+              <Camera className="h-4 w-4" />
+              {shownImage ? "Zmeniť fotku" : "Pridať fotku"}
+            </span>
+          </span>
+          <input
+            type="file"
+            name="photo"
+            accept="image/*,.heic,.heif"
+            className="sr-only"
+            onChange={(e) => {
+              chooseFile(e.target.files?.[0] ?? null);
+              setRemoveImage(false);
+            }}
+          />
+        </label>
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <label className="cursor-pointer rounded-lg border border-stone-300 px-3 py-1.5 font-medium hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800">
-            {shownImage ? "Zmeniť fotku" : "Pridať fotku"}
-            <input
-              type="file"
-              name="photo"
-              accept="image/*,.heic,.heif"
-              className="sr-only"
-              onChange={(e) => {
-                chooseFile(e.target.files?.[0] ?? null);
-                setRemoveImage(false);
-              }}
-            />
-          </label>
           {newFile && (
             <button
               type="button"
@@ -225,7 +228,7 @@ export default function RecipeForm({
       <div className="space-y-1">
         <label className={labelClass} htmlFor="ingredients">
           Suroviny{" "}
-          <span className="text-stone-400">(každá na samostatný riadok; riadok končiaci „:“, napr. „Cesto:“, začína časť)</span>
+          <span className="text-stone-400">(každá na samostatný riadok; skupinu surovín začnite názvom skupiny s dvojbodkou, napr. „Cesto:“)</span>
         </label>
         <textarea
           id="ingredients"
