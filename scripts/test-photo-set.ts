@@ -13,7 +13,7 @@
 //
 // Save the reviewed results into an account (no AI calls; the recipes come
 // from photo-import-review/, as they were read; a recipe of the same title is
-// skipped, so it can be re-run):
+// skipped, so it can be re-run; one without a dish photo gets a drawn picture):
 //   npx tsx --env-file=.env scripts/test-photo-set.ts --save --user <email> [<case>…]
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -22,6 +22,7 @@ import { extractRecipesFromPhotos, type PageRecipe } from "@/lib/extractRecipe";
 import { cropDish } from "@/lib/dishCrop";
 import { preparePhoto, saveImageBuffer } from "@/lib/saveImage";
 import { stripUserArg, userIdForScript } from "@/lib/script-user";
+import { generateRecipePicture } from "@/lib/dishImage";
 
 const SET = path.resolve("test_photos");
 const OUT = path.resolve("photo-import-review");
@@ -177,7 +178,10 @@ async function save(userId: string, names: string[]) {
           scanPaths: JSON.stringify((used.length ? used : r.photos.map((_, i) => i)).map((i) => photoPaths[i])),
         },
       });
-      console.log(`${r.name}: "${x.title}" saved (${recipe.id})${x.crop ? "" : ", no picture"}`);
+      // As in the app: no dish photo, so a picture is drawn from the text.
+      if (!x.crop) await generateRecipePicture(recipe.id, { userId, isGuest: false });
+      const drawn = !x.crop && (await prisma.recipe.findUnique({ where: { id: recipe.id } }))?.imagePath;
+      console.log(`${r.name}: "${x.title}" saved (${recipe.id})${x.crop ? "" : drawn ? ", picture drawn" : ", no picture"}`);
     }
   }
 }
