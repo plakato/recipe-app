@@ -207,8 +207,8 @@ recipes are hidden, not deleted. In order:
     the plan). Needs `SYNC_USER=<email>` in .env.
   - Backups: `recipes-backup.timer` nightly 02:30 → gdrive:RecipeAppBackup
     (this Mac's dev copy backs up to gdrive:RecipeAppBackup-mac instead).
-  - Still to do: Cloudflare Access in front of the login page, OpenRouter
-    monthly spend limit (both dashboard settings), firewall (ufw) once
+  - Still to do: Cloudflare Access in front of the login page (dashboard
+    setting; the OpenRouter monthly spend limit is set, 2026-10-11), firewall (ufw) once
     SSH-over-Tailscale is confirmed as the only SSH path, own rclone client ID.
 - **Database backups** — DONE on this Mac (2026-09-23): `scripts/backup.sh`
   copies a SQLite snapshot, the photos and a JSON/Markdown export

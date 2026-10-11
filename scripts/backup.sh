@@ -14,9 +14,12 @@
 set -euo pipefail
 
 PROJECT="$(cd "$(dirname "$0")/.." && pwd)"
+# A setting from the project's .env, or empty. Never fails: the schedulers
+# start this script outside the project, and a missing setting is normal.
+envval() { grep -E "^$1=" "$PROJECT/.env" 2>/dev/null | cut -d= -f2- | tr -d '"' || true; }
 # Drive folder; override with BACKUP_REMOTE in .env (e.g. a dev machine uses
 # its own folder so it never overwrites the production backups).
-REMOTE="$(grep -E '^BACKUP_REMOTE=' .env 2>/dev/null | cut -d= -f2- | tr -d '"')"
+REMOTE="$(envval BACKUP_REMOTE)"
 REMOTE="${REMOTE:-gdrive:RecipeAppBackup}"
 LOCAL="$PROJECT/backups"
 LOG="$LOCAL/backup.log"
@@ -29,13 +32,13 @@ echo "=== $(date '+%F %T') backup start"
 
 cd "$PROJECT"
 # Photo folder: UPLOAD_DIR from .env (production) or public/uploads (dev).
-UPLOADS="$(grep -E '^UPLOAD_DIR=' .env 2>/dev/null | cut -d= -f2- | tr -d '"')"
+UPLOADS="$(envval UPLOAD_DIR)"
 UPLOADS="${UPLOADS:-public/uploads}"
 
 # 1. Consistent copy of the live SQLite database (safe while the app runs).
 # Location comes from DATABASE_URL in .env: "file:./dev.db" (relative to
 # prisma/, the dev default) or "file:/abs/path.db" (production).
-DBURL="$(grep -E '^DATABASE_URL=' .env 2>/dev/null | cut -d= -f2- | tr -d '"' | sed 's|^file:||')"
+DBURL="$(envval DATABASE_URL | sed 's|^file:||')"
 DBURL="${DBURL:-./dev.db}"
 case "$DBURL" in /*) DB="$DBURL" ;; *) DB="prisma/${DBURL#./}" ;; esac
 sqlite3 "$DB" ".backup '$LOCAL/db/dev-$DATE.db'"
