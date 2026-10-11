@@ -210,13 +210,16 @@ recipes are hidden, not deleted. In order:
   - Still to do: Cloudflare Access in front of the login page (dashboard
     setting; the OpenRouter monthly spend limit is set, 2026-10-11), firewall (ufw) once
     SSH-over-Tailscale is confirmed as the only SSH path, own rclone client ID.
-- **Database backups** — DONE on this Mac (2026-09-23): `scripts/backup.sh`
-  copies a SQLite snapshot, the photos and a JSON/Markdown export
-  (`scripts/export-recipes.ts`) to Google Drive via rclone, nightly at 02:30
-  (installed with `scripts/install-backup-schedule.sh`). Log: `backups/backup.log`.
-  Still to do: re-create the schedule on the Hermes server after deploying, and
-  **create our own Google client ID for rclone** — rclone's shared one is being
-  retired during 2026 (https://rclone.org/drive/#making-your-own-client-id).
+- **Database backups** — on the Hermes server only: `recipes-backup.timer`
+  runs `scripts/backup.sh` nightly at 02:30 (SQLite snapshot, photos, JSON/
+  Markdown export → gdrive:RecipeAppBackup). Log: `/srv/recipes/app/backups/backup.log`.
+  The Mac's own backup was switched off 2026-10-11 (every deploy copies the
+  recipes, photos and statistics to the server anyway); turn it back on with
+  `scripts/install-backup-schedule.sh` (it uses BACKUP_REMOTE from .env).
+  Backups had silently stopped 2026-09-29 → 2026-10-11 (script exited before
+  logging under the schedulers; fixed). Still to do: **create our own Google
+  client ID for rclone** — rclone's shared one is being retired during 2026
+  (https://rclone.org/drive/#making-your-own-client-id).
 - ~~Single shared site password~~ → replaced by per-user accounts (email +
   password, invite-only sign-up) on 2026-09-23. Social logins (Google/Facebook)
   deliberately deferred.
