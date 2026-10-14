@@ -1,9 +1,10 @@
 // Periodic tidy-up, run after responses (Next's after()) at most once an hour
-// per server process: expired demo guests, expired sessions, and stored
+// per server process: expired demo guests, expired sessions and ChatGPT sign-ins, and stored
 // photos no recipe uses. Server-only.
 import { pruneExpiredSessions } from "@/lib/auth";
 import { removeUnusedUploads } from "@/lib/cleanUploads";
 import { removeExpiredGuests } from "@/lib/demo";
+import { pruneOAuth } from "@/lib/oauth";
 
 const EVERY_MS = 60 * 60 * 1000;
 let lastRun = 0;
@@ -15,6 +16,7 @@ export async function runHousekeeping(): Promise<void> {
     // Guests first: their photos then count as unused.
     const guests = await removeExpiredGuests();
     await pruneExpiredSessions();
+    await pruneOAuth();
     const photos = await removeUnusedUploads();
     if (guests || photos.length) {
       console.info(`Housekeeping: removed ${guests} expired demo(s), ${photos.length} unused photo(s).`);

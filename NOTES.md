@@ -139,12 +139,33 @@ recipes are hidden, not deleted. In order:
    demo visitors. Today `AiUsage` records imports and paid-call costs only;
    this needs token counts for every model call (OpenRouter's `usage`) and
    edit events too. (Requested 2026-10-01.)
-8. **Later.** Link import returns (incl. multi-recipe pages, already built);
-   ChatGPT connection over our database (read-only MCP server with sign-in).
+8. **Later.** Link import returns (incl. multi-recipe pages, already built).
+9. **ChatGPT app** — BUILT 2026-10-14, not yet deployed or tried in ChatGPT.
+   People ask ChatGPT "something quick / for many / keeps for days / with
+   onion and tofu" and it picks (and may slightly adapt) one of *their*
+   recipes, on their own ChatGPT plan. Pieces:
+   - `/mcp` (app/mcp/route.ts, lib/mcp.ts): a small stateless MCP server,
+     JSON only; tools in lib/mcpTools.ts — `list_recipes` (titles +
+     ingredients, optional word query, accent-insensitive) and
+     `get_recipes` (up to 5 in full, with links). Read-only.
+   - Sign-in (lib/oauth.ts): OAuth 2.1 as MCP asks — discovery at
+     `/.well-known/oauth-protected-resource` and `…/oauth-authorization-server`,
+     dynamic client registration `/oauth/register`, approval page
+     `/oauth/authorize` (signs in first), `/oauth/token` with PKCE S256 and
+     refresh rotation. Hashes only in the DB; expired rows pruned hourly.
+   - Recipe facts (time, servings, keeps): option B — ChatGPT reads the texts
+     itself. If answers are poor, switch to A: AI fills the facts once (~$0.05).
+   - Try it: ChatGPT web → Settings → Apps → Advanced → Developer mode →
+     create app with `https://recepty.brezinovi.sk/mcp`, OAuth. Needs a paid
+     ChatGPT plan; each tester adds it themselves.
+   - For the app directory still: support email (Patrícia will give it),
+     terms page, OPENAI_APPS_CHALLENGE in .env (domain check, route ready),
+     a review account without 2FA, test prompts, OpenAI account with global
+     data residency.
 
 ## Deferred features
 
-- **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.) Plan (2026-10-11): probably through MCP as a ChatGPT app, so the searching runs on the user's ChatGPT account and its tokens, not ours. Our server only exposes the recipes as tools (list, read, search by words).
+- **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.) Being done as the ChatGPT app (step 9), so the searching runs on the user's ChatGPT account and its tokens, not ours. Our server only exposes the recipes as tools (list, read, search by words).
 
 - **Recipes with photos of the instructions.** Recipes whose method is (also)
   shown in step-by-step photos — import and show them. (Requested 2026-10-08.)

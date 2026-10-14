@@ -30,6 +30,7 @@ model User {
   guestExpiresAt DateTime?
   recipes   Recipe[]
   sessions  Session[]
+  oauthTokens OAuthToken[]
   createdAt DateTime @default(now())
 
   @@index([isGuest, guestExpiresAt])
@@ -100,4 +101,40 @@ model Activity {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ChatGPT (and other MCP apps) sign in with OAuth 2.1 (lib/oauth.ts): each app
+// registers itself (dynamic client registration), the person approves it on
+// /oauth/authorize, and the app gets tokens for /mcp that read that person's
+// recipes. Codes and tokens are stored only as SHA-256 hashes.
+model OAuthClient {
+  id           String   @id // client_id
+  name         String?
+  redirectUris String // JSON string[]
+  createdAt    DateTime @default(now())
+}
+
+// A one-time code from an approval, exchanged for tokens within minutes.
+model OAuthCode {
+  id            String   @id // sha256(code)
+  clientId      String
+  userId        String
+  redirectUri   String
+  codeChallenge String // PKCE, S256
+  expiresAt     DateTime
+}
+
+// An access token ("access", short-lived) or refresh token ("refresh",
+// rotated on every use).
+model OAuthToken {
+  id        String   @id // sha256(token)
+  kind      String
+  clientId  String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }

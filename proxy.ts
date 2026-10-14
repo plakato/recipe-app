@@ -10,6 +10,11 @@ import { SESSION_COOKIE } from "@/lib/auth-constants";
 
 const PUBLIC_PATHS = ["/login", "/signup", "/privacy", "/api/auth/login", "/api/auth/signup", "/robots.txt"];
 
+// ChatGPT's connection (lib/oauth.ts, lib/mcp.ts): apps call these without
+// our cookie — /mcp checks its own access token, and /oauth/authorize sends
+// people to sign in itself, keeping the request's parameters.
+const APP_PATHS = ["/mcp", "/oauth/register", "/oauth/token", "/oauth/authorize"];
+
 // Pages visitors may open without an account: the recipe list, a recipe and
 // its photos, editing a recipe and adding one from a photo (their demo starts
 // at their first change — lib/demoSession.ts). The pages themselves decide
@@ -27,7 +32,11 @@ function isBrowsable(pathname: string): boolean {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has(SESSION_COOKIE);
-  const isPublic = PUBLIC_PATHS.includes(pathname) || isBrowsable(pathname);
+  const isPublic =
+    PUBLIC_PATHS.includes(pathname) ||
+    APP_PATHS.includes(pathname) ||
+    pathname.startsWith("/.well-known/") ||
+    isBrowsable(pathname);
 
   if (!hasSession && !isPublic) {
     const login = new URL("/login", request.url);

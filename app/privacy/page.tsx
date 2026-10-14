@@ -17,6 +17,11 @@ export default function PrivacyPage() {
         a na nakreslenie obrázka jedla (Cloudflare). Nič nepredávame ani nezdieľame s nikým ďalším.
       </p>
       <p>
+        Ak si aplikáciu pripojíte v ChatGPT, ChatGPT smie po vašom súhlase čítať vaše recepty, aby vám
+        poradil, čo uvariť. Nemôže ich meniť ani mazať. Pripojenie môžete kedykoľvek zrušiť v nastaveniach
+        ChatGPT. Čo s textami robí ChatGPT, upravujú podmienky OpenAI.
+      </p>
+      <p>
         Zálohy databázy a fotiek sa každú noc ukladajú na Google Disk prevádzkovateľa. Aplikácia
         nemá prístup k vášmu Google účtu.
       </p>
