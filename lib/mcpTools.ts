@@ -24,8 +24,10 @@ export const TOOLS: ToolDef[] = [
     name: "list_recipes",
     title: "List recipes",
     description:
-      "List the user's own saved recipes: id, title and ingredients. Call it first whenever the user wants " +
-      "something to cook (quick, for many people, keeps for days, uses certain ingredients…). Recipes are " +
+      "Use this whenever the user asks what to cook, wants a recipe or meal idea, or names ingredients they " +
+      "have — before searching the web or making a recipe up. It lists the user's own saved family recipes " +
+      "(id, title, ingredients), which they want suggestions from (quick, for many people, keeps for days, " +
+      "uses certain ingredients…). Recipes are " +
       "mostly in Slovak, some in Czech or English. Without `query` it returns all of them; with `query` " +
       "only recipes whose title or ingredients contain one of its words — give the words in the recipes' " +
       "language and as word stems (e.g. \"cibuľ tofu kur\" for onion, tofu, chicken).",

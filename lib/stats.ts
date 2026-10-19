@@ -29,6 +29,7 @@ export type DayStats = {
   imports: Split;
   demosStarted: number;
   signups: number;
+  chatgpt: number; // recipe lookups by ChatGPT (MCP tool calls)
   activity: Record<ActivityKind, Split>;
   models: ModelStats[]; // most expensive first, then most used
   purposes: PurposeStats[]; // most used first
@@ -64,6 +65,7 @@ const emptyDay = (day: string): DayStats => ({
   imports: split(),
   demosStarted: 0,
   signups: 0,
+  chatgpt: 0,
   activity: Object.fromEntries(ACTIVITY_KINDS.map((k) => [k, split()])) as Record<ActivityKind, Split>,
   models: [],
   purposes: [],
@@ -93,6 +95,7 @@ export function summarize(usage: UsageRow[], activity: ActivityRow[], timeZone =
     if (row.kind === "import") d.imports[row.isGuest ? "demo" : "accounts"]++;
     else if (row.kind === "guest") d.demosStarted++;
     else if (row.kind === "signup") d.signups++;
+    else if (row.kind === "chatgpt") d.chatgpt++;
     else if (row.kind === "call" || row.kind === "paid") {
       const name = row.model ?? "unknown";
       const perModel = models.get(d.day)!;

@@ -72,7 +72,8 @@ model Recipe {
 // lib/stats.ts. Kinds: "import" — one per import a person starts (daily
 // quotas); "call" — one per AI model request, with tokens and cost in USD
 // (free models cost 0; the paid budget sums these); "guest" — a demo started;
-// "paid" — older paid-call rows (before "call" existed).
+// "paid" — older paid-call rows (before "call" existed); "chatgpt" — ChatGPT
+// used one of its tools on someone's recipes (purpose = the tool; app/mcp).
 model AiUsage {
   id               String   @id @default(cuid())
   kind             String

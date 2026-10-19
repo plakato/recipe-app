@@ -2,6 +2,7 @@
 // access token from our OAuth sign-in (lib/oauth.ts); without one the 401
 // tells the app where to sign in.
 import { siteUrl } from "@/lib/auth-forms";
+import { prisma } from "@/lib/prisma";
 import { handleMessage, type Reply } from "@/lib/mcp";
 import { callTool, TOOLS } from "@/lib/mcpTools";
 import { oauthUrls, userForAccessToken } from "@/lib/oauth";
@@ -25,7 +26,12 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }, { status: 400 });
   }
-  const tools = { list: TOOLS, call: (name: string, args: Record<string, unknown>) => callTool(name, args, userId, origin) };
+  // Each tool use is counted in the statistics (kind "chatgpt"; free for us).
+  const call = async (name: string, args: Record<string, unknown>) => {
+    await prisma.aiUsage.create({ data: { kind: "chatgpt", userId, purpose: name } }).catch(() => {});
+    return callTool(name, args, userId, origin);
+  };
+  const tools = { list: TOOLS, call };
   const messages = Array.isArray(body) ? body : [body];
   const replies = (await Promise.all(messages.map((m) => handleMessage(m, tools)))).filter((r): r is Reply => r !== null);
   if (!replies.length) return new Response(null, { status: 202 });
