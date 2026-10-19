@@ -140,7 +140,7 @@ recipes are hidden, not deleted. In order:
    this needs token counts for every model call (OpenRouter's `usage`) and
    edit events too. (Requested 2026-10-01.)
 8. **Later.** Link import returns (incl. multi-recipe pages, already built).
-9. **ChatGPT app** — BUILT 2026-10-14, not yet deployed or tried in ChatGPT.
+9. **ChatGPT plugin** — BUILT and deployed 2026-10-19, not yet tried in ChatGPT.
    People ask ChatGPT "something quick / for many / keeps for days / with
    onion and tofu" and it picks (and may slightly adapt) one of *their*
    recipes, on their own ChatGPT plan. Pieces:
@@ -155,9 +155,10 @@ recipes are hidden, not deleted. In order:
      refresh rotation. Hashes only in the DB; expired rows pruned hourly.
    - Recipe facts (time, servings, keeps): option B — ChatGPT reads the texts
      itself. If answers are poor, switch to A: AI fills the facts once (~$0.05).
-   - Try it: ChatGPT web → Settings → Apps → Advanced → Developer mode →
-     create app with `https://recepty.brezinovi.sk/mcp`, OAuth. Needs a paid
-     ChatGPT plan; each tester adds it themselves.
+   - Try it: ChatGPT (since Oct 2026 these are called "plugins") → Plugins
+     → + → Add custom MCP server, URL `https://recepty.brezinovi.sk/mcp`,
+     OAuth → Create as a plugin, then install it and @-mention it in a chat.
+     Each tester adds it themselves.
    - For the app directory still: support email (Patrícia will give it),
      terms page, OPENAI_APPS_CHALLENGE in .env (domain check, route ready),
      a review account without 2FA, test prompts, OpenAI account with global
