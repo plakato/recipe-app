@@ -3,6 +3,7 @@
 // full. ChatGPT itself judges time, servings and how long a dish keeps from
 // the texts (NOTES.md: option B). Read-only. Server-only.
 import { prisma } from "@/lib/prisma";
+import { visibleRecipes } from "@/lib/features";
 import { parseList } from "@/lib/recipes";
 
 // More recipes than this and the list needs a query (keeps answers small).
@@ -79,7 +80,8 @@ export async function callTool(
   userId: string,
   origin: string,
 ): Promise<ToolResult> {
-  const mine = { userId, deletedAt: null };
+  // Only what the app shows: no Trash, no hidden link recipes (lib/features.ts).
+  const mine = { userId, deletedAt: null, ...visibleRecipes };
 
   if (name === "list_recipes") {
     const query = typeof args.query === "string" ? args.query.trim() : "";
