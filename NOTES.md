@@ -184,6 +184,14 @@ recipes are hidden, not deleted. In order:
    opens an existing account by e-mail (it doesn't say the e-mail is
    confirmed). Accounts made this way have no password (none can be set yet).
 
+11. **Privacy policy** — full version 2026-10-19 (app/privacy/page.tsx), for
+   Facebook, Google and GDPR. Name and contact from .env: PRIVACY_OPERATOR,
+   PRIVACY_EMAIL (not in the public repo). Keep it true: IPs erased after 7
+   days (lib/housekeeping.ts), DB backups 90 days, photo backups are never
+   deleted automatically — on an account deletion request, delete that
+   account's photos from gdrive:RecipeBackup/uploads by hand. No self-service
+   account deletion yet (by e-mail request).
+
 ## Deferred features
 
 - **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.) Being done as the ChatGPT app (step 9), so the searching runs on the user's ChatGPT account and its tokens, not ours. Our server only exposes the recipes as tools (list, read, search by words).
