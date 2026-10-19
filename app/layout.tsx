@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Recepty",
+  title: "Receptík",
   description: "Naša rodinná zbierka receptov",
   // Not in search engines for now (roadmap step 2; reconsider later).
   robots: { index: false, follow: false },

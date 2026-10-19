@@ -7,7 +7,7 @@ import type { ToolDef, ToolResult } from "@/lib/mcpTools";
 export const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
 
 export const INSTRUCTIONS =
-  "This app holds the user's own family recipe collection. When the user asks what to cook, choose from " +
+  "This app (Receptík) holds the user's own recipe collection. When the user asks what to cook, choose from " +
   "these recipes rather than inventing one: call list_recipes (with a query when they name ingredients), " +
   "then get_recipes for the likely candidates to check time, servings and how long the dish keeps. " +
   "Suggest one or a few, with the recipe link. You may adapt a recipe slightly so it uses ingredients the " +
@@ -43,7 +43,7 @@ export async function handleMessage(msg: Message, tools: Tools): Promise<Reply |
       return ok(msg.id, {
         protocolVersion: PROTOCOL_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSIONS[0],
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "rodinne-recepty", title: "Rodinné recepty", version: "1.0.0" },
+        serverInfo: { name: "receptik", title: "Receptík", version: "1.0.0" },
         instructions: INSTRUCTIONS,
       });
     }

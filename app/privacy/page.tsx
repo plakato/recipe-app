@@ -9,7 +9,7 @@ export default function PrivacyPage() {
     <article className="mx-auto max-w-2xl space-y-4 text-stone-800 dark:text-stone-200">
       <h1 className="font-display text-3xl">Ochrana súkromia</h1>
       <p>
-        Rodinné recepty sú súkromná aplikácia pre rodinu a známych. Ukladáme len to, čo do nej sami
+        Receptík je súkromná aplikácia na recepty pre rodinu a známych. Ukladáme len to, čo do nej sami
         vložíte: e-mail a heslo (zašifrované) na prihlásenie, vaše recepty a fotky.
       </p>
       <p>
