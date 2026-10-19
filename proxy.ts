@@ -36,6 +36,8 @@ export function proxy(request: NextRequest) {
     PUBLIC_PATHS.includes(pathname) ||
     APP_PATHS.includes(pathname) ||
     pathname.startsWith("/.well-known/") ||
+    // Signing in with Google/Facebook (lib/socialLogin.ts).
+    pathname.startsWith("/api/auth/social/") ||
     isBrowsable(pathname);
 
   if (!hasSession && !isPublic) {

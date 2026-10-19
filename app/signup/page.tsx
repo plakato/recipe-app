@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import AuthCard, { fieldClass, labelClass } from "@/components/AuthCard";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password";
 import Turnstile from "@/components/Turnstile";
+import SocialButtons from "@/components/SocialButtons";
 import { turnstileSiteKey } from "@/lib/turnstile";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,8 @@ export default async function SignupPage({
       <p className="mb-4 text-sm text-stone-600 dark:text-stone-400">
         Začnete s kópiou našich rodinných receptov — môžete ich upravovať aj mazať.
       </p>
-      <form method="post" action="/api/auth/signup" className="space-y-4">
+      <SocialButtons />
+      <form method="post" action="/api/auth/signup" className="mt-4 space-y-4">
         {/* Bot trap: hidden from people (and screen readers); bots fill it in. */}
         <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
           <label htmlFor="website">Web</label>

@@ -164,6 +164,18 @@ recipes are hidden, not deleted. In order:
      a review account without 2FA, test prompts, OpenAI account with global
      data residency.
 
+10. **Sign in with Google / Facebook** — BUILT 2026-10-19, waiting for keys.
+   lib/socialLogin.ts + app/api/auth/social/[provider] (+ /callback); buttons
+   (components/SocialButtons.tsx) appear only when the keys are in .env:
+   GOOGLE_CLIENT_ID/_SECRET, FACEBOOK_APP_ID/_SECRET. Redirect URIs to
+   register: `https://recepty.brezinovi.sk/api/auth/social/<google|facebook>/callback`
+   (and `http://localhost:3000/...` for local tests). Finds the account by
+   the stored link (SocialLogin table), then — Google only, verified e-mail —
+   by e-mail; otherwise creates one (lib/accounts.ts, same limits and starter
+   recipes as sign-up; a demo guest keeps their changes). Facebook never
+   opens an existing account by e-mail (it doesn't say the e-mail is
+   confirmed). Accounts made this way have no password (none can be set yet).
+
 ## Deferred features
 
 - **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.) Being done as the ChatGPT app (step 9), so the searching runs on the user's ChatGPT account and its tokens, not ours. Our server only exposes the recipes as tools (list, read, search by words).

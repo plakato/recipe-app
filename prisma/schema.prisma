@@ -17,7 +17,7 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  password  String? // scrypt hash (lib/password.ts); null only for the legacy placeholder owner
+  password  String? // scrypt hash (lib/password.ts); null for the legacy placeholder owner and accounts that sign in with Google/Facebook only
   name      String?
   // Demo visitors get a temporary guest account (lib/demo.ts), deleted after
   // guestExpiresAt; signing up turns it into a normal account.
@@ -31,6 +31,7 @@ model User {
   recipes   Recipe[]
   sessions  Session[]
   oauthTokens OAuthToken[]
+  logins    SocialLogin[]
   createdAt DateTime @default(now())
 
   @@index([isGuest, guestExpiresAt])
@@ -138,4 +139,19 @@ model OAuthToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// Signing in with Google or Facebook (lib/socialLogin.ts): which of their
+// accounts belongs to which of ours. Found by this link first, then by the
+// same (verified) e-mail.
+model SocialLogin {
+  id                String   @id @default(cuid())
+  provider          String // "google" | "facebook"
+  providerAccountId String
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }

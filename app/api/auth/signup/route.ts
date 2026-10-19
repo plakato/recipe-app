@@ -4,13 +4,9 @@ import { createSession, getSessionUser } from "@/lib/auth";
 import { hashPassword, isValidEmail, MIN_PASSWORD_LENGTH, normalizeEmail } from "@/lib/password";
 import { redirectWithError, isSameOrigin, siteUrl } from "@/lib/auth-forms";
 import { verifyTurnstile } from "@/lib/turnstile";
-import { canSignUp, recordSignup } from "@/lib/signupLimits";
-import { copyShowcaseRecipes } from "@/lib/demo";
+import { canSignUp } from "@/lib/signupLimits";
+import { createAccount } from "@/lib/accounts";
 import { clientIp, requestHost } from "@/lib/clientIp";
-
-// The placeholder owner that held every recipe before accounts existed. The
-// first real account adopts it (and therefore all existing recipes).
-const LEGACY_OWNER_EMAIL = "owner@local";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
@@ -50,30 +46,7 @@ export async function POST(request: Request) {
   }
 
   const hashed = await hashPassword(password);
-  const legacy = await prisma.user.findUnique({ where: { email: LEGACY_OWNER_EMAIL } });
-  // Signing up from the demo turns the guest account into this account, so
-  // the visitor keeps everything they changed.
-  const current = await getSessionUser();
-  const guest = current?.isGuest ? current : null;
-  const user = guest
-    ? await prisma.user.update({
-        where: { id: guest.id },
-        data: { email, name: name || null, password: hashed, isGuest: false, guestExpiresAt: null },
-      })
-    : legacy && !legacy.password
-      ? await prisma.user.update({
-          where: { id: legacy.id },
-          data: { email, name: name || null, password: hashed },
-        })
-      : await prisma.user.create({
-          data: { email, name: name || null, password: hashed },
-        });
-
-  // A brand-new account starts with its own copy of the showcase recipes
-  // (edit or delete them freely). A demo visitor keeps their demo copy; the
-  // legacy owner already has the recipes.
-  if (!guest && user.id !== legacy?.id) await copyShowcaseRecipes(user.id);
-  await recordSignup(user.id, ip);
+  const user = await createAccount({ email, name, password: hashed }, await getSessionUser(), ip);
 
   const cookie = await createSession(user.id);
   const res = NextResponse.redirect(siteUrl(request, "/"), 303);
