@@ -1,7 +1,9 @@
 #!/bin/bash
 # Nightly backup of the recipe app's data to Google Drive (via rclone).
+# On the server it goes through the rclone crypt remote gdrive-crypt:
+# (scripts/setup-backup-encryption.sh), so Drive holds only encrypted data.
 #
-# What it backs up, into gdrive:RecipeAppBackup/
+# What it backs up, into $BACKUP_REMOTE/
 #   db/dev-YYYY-MM-DD.db   consistent SQLite snapshot (one per day, 90 kept)
 #   db/dev-latest.db       always the newest snapshot
 #   uploads/               recipe photos (copy-only: nothing is ever deleted)

@@ -189,7 +189,14 @@ recipes are hidden, not deleted. In order:
    PRIVACY_EMAIL (not in the public repo). Keep it true: IPs erased after 7
    days (lib/housekeeping.ts), DB backups 90 days, photo backups are never
    deleted automatically — on an account deletion request, delete that
-   account's photos from gdrive:RecipeBackup/uploads by hand. No self-service
+   account's photos from the backup's uploads/ by hand.
+   Backups are encrypted (2026-10-19): rclone crypt remote `gdrive-crypt:`
+   over Drive folder RecipeBackupEncrypted, BACKUP_REMOTE="gdrive-crypt:backup"
+   (scripts/setup-backup-encryption.sh). Password only in Patrícia's password
+   manager and (obscured) in the server's rclone.conf. To restore elsewhere:
+   rclone with OUR Google client ID (RCLONE_CLIENT_ID/_SECRET in the Mac's
+   .env — drive.file scope sees only files that client made), then a crypt
+   remote with the same password, standard filename + directory encryption. No self-service
    account deletion yet (by e-mail request).
 
 ## Deferred features

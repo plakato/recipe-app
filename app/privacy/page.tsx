@@ -82,7 +82,8 @@ export default function PrivacyPage() {
           pri registrácii a nakreslenie obrázka jedla (posiela sa len popis jedla).
         </li>
         <li>
-          <strong>Google Disk prevádzkovateľa</strong> — nočné zálohy databázy a fotiek.
+          <strong>Google Disk prevádzkovateľa</strong> — nočné zálohy databázy a fotiek, zašifrované ešte na
+          našom serveri, takže Google ich nevie prečítať.
         </li>
         <li>
           <strong>Google alebo Facebook</strong> — len ak sa cez ne prihlasujete (overia, že ste to vy).
