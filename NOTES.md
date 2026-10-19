@@ -164,6 +164,13 @@ recipes are hidden, not deleted. In order:
      terms page, OPENAI_APPS_CHALLENGE in .env (domain check, route ready),
      a review account without 2FA, test prompts, OpenAI account with global
      data residency.
+   - Before submitting (decided 2026-10-19): **English version** of the
+     sign-in, approval and privacy pages (reviewers; friends abroad) — later.
+     Review = automated checks on upload, then people run our test prompts
+     word for word on desktop, Android and iOS. So: test account with email
+     + password (not Google-only) and recipes that fit the prompts; check the
+     plugin is called reliably on phones too (it sometimes chose web search).
+     Rejection notes are generic; median ~8 days, sometimes 30–90.
 
 10. **Sign in with Google / Facebook** — BUILT 2026-10-19, waiting for keys.
    lib/socialLogin.ts + app/api/auth/social/[provider] (+ /callback); buttons
