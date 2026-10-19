@@ -158,7 +158,8 @@ recipes are hidden, not deleted. In order:
    - Try it: ChatGPT (since Oct 2026 these are called "plugins") → Plugins
      → + → Add custom MCP server, URL `https://recepty.brezinovi.sk/mcp`,
      OAuth → Create as a plugin, then install it and @-mention it in a chat.
-     Each tester adds it themselves.
+     Each tester adds it themselves. Works on the free ChatGPT plan too
+     (Patrícia tested it on Free, 2026-10-19).
    - For the app directory still: support email (Patrícia will give it),
      terms page, OPENAI_APPS_CHALLENGE in .env (domain check, route ready),
      a review account without 2FA, test prompts, OpenAI account with global
