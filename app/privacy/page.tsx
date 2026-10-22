@@ -7,11 +7,12 @@ export const dynamic = "force-dynamic";
 
 const UPDATED = "19. 10. 2026";
 
-// The privacy policy, public (proxy.ts). Also the privacy-policy and
-// data-deletion link for Google and Facebook sign-in and the Google project
-// behind the backups. Keep it true to what the app does: lib/housekeeping.ts
-// (IP addresses, guests), scripts/backup.sh (backup retention), lib/auth.ts
-// (sessions).
+// The privacy policy, public (proxy.ts). Also the privacy-policy link for
+// Google and Facebook sign-in and the Google project behind the backups
+// (Facebook's data-deletion link is app/data-deletion/page.tsx — keep its
+// text in step with "Zmazanie údajov" below). Keep it true to what the app
+// does: lib/housekeeping.ts (IP addresses, guests), scripts/backup.sh (backup
+// retention), lib/auth.ts (sessions).
 export default function PrivacyPage() {
   const operator = process.env.PRIVACY_OPERATOR;
   const email = process.env.PRIVACY_EMAIL;
