@@ -172,7 +172,13 @@ recipes are hidden, not deleted. In order:
      plugin is called reliably on phones too (it sometimes chose web search).
      Rejection notes are generic; median ~8 days, sometimes 30–90.
 
-10. **Sign in with Google / Facebook** — BUILT 2026-10-19, waiting for keys.
+10. **Sign in with Google / Facebook** — BUILT 2026-10-19; keys in both .envs
+   2026-10-22 (Google client in the "Recipe backup" project; Facebook app
+   "Receptík", id 1678313813965103). Facebook still to do: data-deletion URL
+   `https://recepty.brezinovi.sk/data-deletion` (own page; Facebook rejects
+   `#` links and obeys robots.txt, so robots.txt allows /privacy and
+   /data-deletion) — its checker got 403 from Cloudflare; then redirect URI,
+   Live mode, a real sign-in on the live site.
    lib/socialLogin.ts + app/api/auth/social/[provider] (+ /callback); buttons
    (components/SocialButtons.tsx) appear only when the keys are in .env:
    GOOGLE_CLIENT_ID/_SECRET, FACEBOOK_APP_ID/_SECRET. Redirect URIs to
