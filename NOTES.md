@@ -199,6 +199,15 @@ recipes are hidden, not deleted. In order:
    remote with the same password, standard filename + directory encryption. No self-service
    account deletion yet (by e-mail request).
 
+12. **Backups to Google Cloud Storage** — planned (2026-10-22), Patrícia
+   wants to learn Google Cloud. Replace the Drive remote with a GCS bucket
+   (EU region, e.g. europe-west3; Google's Cloud Data Processing Addendum
+   covers it), keep the rclone crypt layer on top, service account with
+   access to that bucket only. Update the privacy policy in the same change
+   (where backups are, who stores them). Then delete the old Drive folders
+   (RecipeBackup, RecipeAppBackup, RecipeAppBackup-mac; and
+   RecipeBackupEncrypted once GCS works) — ask first.
+
 ## Deferred features
 
 - **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.) Being done as the ChatGPT app (step 9), so the searching runs on the user's ChatGPT account and its tokens, not ours. Our server only exposes the recipes as tools (list, read, search by words).
