@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Search, X } from "lucide-react";
 import RecipeImage from "@/components/RecipeImage";
-import { matches } from "@/lib/recipeSearch";
+import { search } from "@/lib/recipeSearch";
 
 export type GridRecipe = { id: string; title: string; imagePath: string | null; search: string };
 
@@ -16,7 +16,7 @@ const SEARCH_FROM = 12;
 export default function RecipeGrid({ recipes, chatgpt }: { recipes: GridRecipe[]; chatgpt: boolean }) {
   const [query, setQuery] = useState("");
   const searching = query.trim() !== "";
-  const shown = searching ? recipes.filter((r) => matches(r.search, query)) : recipes;
+  const shown = searching ? search(recipes, query) : recipes;
 
   return (
     <div className="space-y-4">
