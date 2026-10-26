@@ -24,9 +24,15 @@ export type PurposeStats = {
   costUsd: number;
   models: { model: string; calls: number; costUsd: number }[]; // most used first
 };
+// How long photo imports kept people waiting (recordWait, lib/aiBudget.ts).
+export type WaitStats = {
+  ms: number[]; // each import that ended with recipes, in milliseconds
+  failed: number; // imports that ended with an error
+};
 export type DayStats = {
   day: string; // YYYY-MM-DD in the stats time zone
   imports: Split;
+  waits: WaitStats;
   demosStarted: number;
   signups: number;
   chatgpt: number; // recipe lookups by ChatGPT (MCP tool calls)
@@ -45,6 +51,7 @@ export type UsageRow = {
   userId?: string | null;
   model: string | null;
   purpose?: string | null;
+  durationMs?: number | null;
   promptTokens: number;
   completionTokens: number;
   costUsd: number;
@@ -63,6 +70,7 @@ const split = (): Split => ({ accounts: 0, demo: 0 });
 const emptyDay = (day: string): DayStats => ({
   day,
   imports: split(),
+  waits: { ms: [], failed: 0 },
   demosStarted: 0,
   signups: 0,
   chatgpt: 0,
@@ -96,6 +104,10 @@ export function summarize(usage: UsageRow[], activity: ActivityRow[], timeZone =
     else if (row.kind === "guest") d.demosStarted++;
     else if (row.kind === "signup") d.signups++;
     else if (row.kind === "chatgpt") d.chatgpt++;
+    else if (row.kind === "wait") {
+      if (row.purpose === "ok" && row.durationMs != null) d.waits.ms.push(row.durationMs);
+      else d.waits.failed++;
+    }
     else if (row.kind === "call" || row.kind === "paid") {
       const name = row.model ?? "unknown";
       const perModel = models.get(d.day)!;
@@ -130,6 +142,15 @@ export function summarize(usage: UsageRow[], activity: ActivityRow[], timeZone =
   return [...days.values()].sort((a, b) => b.day.localeCompare(a.day));
 }
 
+// The middle and the longest wait, in milliseconds (null when none).
+export function waitSummary(w: WaitStats): { median: number; longest: number } | null {
+  if (w.ms.length === 0) return null;
+  const sorted = [...w.ms].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  return { median, longest: sorted[sorted.length - 1] };
+}
+
 // Add a model's calls to a purpose's list, keeping it most used first.
 function addModel(list: PurposeStats["models"], m: PurposeStats["models"][number]) {
   const found = list.find((x) => x.model === m.model);
@@ -148,6 +169,8 @@ export function total(days: DayStats[]): DayStats {
   for (const d of days) {
     sum.imports.accounts += d.imports.accounts;
     sum.imports.demo += d.imports.demo;
+    sum.waits.ms.push(...d.waits.ms);
+    sum.waits.failed += d.waits.failed;
     sum.demosStarted += d.demosStarted;
     sum.signups += d.signups;
     for (const k of ACTIVITY_KINDS) {
@@ -186,7 +209,7 @@ export async function loadDailyStats(days = 30): Promise<DayStats[]> {
   const [usage, activity] = await Promise.all([
     prisma.aiUsage.findMany({
       where: { createdAt: { gte: since } },
-      select: { kind: true, isGuest: true, userId: true, model: true, purpose: true, promptTokens: true, completionTokens: true, costUsd: true, createdAt: true },
+      select: { kind: true, isGuest: true, userId: true, model: true, purpose: true, durationMs: true, promptTokens: true, completionTokens: true, costUsd: true, createdAt: true },
     }),
     prisma.activity.findMany({
       where: { createdAt: { gte: since } },

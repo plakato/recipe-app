@@ -12,7 +12,7 @@ import { isUploadPath, linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { pickRecipeImages } from "@/lib/pickImage";
 import { runHousekeeping } from "@/lib/housekeeping";
-import { refundImport, startImport } from "@/lib/aiBudget";
+import { recordWait, refundImport, startImport } from "@/lib/aiBudget";
 import { clientIp } from "@/lib/clientIp";
 import { AppError, USER_MESSAGES, toUserMessage } from "@/lib/userErrors";
 import { extractRecipesFromPhotos, extractRecipesFromText } from "@/lib/extractRecipe";
@@ -144,6 +144,7 @@ export type PhotoImportResult =
   | { ok: false; error: string };
 
 export async function importRecipesFromPhotos(formData: FormData): Promise<PhotoImportResult> {
+  const startedAt = Date.now();
   const files = formData.getAll("photo").filter((f): f is File => f instanceof File && f.size > 0);
   if (files.length === 0) return { ok: false, error: "Najprv prosím vyberte fotku." };
   if (files.length > MAX_PHOTOS) {
@@ -193,8 +194,10 @@ export async function importRecipesFromPhotos(formData: FormData): Promise<Photo
         };
       }),
     );
+    await recordWait(slot, startedAt, "ok");
     return { ok: true, drafts };
   } catch (err) {
+    await recordWait(slot, startedAt, err instanceof AppError ? err.code : "unknown");
     return { ok: false, error: await importFailed(slot.id, err) };
   }
 }

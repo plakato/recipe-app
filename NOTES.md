@@ -134,6 +134,10 @@ recipes are hidden, not deleted. In order:
    `Activity`. Page `/admin/stats` (accounts marked with
    `scripts/set-admin.ts <email>`), report `scripts/usage-report.ts [days]`.
    Not yet: failed (busy) model attempts aren't counted; a daily email.
+   2026-10-26: each photo import's wait is recorded (AiUsage kind "wait",
+   durationMs, purpose "ok" or the error code; from the photos arriving to
+   the answer — upload time not included; not synced from the Mac) and shown
+   as median / longest per day. Model calls give up after 150 s.
    Was: **Daily usage statistics.** A daily summary of AI use: tokens and cost per
    model (free and paid), how many imports and edits, from accounts vs.
    demo visitors. Today `AiUsage` records imports and paid-call costs only;

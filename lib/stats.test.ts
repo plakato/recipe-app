@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
-const { summarize, total, dayKey } = await import("./stats");
+const { summarize, total, dayKey, waitSummary } = await import("./stats");
 
 const TZ = "Europe/Bratislava";
 const at = (iso: string) => new Date(iso);
@@ -113,5 +113,35 @@ describe("summarize per purpose", () => {
     expect(total(days).purposes.find((p) => p.purpose === "unknown")?.models).toEqual([
       { model: "gemma:free", calls: 1, costUsd: 0 },
     ]);
+  });
+});
+
+describe("import waits", () => {
+  const wait = (ms: number, outcome: string, iso: string) => ({ ...row("wait", iso), purpose: outcome, durationMs: ms });
+  const days = summarize(
+    [
+      wait(40_000, "ok", "2026-10-26T08:00:00Z"),
+      wait(100_000, "ok", "2026-10-26T09:00:00Z"),
+      wait(60_000, "ok", "2026-10-26T10:00:00Z"),
+      wait(150_000, "busy", "2026-10-26T11:00:00Z"),
+      wait(30_000, "ok", "2026-10-25T11:00:00Z"),
+    ],
+    [],
+    TZ,
+  );
+
+  it("keeps successful waits and counts failures per day", () => {
+    expect(days[0].waits).toEqual({ ms: [40_000, 100_000, 60_000], failed: 1 });
+    expect(waitSummary(days[0].waits)).toEqual({ median: 60_000, longest: 100_000 });
+  });
+
+  it("adds them up over days", () => {
+    const sum = total(days);
+    expect(waitSummary(sum.waits)).toEqual({ median: 50_000, longest: 100_000 });
+    expect(sum.waits.failed).toBe(1);
+  });
+
+  it("has no summary without waits", () => {
+    expect(waitSummary({ ms: [], failed: 2 })).toBeNull();
   });
 });

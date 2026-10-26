@@ -82,7 +82,8 @@ model AiUsage {
   isGuest          Boolean  @default(false) // made from a demo
   ip               String?
   model            String?
-  purpose          String? // "call": "read-recipe" | "choose-photos" | "describe-dish" | "draw-dish"
+  purpose          String? // "call": "read-recipe" | "choose-photos" | "describe-dish" | "draw-dish"; "wait": "ok" or the error code
+  durationMs       Int? // "wait": how long a photo import took, from the photos arriving to the answer
   promptTokens     Int      @default(0)
   completionTokens Int      @default(0)
   costUsd          Float    @default(0)
