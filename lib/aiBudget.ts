@@ -67,19 +67,6 @@ export async function startImport({
   return { id: row.id };
 }
 
-// How long a photo import kept the person waiting, and how it ended ("ok"
-// or the error code), for the statistics. Not synced from the Mac (lib/
-// sync.ts): only the live site's waits are what people see.
-export async function recordWait(
-  { userId, isGuest }: { userId: string; isGuest: boolean },
-  startedAt: number,
-  outcome: string,
-): Promise<void> {
-  await prisma.aiUsage
-    .create({ data: { kind: "wait", userId, isGuest, purpose: outcome, durationMs: Date.now() - startedAt } })
-    .catch(() => {});
-}
-
 // Give an import back (e.g. it failed only because the models were busy).
 export async function refundImport(id: string): Promise<void> {
   await prisma.aiUsage.delete({ where: { id } }).catch(() => {});

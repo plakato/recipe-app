@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Ochrana súkromia" };
 // PRIVACY_EMAIL), so no personal details sit in the public code.
 export const dynamic = "force-dynamic";
 
-const UPDATED = "19. 10. 2026";
+const UPDATED = "26. 10. 2026";
 
 // The privacy policy, public (proxy.ts). Also the privacy-policy link for
 // Google and Facebook sign-in and the Google project behind the backups
@@ -59,6 +59,10 @@ export default function PrivacyPage() {
           receptu z fotky (na ochranu pred zneužitím) a záznamy o používaní, napr. koľko receptov sa
           pridalo (na denné limity a štatistiky).
         </li>
+        <li>
+          <strong>Upozornenia:</strong> ak ich v telefóne alebo prehliadači povolíte, uložíme adresu, na
+          ktorú vám môžeme poslať správu, že sa recept prečítal. Nič iné cez ňu neposielame.
+        </li>
       </ul>
 
       <h2 className={h2}>Na čo ich používame</h2>
@@ -90,6 +94,10 @@ export default function PrivacyPage() {
           <strong>Google alebo Facebook</strong> — len ak sa cez ne prihlasujete (overia, že ste to vy).
         </li>
         <li>
+          <strong>Apple, Google alebo Mozilla</strong> (podľa vášho telefónu či prehliadača) — len ak
+          povolíte upozornenia: doručia správu „recept je prečítaný“ s jeho názvom.
+        </li>
+        <li>
           <strong>OpenAI (ChatGPT)</strong> — len ak si Receptík v ChatGPT sami pripojíte: potom smie čítať
           vaše recepty, aby vám poradil, čo uvariť; meniť ani mazať ich nemôže. Ako s textami zaobchádza
           ChatGPT, upravujú podmienky OpenAI.
@@ -104,6 +112,7 @@ export default function PrivacyPage() {
       <ul className="list-disc space-y-1 pl-6">
         <li>Účet, recepty a fotky — kým účet máte. Recept v koši môžete obnoviť, kým ho natrvalo nezmažete.</li>
         <li>IP adresy — najviac 7 dní.</li>
+        <li>Adresa pre upozornenia — kým upozornenia nevypnete alebo kým máte účet.</li>
         <li>Prihlásenie v prehliadači — 30 dní; účty z dema bez registrácie sa mažú po 24 hodinách nečinnosti.</li>
         <li>
           Zálohy databázy — 90 dní. Zálohy fotiek sa samy nemažú; keď požiadate o zmazanie účtu, vymažeme

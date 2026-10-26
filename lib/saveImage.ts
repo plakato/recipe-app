@@ -4,9 +4,10 @@
 // Server-only (filesystem + network).
 
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { safeFetch } from "@/lib/safeFetch";
+import { isUploadPath } from "@/lib/recipes";
 
 // Where photo files live. In development this is public/uploads, which Next
 // serves statically. In production set UPLOAD_DIR to a folder outside the
@@ -187,6 +188,23 @@ export async function cropPhoto(
       .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
       .jpeg({ quality: 85 })
       .toBuffer();
+  } catch {
+    return null;
+  }
+}
+
+// A photo saved earlier (an upload path), read back as for the model — to
+// read it again (lib/photoReading.ts). null if it's gone (unused uploads are
+// tidied up after a day) or isn't one of ours.
+export async function loadStoredPhoto(
+  imagePath: string,
+): Promise<{ imagePath: string; dataUrl: string; buf: Buffer } | null> {
+  if (!isUploadPath(imagePath)) return null;
+  try {
+    const buf = await readFile(uploadFilePath(imagePath));
+    const ext = path.extname(imagePath).slice(1).toLowerCase();
+    const type = Object.keys(EXT_BY_TYPE).find((t) => EXT_BY_TYPE[t] === ext) ?? "image/jpeg";
+    return { imagePath, buf, dataUrl: `data:${type};base64,${buf.toString("base64")}` };
   } catch {
     return null;
   }

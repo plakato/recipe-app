@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { getSessionUser, requireUser } from "@/lib/auth";
 import type { User } from "@prisma/client";
 import { userForChange } from "@/lib/demoSession";
 import { enterUsage } from "@/lib/usageContext";
@@ -12,12 +12,14 @@ import { isUploadPath, linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { pickRecipeImages } from "@/lib/pickImage";
 import { runHousekeeping } from "@/lib/housekeeping";
-import { recordWait, refundImport, startImport } from "@/lib/aiBudget";
+import { refundImport, startImport } from "@/lib/aiBudget";
 import { clientIp } from "@/lib/clientIp";
 import { AppError, USER_MESSAGES, toUserMessage } from "@/lib/userErrors";
-import { extractRecipesFromPhotos, extractRecipesFromText } from "@/lib/extractRecipe";
-import { cropDish } from "@/lib/dishCrop";
-import { saveImageBuffer, saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
+import { extractRecipesFromText } from "@/lib/extractRecipe";
+import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
+import { readAndSave, readingStatus as readingStatusFor, retryReading, startReading } from "@/lib/photoReading";
+import type { ReadingStatus } from "@/lib/readingNotice";
+import { savePushSubscription, type PushKeys } from "@/lib/push";
 import { generateRecipePicture } from "@/lib/dishImage";
 import { access, unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
@@ -135,13 +137,11 @@ export async function importRecipesFromUrl(url: string): Promise<UrlImportResult
   }
 }
 
-// Photo import: one or more photos taken together (a recipe over two pages,
-// a page plus a picture of the dish, a page with two recipes…). Saves the
-// photos, reads every recipe from them in one model request, crops each
-// recipe's dish picture, and hands the drafts back to review one by one.
-export type PhotoImportResult =
-  | { ok: true; drafts: RecipeDraft[] }
-  | { ok: false; error: string };
+// Photo import: saves the photos and starts reading them in the background
+// (lib/photoReading.ts) — reading takes a minute or more. Every recipe found
+// is saved as read; the person is told when it's done (in the app and by a
+// notification), and can add the next one meanwhile.
+export type PhotoImportResult = { ok: true; readingId: string } | { ok: false; error: string };
 
 export async function importRecipesFromPhotos(formData: FormData): Promise<PhotoImportResult> {
   const startedAt = Date.now();
@@ -157,49 +157,67 @@ export async function importRecipesFromPhotos(formData: FormData): Promise<Photo
   // One import, however many photos (they are read in one request).
   const slot = await reserveImport(who.user);
   if ("error" in slot) return { ok: false, error: slot.error };
-  // AI calls below are recorded for this person (statistics).
-  enterUsage({ userId: slot.userId, isGuest: slot.isGuest });
-  // Photos of drafts that are never saved are tidied up later.
   after(runHousekeeping);
-  try {
-    const photos: NonNullable<Awaited<ReturnType<typeof saveUploadedImage>>>[] = [];
-    for (const file of files) {
-      const saved = await saveUploadedImage(file);
-      if (!saved) {
-        await refundImport(slot.id);
-        return {
-          ok: false,
-          error: `Fotku ${file.name} nevieme otvoriť: tento typ nepodporujeme alebo je príliš veľká (najviac 8 MB).`,
-        };
-      }
-      photos.push(saved);
+  const photos: NonNullable<Awaited<ReturnType<typeof saveUploadedImage>>>[] = [];
+  for (const file of files) {
+    const saved = await saveUploadedImage(file);
+    if (!saved) {
+      await refundImport(slot.id);
+      return {
+        ok: false,
+        error: `Fotku ${file.name} nevieme otvoriť: tento typ nepodporujeme alebo je príliš veľká (najviac 8 MB).`,
+      };
     }
-    // Free models first; the paid one only as a budget-capped fallback. The
-    // model works out the recipe's language itself.
-    const recipes = await extractRecipesFromPhotos(photos.map((p) => p.dataUrl));
-    const drafts = await Promise.all(
-      recipes.map(async (r): Promise<RecipeDraft> => {
-        // No dish photo that passes the check: no picture rather than a
-        // wrong one — a generated one replaces it after saving.
-        const others = recipes.filter((o) => o !== r).map((o) => o.title);
-        const crop = await cropDish(r, photos, others);
-        // The scans: the photos with its text and its dish (all, if unsure).
-        const used = [...new Set([...r.photos, ...(r.dish ? [r.dish.photo] : [])])].sort();
-        return {
-          title: r.title,
-          ingredients: r.ingredients,
-          instructions: r.instructions,
-          imagePath: crop ? await saveImageBuffer(crop, "jpg") : undefined,
-          scanPaths: (used.length ? used : photos.map((_, i) => i)).map((i) => photos[i].imagePath),
-        };
-      }),
-    );
-    await recordWait(slot, startedAt, "ok");
-    return { ok: true, drafts };
-  } catch (err) {
-    await recordWait(slot, startedAt, err instanceof AppError ? err.code : "unknown");
-    return { ok: false, error: await importFailed(slot.id, err) };
+    photos.push(saved);
   }
+  const reader = { userId: slot.userId, isGuest: slot.isGuest };
+  const readingId = await startReading(reader, photos);
+  after(() => readAndSave(readingId, slot.id, reader, photos, startedAt));
+  return { ok: true, readingId };
+}
+
+// How the person's background readings are doing, for the in-app notice
+// (components/ReadingNotifier.tsx). Only their own; [] when signed out.
+export async function readingStatus(ids: string[]): Promise<ReadingStatus[]> {
+  const user = await getSessionUser();
+  if (!user || !Array.isArray(ids)) return [];
+  return readingStatusFor(user.id, ids.filter((id) => typeof id === "string"));
+}
+
+// Read a failed reading's photos again (its page's "Skúsiť znova"): a new
+// reading, counted as a new import.
+export async function retryPhotoReading(readingId: string): Promise<PhotoImportResult> {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  const slot = await reserveImport(user);
+  if ("error" in slot) return { ok: false, error: slot.error };
+  const retry = await retryReading(String(readingId), slot.id, { userId: user.id, isGuest: user.isGuest });
+  if (!retry) {
+    await refundImport(slot.id);
+    return { ok: false, error: "Fotky už nemáme. Pridajte ich prosím znova." };
+  }
+  after(retry.run);
+  return { ok: true, readingId: retry.readingId };
+}
+
+// Move a recipe from a reading's page to the Trash, staying on that page.
+export async function trashReadRecipe(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const deleted = await prisma.recipe.updateMany({
+    where: { id, userId: user.id, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  if (deleted.count) await logActivity("deleted", user);
+  revalidatePath(`/recipes/read/${String(formData.get("reading") ?? "")}`);
+}
+
+// This browser agreed to notifications: remember it for the signed-in person.
+export async function subscribeToPush(sub: PushKeys): Promise<void> {
+  const user = await getSessionUser();
+  if (!user || typeof sub?.endpoint !== "string" || !/^https:\/\//.test(sub.endpoint)) return;
+  if (typeof sub.keys?.p256dh !== "string" || typeof sub.keys?.auth !== "string") return;
+  await savePushSubscription(user.id, sub);
 }
 
 // Result of a save attempt, consumed by RecipeForm via useActionState.

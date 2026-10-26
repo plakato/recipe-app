@@ -105,8 +105,9 @@ export function summarize(usage: UsageRow[], activity: ActivityRow[], timeZone =
     else if (row.kind === "signup") d.signups++;
     else if (row.kind === "chatgpt") d.chatgpt++;
     else if (row.kind === "wait") {
+      // "reading": still running, counted once it ends.
       if (row.purpose === "ok" && row.durationMs != null) d.waits.ms.push(row.durationMs);
-      else d.waits.failed++;
+      else if (row.purpose !== "reading") d.waits.failed++;
     }
     else if (row.kind === "call" || row.kind === "paid") {
       const name = row.model ?? "unknown";

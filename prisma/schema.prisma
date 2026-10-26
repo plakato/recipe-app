@@ -32,6 +32,7 @@ model User {
   sessions  Session[]
   oauthTokens OAuthToken[]
   logins    SocialLogin[]
+  pushSubscriptions PushSubscription[]
   createdAt DateTime @default(now())
 
   @@index([isGuest, guestExpiresAt])
@@ -82,8 +83,10 @@ model AiUsage {
   isGuest          Boolean  @default(false) // made from a demo
   ip               String?
   model            String?
-  purpose          String? // "call": "read-recipe" | "choose-photos" | "describe-dish" | "draw-dish"; "wait": "ok" or the error code
+  purpose          String? // "call": "read-recipe" | "choose-photos" | "describe-dish" | "draw-dish"; "wait": "reading" while it runs, then "ok" or the error code
   durationMs       Int? // "wait": how long a photo import took, from the photos arriving to the answer
+  readResult       String? // "wait": JSON [{ id, like? }] — the recipes it saved; like: an older recipe it resembles
+  photoPaths       String? // "wait": JSON list of the photos read (uploads), for trying again
   promptTokens     Int      @default(0)
   completionTokens Int      @default(0)
   costUsd          Float    @default(0)
@@ -154,5 +157,20 @@ model SocialLogin {
   createdAt         DateTime @default(now())
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// A browser or phone that agreed to notifications (lib/push.ts): "your recipe
+// has been read". The endpoint is the push service's address for it (Apple,
+// Google, Mozilla); p256dh/auth encrypt the message to it.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
   @@index([userId])
 }

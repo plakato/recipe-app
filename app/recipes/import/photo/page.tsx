@@ -5,6 +5,7 @@ import { getShowcaseUserId } from "@/lib/showcase";
 import { turnstileSiteKey } from "@/lib/turnstile";
 import { URL_IMPORT_ENABLED } from "@/lib/features";
 import PhotoImport from "@/components/PhotoImport";
+import { pushPublicKey } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +20,11 @@ export default async function ImportFromPhotoPage() {
         <h1 className="font-display text-3xl">Z fotky</h1>
         <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
           Odfoťte stránku z kuchárky, ručne písaný recept alebo snímku obrazovky.
-          Umelá inteligencia ho prečíta a vyplní recept, ktorý pred uložením skontrolujete.
+          Umelá inteligencia ho prečíta a uloží medzi vaše recepty.
         </p>
       </div>
 
-      <PhotoImport botCheckKey={signedIn ? null : turnstileSiteKey()} />
+      <PhotoImport botCheckKey={signedIn ? null : turnstileSiteKey()} pushKey={pushPublicKey()} />
 
       {/* With link import paused, photo is the only way to add: no chooser. */}
       {URL_IMPORT_ENABLED && (

@@ -138,6 +138,18 @@ recipes are hidden, not deleted. In order:
    durationMs, purpose "ok" or the error code; from the photos arriving to
    the answer — upload time not included; not synced from the Mac) and shown
    as median / longest per day. Model calls give up after 150 s.
+   2026-10-26: **photo reading runs in the background** (lib/photoReading.ts):
+   the action saves the photos and returns; the recipes are saved as read (no
+   review step — the edit page is the same form), one notification per
+   reading: in the app (components/ReadingNotifier.tsx polls readingStatus;
+   pending ids in localStorage) and Web Push (lib/push.ts, public/sw.js;
+   PUSH_PUBLIC_KEY/_PRIVATE_KEY/_CONTACT in .env, permission asked on the
+   first send; iPhone only from the home-screen app). A reading = its "wait"
+   row (purpose reading → ok/error code, readResult, photoPaths). Its page
+   /recipes/read/<id>: each recipe with Zobraziť / Zmazať and "looks like …
+   you already have" (lib/similarity.ts), or the error with Skúsiť znova
+   (same photos, a new import; photos kept a day). Cut off by a restart →
+   failed after 15 min. Don't deploy while someone is reading (restart).
    Was: **Daily usage statistics.** A daily summary of AI use: tokens and cost per
    model (free and paid), how many imports and edits, from accounts vs.
    demo visitors. Today `AiUsage` records imports and paid-call costs only;
