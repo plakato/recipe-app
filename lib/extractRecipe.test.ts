@@ -229,6 +229,12 @@ describe("toPageRecipes", () => {
     expect(r.ingredients).toEqual(["NA GRILOVANÉ KUŘE:", "3 stroužky česneku", "K PODÁVÁNÍ:", "hrst koriandru"]);
   });
 
+  it("adds no colons when the whole card is written in capitals", () => {
+    const caps = { ...orange, ingredients: ["2 VAJCIA", "HRNČEK MÚKY", "SOĽ"] };
+    const [r] = toPageRecipes({ recipes: [caps] }, 2);
+    expect(r.ingredients).toEqual(["2 VAJCIA", "HRNČEK MÚKY", "SOĽ"]);
+  });
+
   it("writes a title printed in capitals like a sentence", () => {
     const [r] = toPageRecipes({ recipes: [{ ...orange, title: "PEČENÉ KUŘE NA POMERANČÍCH" }] }, 2);
     expect(r.title).toBe("Pečené kuře na pomerančích");

@@ -518,6 +518,7 @@ Which recipes:
 
 Text:
 - Keep the recipe in its ORIGINAL language (do not translate). Transcribe printed or handwritten text as accurately as you can.
+- Text written all in capitals (common in titles and on handwritten cards): write it in normal case — a capital only at the start of the title, item or sentence and for names of people, places and brands, e.g. "PARADAJKOVÁ (OD LEY)" → "Paradajková (od Ley)", "SLOPPY JOES" → "Sloppy Joes". Component headings follow the heading rule below.
 - Join words that the page splits at the end of a line (e.g. "mari-" + "nády" → "marinády"), and lines that continue one ingredient (e.g. "1–2 lžičky srirachy" + "+ navíc k podávání" is one item).
 - If the recipe has separate components (e.g. dough, filling, glaze, sauce, "for serving"), keep ONE list but put a heading line ending in a colon before each component's items, in the recipe's language, e.g. "Cesto:", "Plnka:", "K podávání:". Do the same in instructions when the steps are grouped by component. Never invent components.
 - Leave out everything that is not the recipe itself: introductions, stories and history of the dish, advertising, author and photo credits, page numbers, links, QR codes, servings/time/difficulty labels.
@@ -546,16 +547,19 @@ function asBox(value: unknown): Box | null {
 // models don't follow that rule reliably). A photo counts as such a picture
 // when the model lists it in "pictures" or a dish fills half of it.
 // A component heading printed in capitals without its colon ("K PODÁVÁNÍ",
-// "NA GRILOVANÉ KUŘE") gets one, so the app shows it as a heading.
+// "NA GRILOVANÉ KUŘE") gets one, so the app shows it as a heading — unless
+// most lines are in capitals: then the whole card was written that way.
 function withHeadingColons(lines: string[]): string[] {
-  return lines.map((l) =>
-    l.length <= 40 && !/[\d:]/.test(l) && /\p{Lu}/u.test(l) && l === l.toUpperCase() ? `${l}:` : l,
-  );
+  const caps = (l: string) => /\p{Lu}/u.test(l) && l === l.toUpperCase();
+  if (lines.filter(caps).length * 2 > lines.length) return lines;
+  return lines.map((l) => (l.length <= 40 && !/[\d:]/.test(l) && caps(l) ? `${l}:` : l));
 }
 
 // A title printed all in capitals ("KUŘE NA POMERANČÍCH") reads as
-// "Kuře na pomerančích", like the others. Only on import from a photo — a
-// title the person types in capitals stays as typed.
+// "Kuře na pomerančích", like the others. The prompt asks the model for that
+// already, keeping names capitalised ("od Ley"); this catches a model that
+// didn't. Only on import from a photo — a title the person types in capitals
+// stays as typed.
 export function withoutShouting(title: string): string {
   if (/\p{Ll}/u.test(title) || !/\p{Lu}.*\p{Lu}/u.test(title)) return title;
   const lower = title.toLowerCase();
