@@ -74,7 +74,12 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
     const formData = new FormData();
     for (const p of picked) formData.append("photo", p.file);
     if (needsBotCheck && botToken) formData.append("cf-turnstile-response", botToken);
-    const result = await importRecipesFromPhotos(formData);
+    // The answer can fail to arrive at all (connection lost, the server
+    // restarted by a deploy): say so instead of reading forever.
+    const result = await importRecipesFromPhotos(formData).catch(() => ({
+      ok: false as const,
+      error: "Spojenie so serverom sa prerušilo a recept sa neprečítal. Skúste to prosím znova.",
+    }));
     setLoading(false);
     if (result.ok) {
       setNeedsBotCheck(false);
@@ -154,8 +159,8 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
       </div>
       <p className="text-sm text-stone-500">
         Ak recept pokračuje na ďalšej strane alebo máte aj fotku hotového jedla, pridajte všetky
-        fotky naraz (najviac {MAX_PHOTOS}). Keď je na stránke viac receptov a jeden z nich je na
-        fotke jedla, prečítame len ten.
+        fotky naraz (najviac {MAX_PHOTOS}). Keď je na stránke viac receptov, ukážeme vám ich jeden
+        po druhom; ak pridáte aj fotku hotového jedla, prečítame len recept, ktorý je na nej.
       </p>
 
       {picked.length > 0 && (

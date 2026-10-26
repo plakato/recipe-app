@@ -119,7 +119,7 @@ function paidFallback(tried: string[]): string | undefined {
 function isBusy(e: unknown): boolean {
   return (
     e instanceof Error &&
-    /OpenRouter (429|502|503|404)|rate-limit|Empty response/i.test(e.message)
+    /OpenRouter (429|502|503|404)|rate-limit|Empty response|timed out/i.test(e.message)
   );
 }
 
@@ -128,6 +128,9 @@ function isBusy(e: unknown): boolean {
 // A JSON schema for the answer ("structured output"): models that support it
 // can only return valid JSON of that shape. Others get plain JSON mode.
 type JsonSchema = { name: string; schema: Record<string, unknown> };
+
+// Reading a few photos takes a free model 1–2 minutes when it works at all.
+const MODEL_TIMEOUT_MS = 150_000;
 
 async function callModel(
   model: string,
@@ -142,6 +145,9 @@ async function callModel(
   const maxAttempts = 3;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const res = await fetch(OPENROUTER_URL, {
+      // A model that doesn't answer in time counts as busy: on to the next
+      // one, instead of the person watching the spinner forever.
+      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -162,6 +168,11 @@ async function callModel(
           ? { type: "json_schema", json_schema: { ...schema, strict: true } }
           : { type: "json_object" },
       }),
+    }).catch((err) => {
+      if (err instanceof DOMException && err.name === "TimeoutError") {
+        throw new Error(`${model} timed out after ${MODEL_TIMEOUT_MS / 1000} s`);
+      }
+      throw err;
     });
 
     if (res.ok) {
