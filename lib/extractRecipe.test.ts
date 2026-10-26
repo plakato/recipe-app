@@ -235,6 +235,18 @@ describe("toPageRecipes", () => {
     expect(r.ingredients).toEqual(["Plnka:", "+ soľ", "hrst petržlenu + na ozdobenie", "1 citrón"]);
   });
 
+  it("makes 'Na korpus' and the like headings", () => {
+    const parts = { ...orange, ingredients: ["Na korpus", "2 vejce", "Na pudinkový krém", "320 g mléka", "Na želé a dekorace", "250 ml vody"] };
+    const [r] = toPageRecipes({ recipes: [parts] }, 2);
+    expect(r.ingredients).toEqual(["Na korpus:", "2 vejce", "Na pudinkový krém:", "320 g mléka", "Na želé a dekorace:", "250 ml vody"]);
+  });
+
+  it("joins 'na ozdobu:' turned into a heading back to its ingredient", () => {
+    const soup = { ...orange, ingredients: ["2 lžíce petrželky", "na ozdobu:", "1 lžička oregana", "Na ozdobu:", "kolečka citronu"] };
+    const [r] = toPageRecipes({ recipes: [soup] }, 2);
+    expect(r.ingredients).toEqual(["2 lžíce petrželky + na ozdobu", "1 lžička oregana", "Na ozdobu:", "kolečka citronu"]);
+  });
+
   it("adds no colons when the whole card is written in capitals", () => {
     const caps = { ...orange, ingredients: ["2 VAJCIA", "HRNČEK MÚKY", "SOĽ"] };
     const [r] = toPageRecipes({ recipes: [caps] }, 2);

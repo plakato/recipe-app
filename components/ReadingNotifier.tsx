@@ -13,7 +13,8 @@ const EVERY_MS = 5000;
 // background (lib/pendingReadings.ts), asks every few seconds how they're
 // doing and shows a notice when one is done — "Recept je prečítaný ·
 // Zobraziť". The phone notification (public/sw.js) covers the time the app
-// isn't open; the notice still comes the next time it is.
+// isn't open; the notice still comes the next time it is. Tapping the phone
+// notification while the app is open opens its page here.
 export default function ReadingNotifier() {
   const router = useRouter();
   const [done, setDone] = useState<ReadingStatus[]>([]);
@@ -44,6 +45,24 @@ export default function ReadingNotifier() {
       document.removeEventListener("visibilitychange", check);
     };
   }, [check]);
+
+  // A tapped phone notification (public/sw.js): open its page here, and its
+  // notice is no longer needed.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type !== "open" || typeof e.data.url !== "string") return;
+      const url = new URL(e.data.url, location.origin);
+      if (url.origin !== location.origin) return;
+      if (typeof e.data.reading === "string") {
+        removePendingReading(e.data.reading);
+        setDone((shown) => shown.filter((s) => s.id !== e.data.reading));
+      }
+      router.push(url.pathname + url.search);
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [router]);
 
   const close = (id: string) => {
     removePendingReading(id);

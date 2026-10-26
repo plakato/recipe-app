@@ -24,6 +24,9 @@ self.addEventListener("push", (event) => {
   );
 });
 
+// Tapping it: the app, if open, is brought to the front and asked to open
+// the page itself (components/ReadingNotifier.tsx) — iPhones don't let the
+// service worker navigate it; otherwise the app opens on that page.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
@@ -31,11 +34,9 @@ self.addEventListener("notificationclick", (event) => {
     (async () => {
       const open = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       const client = open.find((c) => new URL(c.url).origin === self.location.origin);
-      if (client) {
-        await client.focus();
-        return client.navigate(url);
-      }
-      return self.clients.openWindow(url);
+      if (!client) return self.clients.openWindow(url);
+      await client.focus();
+      client.postMessage({ type: "open", url, reading: event.notification.tag });
     })(),
   );
 });

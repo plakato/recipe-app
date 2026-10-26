@@ -530,8 +530,10 @@ Which recipes:
 Text:
 - Keep the recipe in its ORIGINAL language (do not translate). Transcribe printed or handwritten text as accurately as you can.
 - Text written all in capitals (common in titles and on handwritten cards): write it in normal case — a capital only at the start of the title, item or sentence and for names of people, places and brands, e.g. "PARADAJKOVÁ (OD LEY)" → "Paradajková (od Ley)", "SLOPPY JOES" → "Sloppy Joes". Component headings follow the heading rule below.
+- Write every word once: where a step continues in the next column or on the next photo, carry on from where it stopped — don't repeat the end of the previous part (e.g. not "…nadrobno. Do hrnce na kostičky, cibuli nadrobno. Do hrnce…").
 - Join words that the page splits at the end of a line (e.g. "mari-" + "nády" → "marinády"), and lines that continue one ingredient (e.g. "1–2 lžičky srirachy" + "+ navíc k podávání" is one item).
-- If the recipe has separate components (e.g. dough, filling, glaze, sauce, "for serving"), keep ONE list but put a heading line ending in a colon before each component's items, in the recipe's language, e.g. "Cesto:", "Plnka:", "K podávání:". Do the same in instructions when the steps are grouped by component. Never invent components.
+- If the recipe has separate components (e.g. dough, filling, glaze, sauce, "for serving"), keep ONE list but put a heading line ending in a colon before each component's items, in the recipe's language, e.g. "Cesto:", "Plnka:", "K podávání:". A printed line like "Na korpus", "Na pudinkový krém" or "Pro omáčku" that names a component is such a heading: write it as "Na korpus:". Do the same in instructions when the steps are grouped by component. Never invent components.
+- "+ na ozdobu", "+ navíc k podávání" and the like belong to the ingredient before them (more of it for garnish or serving): keep them on that ingredient's line, never as a heading.
 - Leave out everything that is not the recipe itself: introductions, stories and history of the dish, advertising, author and photo credits, page numbers, links, QR codes, servings/time/difficulty labels.
 - "tips": only practical advice for making, serving, storing or varying THIS recipe (e.g. "Serve right away; it separates when reheated."), in the recipe's language. A box of advice about another topic belongs to no recipe.
 - Ignore crossed-out or struck-through words: the author deleted them, so leave them out and do not guess a replacement.
@@ -579,15 +581,28 @@ export function withoutShouting(title: string): string {
 
 // An ingredient line starting with "+" ("+ na ozdobenie", "+ navíc k
 // podávání") continues the one before it; models sometimes split it off
-// although the prompt asks them not to.
+// although the prompt asks them not to — or turn it into a heading in small
+// letters ("na ozdobu:"), which is joined back the same way.
 function withContinuationsJoined(lines: string[]): string[] {
   const out: string[] = [];
   for (const l of lines) {
     const prev = out[out.length - 1];
-    if (/^\+/.test(l) && prev !== undefined && !prev.endsWith(":")) out[out.length - 1] = `${prev} ${l}`;
-    else out.push(l);
+    const follows = prev !== undefined && !prev.endsWith(":");
+    if (follows && /^\+/.test(l)) out[out.length - 1] = `${prev} ${l}`;
+    else if (follows && /^\p{Ll}[^\d]{0,30}:$/u.test(l) && /^(na|k|ku|pro|do|navíc)\s/i.test(l)) {
+      out[out.length - 1] = `${prev} + ${l.slice(0, -1)}`;
+    } else out.push(l);
   }
   return out;
+}
+
+// A component heading printed without its colon ("Na korpus", "Pro omáčku",
+// "K podávaniu"): a short line with no quantity, starting with a capital "Na"
+// / "Pro" / "K" / "Ku" and followed by more items, gets one.
+function withComponentColons(lines: string[]): string[] {
+  return lines.map((l, i) =>
+    i < lines.length - 1 && l.length <= 40 && !/[\d:]/.test(l) && /^(Na|Pro|K|Ku)\s\p{L}/u.test(l) ? `${l}:` : l,
+  );
 }
 
 export function toPageRecipes(parsed: unknown, photoCount: number): PageRecipe[] {
@@ -615,7 +630,7 @@ function readPageRecipes(parsed: unknown, photoCount: number): { recipes: PageRe
       const draft = {
         ...raw,
         title: withoutShouting(raw.title),
-        ingredients: withHeadingColons(withContinuationsJoined(raw.ingredients)),
+        ingredients: withComponentColons(withHeadingColons(withContinuationsJoined(raw.ingredients))),
         instructions: withHeadingColons(raw.instructions),
       };
       const tips = asStringArray(r.tips);
