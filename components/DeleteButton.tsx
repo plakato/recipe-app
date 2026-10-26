@@ -7,6 +7,7 @@ import { useActionState, useState } from "react";
 import { softDeleteRecipe } from "@/app/actions";
 import { TrashIcon } from "@/components/Icons";
 import Turnstile from "@/components/Turnstile";
+import ConfirmButton from "@/components/ConfirmButton";
 
 export default function DeleteButton({
   id,
@@ -25,15 +26,15 @@ export default function DeleteButton({
       {botCheckKey && (
         <Turnstile key={state?.at ?? 0} siteKey={botCheckKey} action="demo" onToken={(t) => setReady(!!t)} />
       )}
-      <button
-        type="submit"
+      <ConfirmButton
+        confirm="Zmazať tento recept? Nájdete ho potom v koši."
         disabled={pending || !ready}
         title="Presunúť do koša"
         aria-label="Presunúť do koša"
         className={`${className} disabled:opacity-60`}
       >
         <TrashIcon />
-      </button>
+      </ConfirmButton>
       {state?.error && (
         <p role="alert" className="absolute right-3 top-16 z-10 max-w-xs rounded-lg bg-white p-3 text-sm text-brick-700 shadow-lg dark:bg-stone-900 dark:text-brick-300">
           {state.error}

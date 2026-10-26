@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { statusOf } from "@/lib/photoReading";
 import { trashReadRecipe } from "@/app/actions";
 import RetryReading from "@/components/RetryReading";
+import ConfirmButton from "@/components/ConfirmButton";
 
 export const dynamic = "force-dynamic";
 
@@ -72,9 +73,12 @@ export default async function ReadingPage({ params }: { params: Promise<{ id: st
                   <form action={trashReadRecipe}>
                     <input type="hidden" name="id" value={r.id} />
                     <input type="hidden" name="reading" value={status.id} />
-                    <button type="submit" className="text-sm font-medium text-brick-600 hover:underline dark:text-brick-300">
+                    <ConfirmButton
+                      confirm={`Zmazať recept „${r.title}“? Nájdete ho potom v koši.`}
+                      className="text-sm font-medium text-brick-600 hover:underline dark:text-brick-300"
+                    >
                       Zmazať
-                    </button>
+                    </ConfirmButton>
                   </form>
                 </li>
               ))}

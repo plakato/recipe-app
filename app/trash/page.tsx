@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { restoreRecipe, permanentlyDeleteRecipe } from "@/app/actions";
 import RecipeImage from "@/components/RecipeImage";
+import ConfirmButton from "@/components/ConfirmButton";
 import { RestoreIcon, XIcon } from "@/components/Icons";
 import { visibleRecipes } from "@/lib/features";
 
@@ -59,14 +60,14 @@ export default async function TrashPage() {
               </form>
               <form action={permanentlyDeleteRecipe}>
                 <input type="hidden" name="id" value={recipe.id} />
-                <button
-                  type="submit"
+                <ConfirmButton
+                  confirm="Vymazať recept natrvalo? Toto sa už nedá vrátiť."
                   title="Vymazať natrvalo"
                   aria-label="Vymazať natrvalo"
                   className={`${btn} text-brick-600 hover:bg-brick-50 dark:hover:bg-brick-950/40`}
                 >
                   <XIcon />
-                </button>
+                </ConfirmButton>
               </form>
             </li>
           ))}

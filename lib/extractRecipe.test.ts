@@ -229,6 +229,12 @@ describe("toPageRecipes", () => {
     expect(r.ingredients).toEqual(["NA GRILOVANÉ KUŘE:", "3 stroužky česneku", "K PODÁVÁNÍ:", "hrst koriandru"]);
   });
 
+  it("joins an ingredient line starting with + to the one before it", () => {
+    const plus = { ...orange, ingredients: ["Plnka:", "+ soľ", "hrst petržlenu", "+ na ozdobenie", "1 citrón"] };
+    const [r] = toPageRecipes({ recipes: [plus] }, 2);
+    expect(r.ingredients).toEqual(["Plnka:", "+ soľ", "hrst petržlenu + na ozdobenie", "1 citrón"]);
+  });
+
   it("adds no colons when the whole card is written in capitals", () => {
     const caps = { ...orange, ingredients: ["2 VAJCIA", "HRNČEK MÚKY", "SOĽ"] };
     const [r] = toPageRecipes({ recipes: [caps] }, 2);

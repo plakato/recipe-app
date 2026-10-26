@@ -577,6 +577,19 @@ export function withoutShouting(title: string): string {
   return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
+// An ingredient line starting with "+" ("+ na ozdobenie", "+ navíc k
+// podávání") continues the one before it; models sometimes split it off
+// although the prompt asks them not to.
+function withContinuationsJoined(lines: string[]): string[] {
+  const out: string[] = [];
+  for (const l of lines) {
+    const prev = out[out.length - 1];
+    if (/^\+/.test(l) && prev !== undefined && !prev.endsWith(":")) out[out.length - 1] = `${prev} ${l}`;
+    else out.push(l);
+  }
+  return out;
+}
+
 export function toPageRecipes(parsed: unknown, photoCount: number): PageRecipe[] {
   const { recipes, pictures } = readPageRecipes(parsed, photoCount);
   return keepPictured(recipes, pictures);
@@ -602,7 +615,7 @@ function readPageRecipes(parsed: unknown, photoCount: number): { recipes: PageRe
       const draft = {
         ...raw,
         title: withoutShouting(raw.title),
-        ingredients: withHeadingColons(raw.ingredients),
+        ingredients: withHeadingColons(withContinuationsJoined(raw.ingredients)),
         instructions: withHeadingColons(raw.instructions),
       };
       const tips = asStringArray(r.tips);
