@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   description: "Naša rodinná zbierka receptov",
   // Not in search engines for now (roadmap step 2; reconsider later).
   robots: { index: false, follow: false },
+  // On an iPhone's home screen (Share → Add to Home Screen): opens without
+  // Safari's bars, named Receptík. Android reads app/manifest.ts.
+  appleWebApp: { capable: true, title: "Receptík", statusBarStyle: "default" },
 };
 
 export default async function RootLayout({

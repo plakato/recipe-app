@@ -49,8 +49,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next's own static assets and the tab icons. Uploaded
-  // recipe photos under /uploads are deliberately NOT excluded: they need a
-  // session too.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png).*)"],
+  // Everything except Next's own static assets, the tab icons and the home
+  // screen app's manifest and icons (app/manifest.ts; browsers fetch them
+  // without the cookie). Uploaded recipe photos under /uploads are
+  // deliberately NOT excluded: they need a session too.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|manifest.webmanifest|brand/).*)"],
 };
