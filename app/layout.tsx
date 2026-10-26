@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth";
 import { PlusIcon } from "@/components/Icons";
 import UserMenu from "@/components/UserMenu";
 import ReadingNotifier from "@/components/ReadingNotifier";
+import VersionCheck from "@/components/VersionCheck";
 import { getShowcaseUserId } from "@/lib/showcase";
 import { runHousekeeping } from "@/lib/housekeeping";
 import { after } from "next/server";
@@ -96,6 +97,7 @@ export default async function RootLayout({
         <main className={`mx-auto max-w-6xl px-4 py-6 sm:px-6 ${demoMode ? "pb-20" : ""}`}>{children}</main>
         {/* Photo readings running in the background: a notice when done. */}
         {user && <ReadingNotifier />}
+        <VersionCheck />
         {demoMode && (
           <div
             role="note"

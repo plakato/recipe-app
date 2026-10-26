@@ -20,7 +20,6 @@ export default async function ImportFromPhotoPage() {
         <h1 className="font-display text-3xl">Z fotky</h1>
         <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
           Odfoťte stránku z kuchárky, ručne písaný recept alebo snímku obrazovky.
-          Umelá inteligencia ho prečíta a uloží medzi vaše recepty.
         </p>
       </div>
 

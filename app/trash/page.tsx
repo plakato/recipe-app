@@ -62,6 +62,7 @@ export default async function TrashPage() {
                 <input type="hidden" name="id" value={recipe.id} />
                 <ConfirmButton
                   confirm="Vymazať recept natrvalo? Toto sa už nedá vrátiť."
+                  confirmLabel="Vymazať natrvalo"
                   title="Vymazať natrvalo"
                   aria-label="Vymazať natrvalo"
                   className={`${btn} text-brick-600 hover:bg-brick-50 dark:hover:bg-brick-950/40`}

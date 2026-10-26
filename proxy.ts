@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/lib/auth-constants";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/privacy", "/data-deletion", "/api/auth/login", "/api/auth/signup", "/robots.txt"];
+const PUBLIC_PATHS = ["/login", "/signup", "/privacy", "/data-deletion", "/api/auth/login", "/api/auth/signup", "/robots.txt", "/api/version"];
 
 // ChatGPT's connection (lib/oauth.ts, lib/mcp.ts): apps call these without
 // our cookie — /mcp checks its own access token, and /oauth/authorize sends

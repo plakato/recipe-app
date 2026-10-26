@@ -1,6 +1,23 @@
+import { execSync } from "node:child_process";
 import type { NextConfig } from "next";
 
+// Each deploy is its own version (the commit it was built from): a page left
+// open from an older one — the home-screen app keeps pages for days — reloads
+// instead of calling the new server the old way (components/VersionCheck.tsx).
+function commit(): string {
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+  } catch {
+    return "dev";
+  }
+}
+
+const version = process.env.NEXT_DEPLOYMENT_ID || commit();
+
 const nextConfig: NextConfig = {
+  deploymentId: version,
+  // Built into both the server and the pages, to compare them.
+  env: { APP_VERSION: version },
   experimental: {
     serverActions: {
       // Photos are uploaded to a Server Action; the default 1MB cap is smaller
