@@ -159,8 +159,7 @@ export default function PhotoImport({ botCheckKey = null }: { botCheckKey?: stri
       </div>
       <p className="text-sm text-stone-500">
         Ak recept pokračuje na ďalšej strane alebo máte aj fotku hotového jedla, pridajte všetky
-        fotky naraz (najviac {MAX_PHOTOS}). Keď je na stránke viac receptov, ukážeme vám ich jeden
-        po druhom; ak pridáte aj fotku hotového jedla, prečítame len recept, ktorý je na nej.
+        fotky naraz (najviac {MAX_PHOTOS}).
       </p>
 
       {picked.length > 0 && (
