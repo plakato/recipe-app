@@ -553,6 +553,15 @@ function withHeadingColons(lines: string[]): string[] {
   );
 }
 
+// A title printed all in capitals ("KUŘE NA POMERANČÍCH") reads as
+// "Kuře na pomerančích", like the others. Only on import from a photo — a
+// title the person types in capitals stays as typed.
+export function withoutShouting(title: string): string {
+  if (/\p{Ll}/u.test(title) || !/\p{Lu}.*\p{Lu}/u.test(title)) return title;
+  const lower = title.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
 export function toPageRecipes(parsed: unknown, photoCount: number): PageRecipe[] {
   const { recipes, pictures } = readPageRecipes(parsed, photoCount);
   return keepPictured(recipes, pictures);
@@ -577,6 +586,7 @@ function readPageRecipes(parsed: unknown, photoCount: number): { recipes: PageRe
       const raw = toDraft(r);
       const draft = {
         ...raw,
+        title: withoutShouting(raw.title),
         ingredients: withHeadingColons(raw.ingredients),
         instructions: withHeadingColons(raw.instructions),
       };

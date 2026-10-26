@@ -6,6 +6,7 @@ import {
   toDraft,
   toDrafts,
   toPageRecipes,
+  withoutShouting,
 } from "@/lib/extractRecipe";
 import { paidBudgetLeft, recordModelCall } from "@/lib/aiBudget";
 
@@ -226,6 +227,19 @@ describe("toPageRecipes", () => {
     const caps = { ...orange, ingredients: ["NA GRILOVANÉ KUŘE", "3 stroužky česneku", "K PODÁVÁNÍ", "hrst koriandru"] };
     const [r] = toPageRecipes({ recipes: [caps] }, 2);
     expect(r.ingredients).toEqual(["NA GRILOVANÉ KUŘE:", "3 stroužky česneku", "K PODÁVÁNÍ:", "hrst koriandru"]);
+  });
+
+  it("writes a title printed in capitals like a sentence", () => {
+    const [r] = toPageRecipes({ recipes: [{ ...orange, title: "PEČENÉ KUŘE NA POMERANČÍCH" }] }, 2);
+    expect(r.title).toBe("Pečené kuře na pomerančích");
+  });
+
+  it("keeps titles that aren't all capitals as they are", () => {
+    expect(withoutShouting("Butter Chicken")).toBe("Butter Chicken");
+    expect(withoutShouting("Koláč s BIO jablkami")).toBe("Koláč s BIO jablkami");
+    expect(withoutShouting("ŠIŠKY")).toBe("Šišky");
+    expect(withoutShouting("A")).toBe("A");
+    expect(withoutShouting("")).toBe("");
   });
 
   it("keeps every recipe when no photo is mainly a dish", () => {
