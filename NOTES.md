@@ -224,6 +224,9 @@ recipes are hidden, not deleted. In order:
 
 ## Deferred features
 
+- **Share button.** Share a recipe with a friend from the recipe page.
+  (Requested 2026-10-26.)
+
 - **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.) Being done as the ChatGPT app (step 9), so the searching runs on the user's ChatGPT account and its tokens, not ours. Our server only exposes the recipes as tools (list, read, search by words).
 
 - **Recipes with photos of the instructions.** Recipes whose method is (also)
