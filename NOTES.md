@@ -172,23 +172,27 @@ recipes are hidden, not deleted. In order:
      plugin is called reliably on phones too (it sometimes chose web search).
      Rejection notes are generic; median ~8 days, sometimes 30–90.
 
-10. **Sign in with Google / Facebook** — BUILT 2026-10-19; keys in both .envs
-   2026-10-22 (Google client in the "Recipe backup" project; Facebook app
-   "Receptík", id 1678313813965103). Facebook still to do: data-deletion URL
-   `https://recepty.brezinovi.sk/data-deletion` (own page; Facebook rejects
-   `#` links and obeys robots.txt, so robots.txt allows /privacy and
-   /data-deletion) — its checker got 403 from Cloudflare; then redirect URI,
-   Live mode, a real sign-in on the live site.
+10. **Sign in with Google** — LIVE 2026-10-22, tested by Patrícia 2026-10-26
+   (Google client in the "Recipe backup" project; keys in both .envs).
    lib/socialLogin.ts + app/api/auth/social/[provider] (+ /callback); buttons
-   (components/SocialButtons.tsx) appear only when the keys are in .env:
-   GOOGLE_CLIENT_ID/_SECRET, FACEBOOK_APP_ID/_SECRET. Redirect URIs to
-   register: `https://recepty.brezinovi.sk/api/auth/social/<google|facebook>/callback`
-   (and `http://localhost:3000/...` for local tests). Finds the account by
-   the stored link (SocialLogin table), then — Google only, verified e-mail —
-   by e-mail; otherwise creates one (lib/accounts.ts, same limits and starter
-   recipes as sign-up; a demo guest keeps their changes). Facebook never
-   opens an existing account by e-mail (it doesn't say the e-mail is
-   confirmed). Accounts made this way have no password (none can be set yet).
+   (components/SocialButtons.tsx) appear only when the keys are in .env.
+   Redirect URIs: `https://recepty.brezinovi.sk/api/auth/social/google/callback`
+   and `http://localhost:3000/...`. Finds the account by the stored link
+   (SocialLogin table), then by verified e-mail; otherwise creates one
+   (lib/accounts.ts, same limits and starter recipes as sign-up; a demo guest
+   keeps their changes). Accounts made this way have no password.
+   **Facebook — POSTPONED 2026-10-26** (Meta's setup is long and keeps
+   changing). The code stays; its keys are commented out in both .envs.
+   Done so far in the Meta app "Receptík" (id 1678313813965103): privacy URL
+   and data-deletion URL `https://recepty.brezinovi.sk/data-deletion`
+   accepted (own page — Meta rejects `#` links; robots.txt allows /privacy
+   and /data-deletion, as Meta's checker obeys it and caches it for a while;
+   its "403" in the Sharing Debugger meant robots.txt, not Cloudflare).
+   Stopped at the business portfolio / data-processor questions (answers:
+   Patrícia is the controller; processors Hetzner, Cloudflare, Google
+   backups). Still to do: those, the redirect URI, Live mode, a test.
+   Facebook never opens an existing account by e-mail (it doesn't say the
+   e-mail is confirmed).
 
 11. **Privacy policy** — full version 2026-10-19 (app/privacy/page.tsx), for
    Facebook, Google and GDPR. Name and contact from .env: PRIVACY_OPERATOR,
