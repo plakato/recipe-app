@@ -153,8 +153,8 @@ recipes are hidden, not deleted. In order:
    clears the photos and lists the readings under the button
    (components/ReadingList.tsx, polls every 3 s while reading): "Nový recept ·
    Čítam…", the title as soon as the model has written it (the answer is
-   streamed; AiUsage.readTitles), then Skontrolovať (edit form; saving keeps
-   it) or ✓ (keep as read), "Uložiť všetky bez kontroly" from 2 read ones, a
+   streamed; AiUsage.readTitles), then Skontrolovať (the recipe's page:
+   "Uložiť recept" keeps it; editing leaves it a draft) or ✓ (keep as read), "Uložiť všetky bez kontroly" from 2 read ones, a
    bin (to Trash). Read recipes are drafts (Recipe.readingId = their reading)
    and are left out of the recipes, search, ChatGPT, demo copies and sync
    (`listedRecipes` in lib/features.ts) until kept; the home page links to

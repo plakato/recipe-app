@@ -13,8 +13,8 @@ const recipes = (n: number) => `${n} ${n === 1 ? "recept" : n < 5 ? "recepty" : 
 
 // Under the photo page's button: the photos sent for reading
 // (lib/photoReading.ts). Each shows "Nový recept · Čítam…", its title as soon
-// as that is read, then — read — "Skontrolovať" (the edit form; saving keeps
-// it) or ✓ to keep it as read. "Uložiť všetky" keeps every read one. Drafts
+// as that is read, then — read — "Skontrolovať" (the recipe's page, where it
+// can be edited and kept) or ✓ to keep it as read. "Uložiť všetky" keeps every read one. Drafts
 // stay here, not among the recipes, until kept. Asks every few seconds while
 // something is being read; `sent` changes when new photos were sent.
 export default function ReadingList({ initial, sent }: { initial: ReadingItem[]; sent: number }) {
@@ -28,8 +28,9 @@ export default function ReadingList({ initial, sent }: { initial: ReadingItem[];
   }, []);
 
   const reading = items.some((i) => i.kind === "reading");
+  // Also on arrival: going back to this page shows it as first loaded (maybe
+  // before these photos were sent), so ask how things are now.
   useEffect(() => {
-    if (!sent) return;
     const now = setTimeout(refresh, 0);
     return () => clearTimeout(now);
   }, [sent, refresh]);
@@ -156,7 +157,7 @@ export default function ReadingList({ initial, sent }: { initial: ReadingItem[];
                   <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-3">
                     <div className="min-w-0 sm:flex-1">
                       <Link
-                        href={`/recipes/${item.id}/edit`}
+                        href={`/recipes/${item.id}`}
                         className="line-clamp-2 break-words font-medium hover:underline"
                       >
                         {item.title}
@@ -176,7 +177,7 @@ export default function ReadingList({ initial, sent }: { initial: ReadingItem[];
                     </div>
                     <div className="mt-1.5 flex items-center gap-1 sm:mt-0">
                       <Link
-                        href={`/recipes/${item.id}/edit`}
+                        href={`/recipes/${item.id}`}
                         className="shrink-0 rounded-lg bg-olive-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-olive-700"
                       >
                         Skontrolovať

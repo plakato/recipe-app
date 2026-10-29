@@ -10,6 +10,8 @@ import { BackIcon, EditIcon, LinkIcon } from "@/components/Icons";
 import ScanViewer from "@/components/ScanViewer";
 import { visibleRecipes } from "@/lib/features";
 import { isBeingDrawn } from "@/lib/dishImage";
+import { keepReadRecipe } from "@/app/actions";
+import { Check } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +40,35 @@ export default async function RecipeDetailPage({
   // shown is the dish, cropped from them or generated.
   const scans = parseList(recipe.scanPaths);
   const drawing = isBeingDrawn(recipe);
+  // Read from photos and not kept yet (the photo page's list): reviewed here,
+  // edited if something is wrong, then kept.
+  const draft = !!recipe.readingId;
+  const back = draft ? "/recipes/import/photo" : "/";
 
   return (
     <article className="mx-auto max-w-4xl space-y-8">
+      {draft && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-olive-200 bg-olive-50 px-4 py-3 dark:border-olive-900/50 dark:bg-olive-950/30">
+          <p className="min-w-0 flex-1 basis-60 text-sm text-olive-900 dark:text-olive-200">
+            Prečítané z fotky — zatiaľ nie je medzi vašimi receptami. Ak niečo nesedí, upravte ho.
+          </p>
+          <Link
+            href={back}
+            className="rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-white/60 dark:text-stone-300 dark:hover:bg-stone-800"
+          >
+            Späť na čítané recepty
+          </Link>
+          <form action={keepReadRecipe}>
+            <input type="hidden" name="id" value={recipe.id} />
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 rounded-lg bg-olive-600 px-4 py-2 text-sm font-medium text-white hover:bg-olive-700"
+            >
+              <Check className="h-4 w-4" /> Uložiť recept
+            </button>
+          </form>
+        </div>
+      )}
       {/* Hero: image with the title over a bottom shadow, controls on top. */}
       <header>
         <div className="relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-3xl">
@@ -60,7 +88,12 @@ export default async function RecipeDetailPage({
             </p>
           )}
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 sm:p-4">
-            <Link href="/" title="Všetky recepty" aria-label="Všetky recepty" className={heroBtn}>
+            <Link
+              href={back}
+              title={draft ? "Čítané recepty" : "Všetky recepty"}
+              aria-label={draft ? "Čítané recepty" : "Všetky recepty"}
+              className={heroBtn}
+            >
               <BackIcon />
             </Link>
             <div className="flex items-center gap-2">

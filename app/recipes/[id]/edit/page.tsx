@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import RecipeForm from "@/components/RecipeForm";
 import { updateRecipe } from "@/app/actions";
@@ -25,29 +24,17 @@ export default async function EditRecipePage({
   });
 
   if (!recipe) notFound();
-  // A draft read from photos (the photo page's list): saving keeps it.
-  const draft = !!recipe.readingId;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="font-display text-3xl">{draft ? "Skontrolovať recept" : "Upraviť recept"}</h1>
+      <h1 className="font-display text-3xl">Upraviť recept</h1>
       <RecipeForm
         action={updateRecipe}
         initial={recipeToDraft(recipe)}
         recipeId={recipe.id}
         sourceType={recipe.sourceType}
-        submitLabel={draft ? "Uložiť recept" : "Uložiť zmeny"}
+        submitLabel="Uložiť zmeny"
         botCheckKey={viewer.signedIn ? null : turnstileSiteKey()}
-        secondaryAction={
-          draft ? (
-            <Link
-              href="/recipes/import/photo"
-              className="rounded-lg px-4 py-2.5 font-medium text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
-            >
-              Späť
-            </Link>
-          ) : undefined
-        }
       />
     </div>
   );

@@ -10,7 +10,8 @@ export const visibleRecipes = URL_IMPORT_ENABLED ? {} : { sourceType: { not: "ur
 
 // The recipes among the person's recipes: visible ones they have kept — not
 // the drafts read from photos and waiting on the photo page (Recipe.readingId).
-// A draft opens and edits like any recipe; saving it from the form keeps it.
+// A draft opens and edits like any recipe; it is kept only on purpose (its
+// page's "Uložiť recept", ✓ or "Uložiť všetky" in the list).
 export const listedRecipes = { ...visibleRecipes, readingId: null };
 
 // Photo import: how many photos may be read together (one recipe over a few

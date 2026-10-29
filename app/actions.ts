@@ -207,6 +207,15 @@ export async function keepReadRecipes(ids: string[] | null): Promise<void> {
   if (await keepDrafts({ userId: user.id, isGuest: user.isGuest }, only)) revalidatePath("/");
 }
 
+// "Uložiť recept" on a draft's page: keep it, then back to the list.
+export async function keepReadRecipe(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  if (await keepDrafts({ userId: user.id, isGuest: user.isGuest }, [String(formData.get("id") ?? "")])) {
+    revalidatePath("/");
+  }
+  redirect("/recipes/import/photo");
+}
+
 // Close a failed reading in the list.
 export async function dismissPhotoReading(readingId: string): Promise<void> {
   const user = await getSessionUser();
@@ -355,25 +364,24 @@ export async function updateRecipe(
   if (blocked) return blocked;
   const existing = await prisma.recipe.findFirst({
     where: { id, userId, ...visibleRecipes },
-    select: { imagePath: true, readingId: true },
+    select: { imagePath: true },
   });
   if (!existing) return { error: "Recept sa nenašiel." };
   const image = await resolveImage(formData, existing.imagePath);
   if ("error" in image) return { error: image.error };
   // Scope by userId so only the owner's recipes can be edited. A draft read
-  // from photos, once reviewed and saved, is kept: it joins the recipes.
+  // from photos stays a draft: it is kept only from its page or the list.
   const edited = await prisma.recipe.updateMany({
     where: { id, userId, ...visibleRecipes },
-    data: { ...fields, imagePath: image.imagePath, readingId: null },
+    data: { ...fields, imagePath: image.imagePath },
   });
-  if (edited.count) await logActivity(existing.readingId ? "created" : "edited", user);
+  if (edited.count) await logActivity("edited", user);
   if (existing.imagePath && existing.imagePath !== image.imagePath) {
     await deleteImageIfUnused(existing.imagePath);
   }
   revalidatePath("/");
   revalidatePath(`/recipes/${id}`);
-  // Reviewed from the photo page's list: back to the rest of it.
-  redirect(existing.readingId ? "/recipes/import/photo" : `/recipes/${id}`);
+  redirect(`/recipes/${id}`);
 }
 
 // Soft delete: move to Trash by stamping deletedAt. Recoverable via restore.
@@ -388,6 +396,7 @@ export async function softDeleteRecipe(_prev: { error: string; at: number } | nu
   const formId = String(formData.get("id") ?? "");
   const id = who.copies?.get(formId) ?? formId;
   if (!id) throw new Error("Chýba identifikátor receptu.");
+  const draft = await prisma.recipe.count({ where: { id, userId: who.user.id, readingId: { not: null } } });
   const deleted = await prisma.recipe.updateMany({
     where: { id, userId: who.user.id, ...visibleRecipes },
     data: { deletedAt: new Date() },
@@ -395,7 +404,8 @@ export async function softDeleteRecipe(_prev: { error: string; at: number } | nu
   if (deleted.count) await logActivity("deleted", who.user);
   revalidatePath("/");
   revalidatePath("/trash");
-  redirect("/");
+  // A draft was deleted while reviewing: back to the rest of the list.
+  redirect(draft ? "/recipes/import/photo" : "/");
 }
 
 export async function restoreRecipe(formData: FormData) {
