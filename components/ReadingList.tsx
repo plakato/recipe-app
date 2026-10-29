@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, LoaderCircle, Trash2, X } from "lucide-react";
-import ConfirmButton from "@/components/ConfirmButton";
-import { dismissPhotoReading, keepReadRecipes, photoReadings, retryPhotoReading, trashReadRecipe } from "@/app/actions";
+import { Check, LoaderCircle, X } from "lucide-react";
+import { dismissPhotoReading, keepReadRecipes, photoReadings, retryPhotoReading } from "@/app/actions";
 import type { ReadingItem } from "@/lib/readingList";
 
 const EVERY_MS = 3000;
@@ -14,9 +13,11 @@ const recipes = (n: number) => `${n} ${n === 1 ? "recept" : n < 5 ? "recepty" : 
 // Under the photo page's button: the photos sent for reading
 // (lib/photoReading.ts). Each shows "Nový recept · Čítam…", its title as soon
 // as that is read, then — read — "Skontrolovať" (the recipe's page, where it
-// can be edited and kept) or ✓ to keep it as read. "Uložiť všetky" keeps every read one. Drafts
-// stay here, not among the recipes, until kept. Asks every few seconds while
-// something is being read; `sent` changes when new photos were sent.
+// can be edited, kept or thrown away) or ✓ to keep it as read. "Uložiť
+// všetky" keeps every read one. No bin here: next to ✓ a slip would do the
+// opposite. Drafts stay here, not among the recipes, until kept. Asks every
+// few seconds while something is being read; `sent` changes when new photos
+// were sent.
 export default function ReadingList({ initial, sent }: { initial: ReadingItem[]; sent: number }) {
   const [items, setItems] = useState(initial);
   const [kept, setKept] = useState(0);
@@ -56,10 +57,9 @@ export default function ReadingList({ initial, sent }: { initial: ReadingItem[];
     refresh();
   }
 
-  async function drop(item: ReadingItem) {
-    setItems((list) => list.filter((i) => i.key !== item.key));
-    if (item.kind === "ready") await trashReadRecipe(item.id).catch(() => {});
-    if (item.kind === "failed") await dismissPhotoReading(item.readingId).catch(() => {});
+  async function dismiss(readingId: string, key: string) {
+    setItems((list) => list.filter((i) => i.key !== key));
+    await dismissPhotoReading(readingId).catch(() => {});
     refresh();
   }
 
@@ -135,7 +135,7 @@ export default function ReadingList({ initial, sent }: { initial: ReadingItem[];
                   )}
                   <button
                     type="button"
-                    onClick={() => drop(item)}
+                    onClick={() => dismiss(item.readingId, item.key)}
                     title="Zavrieť"
                     aria-label="Zavrieť"
                     className={`${iconBtn} text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800`}
@@ -191,17 +191,6 @@ export default function ReadingList({ initial, sent }: { initial: ReadingItem[];
                       >
                         <Check className="h-5 w-5" />
                       </button>
-                      <form action={() => drop(item)}>
-                        <ConfirmButton
-                          confirm={`Zahodiť recept „${item.title}“? Nájdete ho potom v koši.`}
-                          confirmLabel="Zahodiť"
-                          title="Zahodiť"
-                          aria-label={`Zahodiť ${item.title}`}
-                          className={`${iconBtn} text-stone-400 hover:bg-brick-50 hover:text-brick-600 dark:hover:bg-brick-950/40`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </ConfirmButton>
-                      </form>
                     </div>
                   </div>
                 </>

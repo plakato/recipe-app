@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import {
   extractJsonObject,
   extractRecipeFromText,
+  extractRecipesFromPhotos,
   parseImageChoices,
   toDraft,
   toDrafts,
@@ -178,6 +179,40 @@ describe("paid model fallback", () => {
     fakeOpenRouter({ "free-a": [200, NONE], "free-b": [404], paid: [200, RECIPE] });
     await expect(extractRecipeFromText("x")).rejects.toMatchObject({ code: "no-recipe" });
     expect(calls).toEqual(["free-a", "free-b"]);
+  });
+
+  describe("photos: paid first", () => {
+    const PAGE = JSON.stringify({
+      pictures: [],
+      recipes: [{ title: "Cake", ingredients: ["flour"], instructions: ["bake"], tips: [], photos: [1], dish: null }],
+    });
+    const EMPTY = JSON.stringify({ pictures: [], recipes: [] });
+    const read = () => extractRecipesFromPhotos(["data:image/jpeg;base64,AA=="]);
+
+    it("asks the paid model first", async () => {
+      fakeOpenRouter({ paid: [200, PAGE], "free-a": [200, PAGE] });
+      await expect(read()).resolves.toMatchObject([{ title: "Cake" }]);
+      expect(calls).toEqual(["paid"]);
+    });
+
+    it("goes on to the free models when it is busy", async () => {
+      fakeOpenRouter({ paid: [404], "free-a": [200, PAGE] });
+      await expect(read()).resolves.toMatchObject([{ title: "Cake" }]);
+      expect(calls).toEqual(["paid", "free-a"]);
+    });
+
+    it("trusts it when it finds no recipe", async () => {
+      fakeOpenRouter({ paid: [200, EMPTY], "free-a": [200, PAGE] });
+      await expect(read()).rejects.toMatchObject({ code: "no-recipe" });
+      expect(calls).toEqual(["paid"]);
+    });
+
+    it("uses only the free models once the budget is spent", async () => {
+      vi.mocked(paidBudgetLeft).mockResolvedValue(false);
+      fakeOpenRouter({ paid: [200, PAGE], "free-a": [200, PAGE] });
+      await expect(read()).resolves.toMatchObject([{ title: "Cake" }]);
+      expect(calls).toEqual(["free-a"]);
+    });
   });
 
   it("records free calls too (tokens for the statistics), at their reported cost", async () => {

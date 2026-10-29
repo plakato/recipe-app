@@ -154,11 +154,17 @@ recipes are hidden, not deleted. In order:
    (components/ReadingList.tsx, polls every 3 s while reading): "Nový recept ·
    Čítam…", the title as soon as the model has written it (the answer is
    streamed; AiUsage.readTitles), then Skontrolovať (the recipe's page:
-   "Uložiť recept" keeps it; editing leaves it a draft) or ✓ (keep as read), "Uložiť všetky bez kontroly" from 2 read ones, a
-   bin (to Trash). Read recipes are drafts (Recipe.readingId = their reading)
+   "Uložiť recept" keeps it; editing leaves it a draft) or ✓ (keep as read), "Uložiť všetky bez kontroly" from 2 read ones
+   (no bin in the list — next to ✓ a slip would do the opposite; it's on
+   the recipe's page). Read recipes are drafts (Recipe.readingId = their reading)
    and are left out of the recipes, search, ChatGPT, demo copies and sync
    (`listedRecipes` in lib/features.ts) until kept; the home page links to
    them when some wait. Failed readings stay a day with Skúsiť znova / ×.
+   Photo reading asks the **paid model first** (decided 2026-10-29: the free
+   Gemma models answered 429 for ~35 s before every reading) — also its dish
+   photo checks; a reading now takes ~20 s instead of 1–1.5 min. Free ones only
+   if it is busy or the budget ($5/month, $0.50/day) is spent. Revisit if it
+   costs too much.
    Was: **Daily usage statistics.** A daily summary of AI use: tokens and cost per
    model (free and paid), how many imports and edits, from accounts vs.
    demo visitors. Today `AiUsage` records imports and paid-call costs only;

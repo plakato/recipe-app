@@ -222,17 +222,6 @@ export async function dismissPhotoReading(readingId: string): Promise<void> {
   if (user) await dismissReading(String(readingId), user.id);
 }
 
-// Throw away a draft read from photos (it goes to the Trash, as a draft).
-export async function trashReadRecipe(id: string): Promise<void> {
-  const user = await getSessionUser();
-  if (!user) return;
-  await prisma.recipe.updateMany({
-    where: { id: String(id), userId: user.id, readingId: { not: null }, deletedAt: null },
-    data: { deletedAt: new Date() },
-  });
-  revalidatePath("/trash");
-}
-
 // Result of a save attempt, consumed by RecipeForm via useActionState.
 // On success the action redirects — unless the form asked to stay (reviewing
 // several imported recipes in a row), in which case it returns `saved`.

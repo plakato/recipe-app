@@ -305,32 +305,39 @@ function runModels<T = RecipeDraft>(
   parse: (parsed: unknown) => T[],
   modelOverride?: string,
   schema?: JsonSchema,
-  onText?: (text: string) => void,
+  options: ModelOptions = {},
 ): Promise<T[]> {
   return withUsage({ purpose: "read-recipe" }, () =>
-    tryModels(messages, parse, modelOverride, schema, onText),
+    tryModels(messages, parse, modelOverride, schema, options),
   );
 }
 
 // onText: each model's answer as it comes (streamed); a model that fails
-// starts over from "".
+// starts over from "". paidFirst: ask the paid model first, while the budget
+// lasts (the free ones are mostly rate-limited: half a minute of retries).
+type ModelOptions = { onText?: (text: string) => void; paidFirst?: boolean };
+
 async function tryModels<T>(
   messages: ChatMessage[],
   parse: (parsed: unknown) => T[],
   modelOverride?: string,
   schema?: JsonSchema,
-  onText?: (text: string) => void,
+  { onText, paidFirst }: ModelOptions = {},
 ): Promise<T[]> {
   const models = [...new Set([modelOverride, ...freeModels()].filter(Boolean) as string[])];
   const paid = paidFallback(models);
+  const first = paidFirst && paid && !modelOverride && (await paidBudgetLeft()) ? paid : undefined;
 
   const errors: unknown[] = [];
-  for (const model of [...models, ...(paid ? [paid] : [])]) {
-    // The paid model is a last resort: only when every free model was busy
-    // (never to second-guess a free model that found no recipe), and only
-    // while the monthly/daily budget lasts.
-    if (model === paid && !(errors.every(isBusy) && (await paidBudgetLeft()))) break;
-    if (model === paid) console.warn(`Free models busy; reading the recipe with paid ${paid}.`);
+  for (const model of first ? [first, ...models] : [...models, ...(paid ? [paid] : [])]) {
+    // Paid first: the free models only if it was busy — not to second-guess
+    // it finding no recipe.
+    if (first && errors.length && !errors.every(isBusy)) break;
+    // Otherwise the paid model is a last resort: only when every free model
+    // was busy (never to second-guess a free model that found no recipe), and
+    // only while the monthly/daily budget lasts.
+    if (!first && model === paid && !(errors.every(isBusy) && (await paidBudgetLeft()))) break;
+    if (!first && model === paid) console.warn(`Free models busy; reading the recipe with paid ${paid}.`);
     try {
       onText?.("");
       const content = await callModel(model, messages, schema, onText);
@@ -463,15 +470,18 @@ export function extractRecipesFromImage(
 // Ask the free models (the paid one only if all are busy, within the budget)
 // for a JSON answer; `parse` returns null for an unusable one, which moves on
 // to the next model. Returns null if no model gave a usable answer.
+// paidFirst: the paid model first while the budget lasts (photo reading).
 export async function askModelsForJson<T>(
   messages: ChatMessage[],
   parse: (parsed: unknown) => T | null,
+  { paidFirst = false }: { paidFirst?: boolean } = {},
 ): Promise<T | null> {
   const models = freeModels();
   const paid = paidFallback(models);
+  const first = paidFirst && paid && (await paidBudgetLeft()) ? paid : undefined;
   const errors: unknown[] = [];
-  for (const model of [...models, ...(paid ? [paid] : [])]) {
-    if (model === paid && !(errors.every(isBusy) && (await paidBudgetLeft()))) break;
+  for (const model of first ? [first, ...models] : [...models, ...(paid ? [paid] : [])]) {
+    if (!first && model === paid && !(errors.every(isBusy) && (await paidBudgetLeft()))) break;
     try {
       const result = parse(extractJsonObject(await callModel(model, messages)));
       if (result !== null) return result;
@@ -749,7 +759,9 @@ export function titlesSoFar(partial: string): string[] {
 // Read every recipe from photos taken together (data: URLs, in the order the
 // person picked them), with the photos each one is on and where its dish is
 // pictured. onTitles: the recipes' titles as soon as they are read, before
-// the rest (called again whenever the list changes).
+// the rest (called again whenever the list changes). Read by the paid model
+// while the budget lasts (decided 2026-10-29: the free ones kept people
+// waiting); then by the free ones.
 export async function extractRecipesFromPhotos(
   imageDataUrls: string[],
   modelOverride?: string,
@@ -780,7 +792,7 @@ export async function extractRecipesFromPhotos(
     },
     modelOverride,
     PAGES_SCHEMA,
-    onTitles && changedTitles(onTitles),
+    { onText: onTitles && changedTitles(onTitles), paidFirst: true },
   );
   // A photo the model used for nothing — no recipe's text, no dish — is
   // usually a full-page picture of a dish it overlooked (it then takes the
@@ -837,6 +849,7 @@ function recipeShownOn(photoDataUrl: string, titles: string[]): Promise<number |
         const n = Number((parsed as Record<string, unknown> | null)?.recipe);
         return Number.isInteger(n) && n >= 0 && n <= titles.length ? { n } : null;
       },
+      { paidFirst: true },
     ),
   ).then((a) => (a && a.n > 0 ? a.n - 1 : null));
 }
@@ -912,6 +925,7 @@ export async function checkCrop(cropDataUrl: string, title: string): Promise<{ d
         const turn = Number(o.turn);
         return { dish: o.dish, turn: ([90, 180, 270].includes(turn) ? turn : 0) as Turn };
       },
+      { paidFirst: true },
     ),
   );
   return answer ?? { dish: true, turn: 0 };
@@ -945,6 +959,7 @@ export function locateDish(photoDataUrl: string, title: string, others: string[]
         const box = asBox(o.box);
         return box ? { box } : null;
       },
+      { paidFirst: true },
     ),
   ).then((a) => a?.box ?? null);
 }
