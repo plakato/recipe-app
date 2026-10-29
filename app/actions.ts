@@ -17,14 +17,13 @@ import { clientIp } from "@/lib/clientIp";
 import { AppError, USER_MESSAGES, toUserMessage } from "@/lib/userErrors";
 import { extractRecipesFromText } from "@/lib/extractRecipe";
 import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
-import { readAndSave, readingStatus as readingStatusFor, retryReading, startReading } from "@/lib/photoReading";
-import type { ReadingStatus } from "@/lib/readingNotice";
-import { savePushSubscription, type PushKeys } from "@/lib/push";
+import { dismissReading, keepDrafts, readAndSave, readingList, retryReading, startReading } from "@/lib/photoReading";
+import type { ReadingItem } from "@/lib/readingList";
 import { generateRecipePicture } from "@/lib/dishImage";
 import { access, unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
 import { findDuplicate, type DuplicateVerdict } from "@/lib/similarity";
-import { MAX_PHOTOS, URL_IMPORT_ENABLED, visibleRecipes } from "@/lib/features";
+import { listedRecipes, MAX_PHOTOS, URL_IMPORT_ENABLED, visibleRecipes } from "@/lib/features";
 
 // Read the recipe fields shared by create and update out of submitted FormData.
 function readRecipeFields(formData: FormData) {
@@ -139,8 +138,8 @@ export async function importRecipesFromUrl(url: string): Promise<UrlImportResult
 
 // Photo import: saves the photos and starts reading them in the background
 // (lib/photoReading.ts) — reading takes a minute or more. Every recipe found
-// is saved as read; the person is told when it's done (in the app and by a
-// notification), and can add the next one meanwhile.
+// is saved as a draft, listed on the photo page to review or keep; the person
+// can add the next photos meanwhile.
 export type PhotoImportResult = { ok: true; readingId: string } | { ok: false; error: string };
 
 export async function importRecipesFromPhotos(formData: FormData): Promise<PhotoImportResult> {
@@ -176,16 +175,15 @@ export async function importRecipesFromPhotos(formData: FormData): Promise<Photo
   return { ok: true, readingId };
 }
 
-// How the person's background readings are doing, for the in-app notice
-// (components/ReadingNotifier.tsx). Only their own; [] when signed out.
-export async function readingStatus(ids: string[]): Promise<ReadingStatus[]> {
+// The photo page's reading list (components/ReadingList.tsx): the person's
+// readings and drafts. [] when signed out.
+export async function photoReadings(): Promise<ReadingItem[]> {
   const user = await getSessionUser();
-  if (!user || !Array.isArray(ids)) return [];
-  return readingStatusFor(user.id, ids.filter((id) => typeof id === "string"));
+  return user ? readingList(user.id) : [];
 }
 
-// Read a failed reading's photos again (its page's "Skúsiť znova"): a new
-// reading, counted as a new import.
+// Read a failed reading's photos again ("Skúsiť znova" in the list): a new
+// reading in its place, counted as a new import.
 export async function retryPhotoReading(readingId: string): Promise<PhotoImportResult> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
@@ -200,24 +198,30 @@ export async function retryPhotoReading(readingId: string): Promise<PhotoImportR
   return { ok: true, readingId: retry.readingId };
 }
 
-// Move a recipe from a reading's page to the Trash, staying on that page.
-export async function trashReadRecipe(formData: FormData): Promise<void> {
-  const user = await requireUser();
-  const id = String(formData.get("id") ?? "");
-  const deleted = await prisma.recipe.updateMany({
-    where: { id, userId: user.id, deletedAt: null },
-    data: { deletedAt: new Date() },
-  });
-  if (deleted.count) await logActivity("deleted", user);
-  revalidatePath(`/recipes/read/${String(formData.get("reading") ?? "")}`);
+// Keep drafts read from photos without reviewing them: those of `ids`, or
+// all of them (null).
+export async function keepReadRecipes(ids: string[] | null): Promise<void> {
+  const user = await getSessionUser();
+  if (!user) return;
+  const only = Array.isArray(ids) ? ids.filter((id) => typeof id === "string") : undefined;
+  if (await keepDrafts({ userId: user.id, isGuest: user.isGuest }, only)) revalidatePath("/");
 }
 
-// This browser agreed to notifications: remember it for the signed-in person.
-export async function subscribeToPush(sub: PushKeys): Promise<void> {
+// Close a failed reading in the list.
+export async function dismissPhotoReading(readingId: string): Promise<void> {
   const user = await getSessionUser();
-  if (!user || typeof sub?.endpoint !== "string" || !/^https:\/\//.test(sub.endpoint)) return;
-  if (typeof sub.keys?.p256dh !== "string" || typeof sub.keys?.auth !== "string") return;
-  await savePushSubscription(user.id, sub);
+  if (user) await dismissReading(String(readingId), user.id);
+}
+
+// Throw away a draft read from photos (it goes to the Trash, as a draft).
+export async function trashReadRecipe(id: string): Promise<void> {
+  const user = await getSessionUser();
+  if (!user) return;
+  await prisma.recipe.updateMany({
+    where: { id: String(id), userId: user.id, readingId: { not: null }, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  revalidatePath("/trash");
 }
 
 // Result of a save attempt, consumed by RecipeForm via useActionState.
@@ -245,7 +249,7 @@ async function duplicateCheck(
     where: {
       userId,
       deletedAt: null,
-      ...visibleRecipes,
+      ...listedRecipes,
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
     select: { id: true, title: true, ingredients: true, instructions: true },
@@ -351,23 +355,25 @@ export async function updateRecipe(
   if (blocked) return blocked;
   const existing = await prisma.recipe.findFirst({
     where: { id, userId, ...visibleRecipes },
-    select: { imagePath: true },
+    select: { imagePath: true, readingId: true },
   });
   if (!existing) return { error: "Recept sa nenašiel." };
   const image = await resolveImage(formData, existing.imagePath);
   if ("error" in image) return { error: image.error };
-  // Scope by userId so only the owner's recipes can be edited.
+  // Scope by userId so only the owner's recipes can be edited. A draft read
+  // from photos, once reviewed and saved, is kept: it joins the recipes.
   const edited = await prisma.recipe.updateMany({
     where: { id, userId, ...visibleRecipes },
-    data: { ...fields, imagePath: image.imagePath },
+    data: { ...fields, imagePath: image.imagePath, readingId: null },
   });
-  if (edited.count) await logActivity("edited", user);
+  if (edited.count) await logActivity(existing.readingId ? "created" : "edited", user);
   if (existing.imagePath && existing.imagePath !== image.imagePath) {
     await deleteImageIfUnused(existing.imagePath);
   }
   revalidatePath("/");
   revalidatePath(`/recipes/${id}`);
-  redirect(`/recipes/${id}`);
+  // Reviewed from the photo page's list: back to the rest of it.
+  redirect(existing.readingId ? "/recipes/import/photo" : `/recipes/${id}`);
 }
 
 // Soft delete: move to Trash by stamping deletedAt. Recoverable via restore.

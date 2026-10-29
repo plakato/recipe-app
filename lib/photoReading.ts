@@ -1,25 +1,24 @@
 // Reading recipes from photos in the background: reading takes a free model
-// a minute or more, so nobody waits on the page. The Server Action
+// a minute or more, so nobody waits for it. The Server Action
 // (app/actions.ts → importRecipesFromPhotos) saves the photos and starts a
-// reading; this runs after its answer, saves every recipe as read and lets
-// the person know — in the app (components/ReadingNotifier.tsx) and on their
-// phone (lib/push.ts): one notification per reading, however many recipes.
-// The reading's page (app/recipes/read/[id]) lists them, notes one that looks
-// like a recipe they already have, and offers to read the photos again if it
-// failed.
+// reading; this runs after its answer and saves every recipe read as a draft
+// (Recipe.readingId). The photo page lists the readings
+// (components/ReadingList.tsx): "Čítam…" with each title as soon as it is
+// read, then each draft to review or keep as it is. Drafts are not among the
+// person's recipes until kept; a failed reading can be read again.
 //
 // A reading is its "wait" row in AiUsage (also the statistics): purpose
-// "reading" while it runs, then "ok" with the recipes (readResult), or the
-// error code. One cut off by a restart ends as "unknown" after a while.
+// "reading" while it runs (readTitles: the titles read so far), then "ok"
+// with the recipes (readResult), or the error code. One cut off by a restart
+// ends as "unknown" after a while.
 // Server-only.
 import { prisma } from "@/lib/prisma";
 import { refundImport } from "@/lib/aiBudget";
 import { cropDish } from "@/lib/dishCrop";
 import { generateRecipePicture } from "@/lib/dishImage";
 import { extractRecipesFromPhotos } from "@/lib/extractRecipe";
-import { visibleRecipes } from "@/lib/features";
-import { notifyUser } from "@/lib/push";
-import { notice, type ReadingStatus } from "@/lib/readingNotice";
+import { listedRecipes, visibleRecipes } from "@/lib/features";
+import type { ReadingItem } from "@/lib/readingList";
 import { parseList } from "@/lib/recipes";
 import { loadStoredPhoto, saveImageBuffer } from "@/lib/saveImage";
 import { findDuplicate } from "@/lib/similarity";
@@ -42,7 +41,7 @@ export async function startReading(who: Who, photos: Photo[]): Promise<string> {
   return row.id;
 }
 
-// Read, save, notify. `importId` is the day's import reservation (given back
+// Read and save the drafts. `importId` is the day's import reservation (given back
 // if the models were only busy); `startedAt` when the photos arrived (the
 // statistics' wait). Never throws.
 export async function readAndSave(
@@ -56,8 +55,15 @@ export async function readAndSave(
   enterUsage(who);
   let saved: Saved[] = [];
   let outcome: string;
+  // The titles as they are read, one write after another.
+  let titlesWritten = Promise.resolve();
+  const onTitles = (titles: string[]) => {
+    titlesWritten = titlesWritten
+      .then(() => prisma.aiUsage.update({ where: { id: readingId }, data: { readTitles: JSON.stringify(titles) } }))
+      .then(() => {}, () => {});
+  };
   try {
-    const recipes = await extractRecipesFromPhotos(photos.map((p) => p.dataUrl));
+    const recipes = await extractRecipesFromPhotos(photos.map((p) => p.dataUrl), undefined, onTitles);
     for (const r of recipes) {
       // Before saving: does it look like a recipe they already have?
       const like = await resemblance(who.userId, r);
@@ -76,10 +82,10 @@ export async function readAndSave(
           sourceType: "photo",
           imagePath: crop ? await saveImageBuffer(crop, "jpg") : null,
           scanPaths: JSON.stringify((used.length ? used : photos.map((_, i) => i)).map((i) => photos[i].imagePath)),
+          readingId,
         },
       });
       saved.push(like ? { id: recipe.id, like } : { id: recipe.id });
-      await prisma.activity.create({ data: { kind: "created", ...who } });
     }
     outcome = "ok";
   } catch (err) {
@@ -88,14 +94,18 @@ export async function readAndSave(
     if (outcome === "busy") await refundImport(importId);
     saved = [];
   }
+  await titlesWritten;
   await prisma.aiUsage
     .update({
       where: { id: readingId },
-      data: { purpose: outcome, durationMs: Date.now() - startedAt, readResult: saved.length ? JSON.stringify(saved) : null },
+      data: {
+        purpose: outcome,
+        durationMs: Date.now() - startedAt,
+        readResult: saved.length ? JSON.stringify(saved) : null,
+        readTitles: null,
+      },
     })
     .catch(() => {});
-  const status = await statusOf(readingId, who.userId);
-  if (status) await notifyUser(who.userId, { ...notice(status), tag: readingId });
   // Pictures for the recipes without a dish photo (~30 s each), last.
   for (const { id } of saved) {
     const r = await prisma.recipe.findUnique({ where: { id }, select: { imagePath: true } });
@@ -106,7 +116,7 @@ export async function readAndSave(
 // The id of the person's recipe this one looks like (lib/similarity.ts), if any.
 async function resemblance(userId: string, r: { title: string; ingredients: string[]; instructions: string[] }) {
   const others = await prisma.recipe.findMany({
-    where: { userId, deletedAt: null, ...visibleRecipes },
+    where: { userId, deletedAt: null, ...listedRecipes },
     select: { id: true, title: true, ingredients: true, instructions: true },
   });
   const verdict = findDuplicate(
@@ -126,12 +136,14 @@ export async function retryReading(
   who: Who,
 ): Promise<{ readingId: string; run: () => Promise<void> } | null> {
   const row = await prisma.aiUsage.findFirst({
-    where: { id: readingId, kind: "wait", userId: who.userId, purpose: { notIn: ["reading", "ok"] } },
+    where: { id: readingId, kind: "wait", userId: who.userId, purpose: { notIn: ["reading", "ok"] }, dismissed: false },
     select: { photoPaths: true },
   });
   const paths = JSON.parse(row?.photoPaths ?? "[]") as string[];
   const photos = (await Promise.all(paths.map(loadStoredPhoto))).filter((p) => p !== null);
   if (!paths.length || photos.length !== paths.length) return null;
+  // The new reading replaces the failed one in the list.
+  await dismissReading(readingId, who.userId);
   const id = await startReading(who, photos);
   const startedAt = Date.now();
   return { readingId: id, run: () => readAndSave(id, importId, who, photos, startedAt) };
@@ -141,41 +153,78 @@ const errorMessage = (code: string) => USER_MESSAGES[code as ErrorCode] ?? USER_
 // Failures worth reading the same photos again for (not "no recipe there").
 const RETRYABLE = new Set(["busy", "unknown"]);
 
-// One reading of the person's, or null if it isn't theirs.
-export async function statusOf(id: string, userId: string): Promise<ReadingStatus | null> {
-  const [status] = await readingStatus(userId, [id]);
-  return status ?? null;
+// A failed reading stays in the list this long (its photos are kept a day).
+const FAILED_SHOWN_MS = 24 * 60 * 60 * 1000;
+
+// The photo page's list: the person's readings still running, failed ones
+// they haven't closed, and the drafts waiting to be kept — oldest first,
+// each reading's recipes together.
+export async function readingList(userId: string): Promise<ReadingItem[]> {
+  await closeStaleReadings();
+  const drafts = await prisma.recipe.findMany({
+    where: { userId, readingId: { not: null }, deletedAt: null, ...visibleRecipes },
+    select: { id: true, title: true, imagePath: true, readingId: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const rows = await prisma.aiUsage.findMany({
+    where: {
+      kind: "wait",
+      userId,
+      OR: [
+        { purpose: "reading" },
+        { purpose: { not: "ok" }, dismissed: false, createdAt: { gt: new Date(Date.now() - FAILED_SHOWN_MS) } },
+        { id: { in: [...new Set(drafts.map((d) => d.readingId!))] } },
+      ],
+    },
+    select: { id: true, purpose: true, readTitles: true, readResult: true },
+    orderBy: { createdAt: "asc" },
+  });
+  // The older recipes the drafts look like.
+  const likeOf = new Map<string, string>();
+  for (const r of rows) for (const s of JSON.parse(r.readResult ?? "[]") as Saved[]) if (s.like) likeOf.set(s.id, s.like);
+  const liked = await prisma.recipe.findMany({
+    where: { id: { in: [...likeOf.values()] }, userId, deletedAt: null, ...listedRecipes },
+    select: { id: true, title: true },
+  });
+  const likeById = new Map(liked.map((l) => [l.id, l]));
+
+  return rows.flatMap((r): ReadingItem[] => {
+    if (r.purpose === "reading") {
+      const titles = JSON.parse(r.readTitles ?? "[]") as string[];
+      return titles.length
+        ? titles.map((title, i) => ({ kind: "reading", key: `${r.id}-${i}`, title }))
+        : [{ kind: "reading", key: r.id, title: null }];
+    }
+    if (r.purpose !== "ok") {
+      const code = r.purpose ?? "unknown";
+      return [{ kind: "failed", key: r.id, readingId: r.id, error: errorMessage(code), canRetry: RETRYABLE.has(code) }];
+    }
+    return drafts
+      .filter((d) => d.readingId === r.id)
+      .map((d) => {
+        const like = likeById.get(likeOf.get(d.id) ?? "");
+        return { kind: "ready", key: d.id, id: d.id, title: d.title, imagePath: d.imagePath, ...(like ? { like } : {}) };
+      });
+  });
 }
 
-// How the person's readings are doing (those of `ids` that are theirs).
-export async function readingStatus(userId: string, ids: string[]): Promise<ReadingStatus[]> {
-  await closeStaleReadings();
-  const rows = await prisma.aiUsage.findMany({
-    where: { id: { in: ids.slice(0, 20) }, kind: "wait", userId },
-    select: { id: true, purpose: true, readResult: true },
+// Keep drafts as they are (all of the person's, or those of `ids`): they join
+// their recipes. How many were kept.
+export async function keepDrafts(who: Who, ids?: string[]): Promise<number> {
+  const { count } = await prisma.recipe.updateMany({
+    where: { userId: who.userId, readingId: { not: null }, deletedAt: null, ...(ids ? { id: { in: ids } } : {}) },
+    data: { readingId: null },
   });
-  return Promise.all(
-    rows.map(async (r): Promise<ReadingStatus> => {
-      if (r.purpose === "reading") return { id: r.id, state: "reading" };
-      if (r.purpose !== "ok") {
-        const code = r.purpose ?? "unknown";
-        return { id: r.id, state: "failed", error: errorMessage(code), canRetry: RETRYABLE.has(code) };
-      }
-      const saved = JSON.parse(r.readResult ?? "[]") as Saved[];
-      const found = await prisma.recipe.findMany({
-        where: { id: { in: saved.flatMap((s) => (s.like ? [s.id, s.like] : [s.id])) }, userId, deletedAt: null },
-        select: { id: true, title: true },
-      });
-      const byId = new Map(found.map((f) => [f.id, f]));
-      const recipes = saved.flatMap((s) => {
-        const recipe = byId.get(s.id);
-        if (!recipe) return []; // deleted since
-        const like = s.like ? byId.get(s.like) : undefined;
-        return [like ? { ...recipe, like } : recipe];
-      });
-      return { id: r.id, state: "done", recipes };
-    }),
-  );
+  if (count) await prisma.activity.createMany({ data: Array.from({ length: count }, () => ({ kind: "created", ...who })) });
+  return count;
+}
+
+// Close a failed reading in the list.
+export async function dismissReading(readingId: string, userId: string): Promise<void> {
+  await prisma.aiUsage.updateMany({
+    where: { id: readingId, kind: "wait", userId, purpose: { notIn: ["reading", "ok"] } },
+    data: { dismissed: true },
+  });
 }
 
 // Readings cut off (a restart during a deploy) end as failed, so nobody is

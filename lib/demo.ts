@@ -7,7 +7,7 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { GUEST_TTL_MS } from "@/lib/auth";
-import { visibleRecipes } from "@/lib/features";
+import { listedRecipes } from "@/lib/features";
 import { getShowcaseUserId } from "@/lib/showcase";
 import type { ErrorCode } from "@/lib/userErrors";
 
@@ -28,7 +28,7 @@ export async function copyShowcaseRecipes(toUserId: string): Promise<Map<string,
   const showcase = await getShowcaseUserId();
   if (!showcase) return new Map();
   const originals = await prisma.recipe.findMany({
-    where: { userId: showcase, deletedAt: null, ...visibleRecipes },
+    where: { userId: showcase, deletedAt: null, ...listedRecipes },
   });
   const copies = await prisma.recipe.createManyAndReturn({
     data: originals.map((r) => ({

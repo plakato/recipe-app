@@ -6,6 +6,7 @@ import {
   toDraft,
   toDrafts,
   toPageRecipes,
+  titlesSoFar,
   withoutShouting,
 } from "@/lib/extractRecipe";
 import { paidBudgetLeft, recordModelCall } from "@/lib/aiBudget";
@@ -283,5 +284,17 @@ describe("toPageRecipes", () => {
     const badPhoto = { ...orange, dish: { photo: 5, box: [0, 0, 1000, 1000] } };
     expect(toPageRecipes({ recipes: [tiny] }, 2)[0].dish).toBeNull();
     expect(toPageRecipes({ recipes: [badPhoto] }, 2)[0].dish).toBeNull();
+  });
+});
+
+describe("titlesSoFar", () => {
+  it("gives each title whose closing quote has arrived, in normal case", () => {
+    const partial = '{"pictures":[],"recipes":[{"title":"BUTTER CHICKEN","ingredients":["1 kg"]},{"title":"Naan s \\"cesnakom\\"","ingr';
+    expect(titlesSoFar(partial)).toEqual(["Butter chicken", 'Naan s "cesnakom"']);
+  });
+
+  it("waits for a title still being written", () => {
+    expect(titlesSoFar('{"pictures":[],"recipes":[{"title":"Kapust')).toEqual([]);
+    expect(titlesSoFar("")).toEqual([]);
   });
 });

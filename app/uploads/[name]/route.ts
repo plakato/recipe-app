@@ -8,7 +8,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { visibleRecipes } from "@/lib/features";
+import { listedRecipes } from "@/lib/features";
 import { getShowcaseUserId } from "@/lib/showcase";
 import { UPLOAD_DIR } from "@/lib/saveImage";
 
@@ -58,7 +58,7 @@ async function isShowcasePhoto(name: string): Promise<boolean> {
     where: {
       userId: showcase,
       deletedAt: null,
-      ...visibleRecipes,
+      ...listedRecipes,
       // A picture, or one of the scans (a JSON list of paths).
       OR: [{ imagePath: file }, { scanPaths: { contains: JSON.stringify(file) } }],
     },

@@ -142,14 +142,23 @@ recipes are hidden, not deleted. In order:
    the action saves the photos and returns; the recipes are saved as read (no
    review step — the edit page is the same form), one notification per
    reading: in the app (components/ReadingNotifier.tsx polls readingStatus;
-   pending ids in localStorage) and Web Push (lib/push.ts, public/sw.js;
-   PUSH_PUBLIC_KEY/_PRIVATE_KEY/_CONTACT in .env, permission asked on the
-   first send; iPhone only from the home-screen app). A reading = its "wait"
-   row (purpose reading → ok/error code, readResult, photoPaths). Its page
-   /recipes/read/<id>: each recipe with Zobraziť / Zmazať and "looks like …
-   you already have" (lib/similarity.ts), or the error with Skúsiť znova
-   (same photos, a new import; photos kept a day). Cut off by a restart →
-   failed after 15 min. Don't deploy while someone is reading (restart).
+   pending ids in localStorage) and Web Push. A reading = its "wait"
+   row (purpose reading → ok/error code, readResult, photoPaths). Cut off by
+   a restart → failed after 15 min. Don't deploy while someone is reading
+   (restart).
+   2026-10-29: **no notifications any more** (too many with many recipes):
+   push, the in-app notices and the reading page are gone (PushSubscription
+   table dropped; public/sw.js only unregisters itself; the PUSH_* keys in
+   both .envs are unused). Instead the photo page keeps the person there,
+   clears the photos and lists the readings under the button
+   (components/ReadingList.tsx, polls every 3 s while reading): "Nový recept ·
+   Čítam…", the title as soon as the model has written it (the answer is
+   streamed; AiUsage.readTitles), then Skontrolovať (edit form; saving keeps
+   it) or ✓ (keep as read), "Uložiť všetky bez kontroly" from 2 read ones, a
+   bin (to Trash). Read recipes are drafts (Recipe.readingId = their reading)
+   and are left out of the recipes, search, ChatGPT, demo copies and sync
+   (`listedRecipes` in lib/features.ts) until kept; the home page links to
+   them when some wait. Failed readings stay a day with Skúsiť znova / ×.
    Was: **Daily usage statistics.** A daily summary of AI use: tokens and cost per
    model (free and paid), how many imports and edits, from accounts vs.
    demo visitors. Today `AiUsage` records imports and paid-call costs only;

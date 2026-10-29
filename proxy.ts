@@ -51,7 +51,7 @@ export function proxy(request: NextRequest) {
 export const config = {
   // Everything except Next's own static assets, the tab icons, the home
   // screen app's manifest and icons (app/manifest.ts; browsers fetch them
-  // without the cookie) and the notifications' service worker (public/sw.js).
+  // without the cookie) and the old notifications' service worker (public/sw.js), which now removes itself.
   // Uploaded recipe photos under /uploads are deliberately NOT excluded: they
   // need a session too.
   matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|manifest.webmanifest|brand/|sw.js).*)"],

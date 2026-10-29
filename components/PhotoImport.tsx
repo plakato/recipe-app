@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import Turnstile from "@/components/Turnstile";
+import ReadingList from "@/components/ReadingList";
 import { importRecipesFromPhotos } from "@/app/actions";
 import { MAX_PHOTOS } from "@/lib/features";
-import { addPendingReading } from "@/lib/pendingReadings";
-import { enableNotifications } from "@/lib/pushClient";
+import type { ReadingItem } from "@/lib/readingList";
 
 const MAX_BYTES = 8 * 1024 * 1024; // per photo, as on the server (lib/saveImage.ts)
 
@@ -17,19 +17,18 @@ const pickButton =
 
 // Photo import: one or more photos taken together — a recipe over several
 // pages, a page plus a picture of the dish, a page with several recipes.
-// Sending them starts a reading in the background (lib/photoReading.ts): the
-// recipes are saved as read and the person is told when it's done
-// (components/ReadingNotifier.tsx, and a phone notification — asked for on
-// the first send, when pushKey is set). They can send the next photos at once.
+// Sending them starts a reading in the background (lib/photoReading.ts) and
+// clears the photos for the next ones; the readings are listed under the
+// button (components/ReadingList.tsx), each to review or keep once read.
 // botCheckKey: set for visitors (demo). The invisible bot check runs while
 // they pick photos; reading starts only once it has passed, and their demo
 // begins with that first reading (app/actions.ts → importRecipesFromPhotos).
 export default function PhotoImport({
   botCheckKey = null,
-  pushKey = null,
+  readings,
 }: {
   botCheckKey?: string | null;
-  pushKey?: string | null;
+  readings: ReadingItem[];
 }) {
   const [botToken, setBotToken] = useState<string | null>(null);
   const [botAttempt, setBotAttempt] = useState(0);
@@ -38,7 +37,7 @@ export default function PhotoImport({
   const [picked, setPicked] = useState<Picked[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // How many readings this page sent (the note under the button).
+  // How many readings this page sent (the list then asks for the new one).
   const [sent, setSent] = useState(0);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -79,8 +78,6 @@ export default function PhotoImport({
 
   async function handleExtract() {
     if (!picked.length) return;
-    // First, while it's still the tap itself: Safari asks only then.
-    enableNotifications(pushKey);
     setLoading(true);
     setError(null);
     const formData = new FormData();
@@ -95,7 +92,6 @@ export default function PhotoImport({
     setLoading(false);
     if (result.ok) {
       setNeedsBotCheck(false);
-      addPendingReading(result.readingId);
       picked.forEach((p) => p.url && URL.revokeObjectURL(p.url));
       setPicked([]);
       setSent((n) => n + 1);
@@ -126,13 +122,6 @@ export default function PhotoImport({
         Ak recept pokračuje na ďalšej strane alebo máte aj fotku hotového jedla, pridajte všetky
         fotky naraz (najviac {MAX_PHOTOS}).
       </p>
-
-      {sent > 0 && !picked.length && (
-        <p role="status" className="rounded-lg border border-olive-200 bg-olive-50 px-4 py-3 text-sm text-olive-900 dark:border-olive-900/50 dark:bg-olive-950/30 dark:text-olive-200">
-          {sent > 1 ? "Recepty sa čítajú" : "Recept sa číta"}. Dáme vám vedieť, keď bude hotový — medzitým
-          môžete pridať ďalší.
-        </p>
-      )}
 
       {picked.length > 0 && (
         <ol className="grid grid-cols-3 gap-3 sm:grid-cols-5">
@@ -188,8 +177,10 @@ export default function PhotoImport({
       </button>
 
       <p className="text-sm text-stone-500">
-        Recept prečítame a uložíme na pozadí. Keď bude hotový, dáme vám vedieť.
+        Kým sa recept číta, môžete pridať ďalší.
       </p>
+
+      <ReadingList initial={readings} sent={sent} />
     </div>
   );
 }

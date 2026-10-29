@@ -32,7 +32,6 @@ model User {
   sessions  Session[]
   oauthTokens OAuthToken[]
   logins    SocialLogin[]
-  pushSubscriptions PushSubscription[]
   createdAt DateTime @default(now())
 
   @@index([isGuest, guestExpiresAt])
@@ -62,12 +61,17 @@ model Recipe {
   imagePath    String? // the picture shown (dish photo or generated), if any
   scanPaths    String? // JSON string[] — the photos the recipe was read from (photo import)
   copiedFromId String? // the showcase recipe this is a copy of (demo / starter copies)
+  // Read from photos and not yet kept by the person: the reading (AiUsage
+  // "wait" row) it came from. Such drafts are listed only on the photo page
+  // (lib/photoReading.ts), not among the recipes; null once kept.
+  readingId    String?
   deletedAt    DateTime? // soft delete — set instead of erasing (Trash)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   @@index([userId])
   @@index([deletedAt])
+  @@index([userId, readingId])
 }
 
 // AI usage, for the limits in lib/aiBudget.ts and the statistics in
@@ -87,6 +91,8 @@ model AiUsage {
   durationMs       Int? // "wait": how long a photo import took, from the photos arriving to the answer
   readResult       String? // "wait": JSON [{ id, like? }] — the recipes it saved; like: an older recipe it resembles
   photoPaths       String? // "wait": JSON list of the photos read (uploads), for trying again
+  readTitles       String? // "wait": JSON list of the recipe titles read so far, while it runs
+  dismissed        Boolean  @default(false) // "wait": a failed reading the person closed
   promptTokens     Int      @default(0)
   completionTokens Int      @default(0)
   costUsd          Float    @default(0)
@@ -157,20 +163,5 @@ model SocialLogin {
   createdAt         DateTime @default(now())
 
   @@unique([provider, providerAccountId])
-  @@index([userId])
-}
-
-// A browser or phone that agreed to notifications (lib/push.ts): "your recipe
-// has been read". The endpoint is the push service's address for it (Apple,
-// Google, Mozilla); p256dh/auth encrypt the message to it.
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-
   @@index([userId])
 }

@@ -16,7 +16,7 @@ async function main() {
   const out = stripUserArg(raw)[0];
   if (!out) throw new Error("Usage: sync-export.ts --user <email> <out>");
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  const rows = await prisma.recipe.findMany({ where: { userId, deletedAt: null }, orderBy: { createdAt: "asc" } });
+  const rows = await prisma.recipe.findMany({ where: { userId, deletedAt: null, readingId: null }, orderBy: { createdAt: "asc" } });
   const recipes: SyncedRecipe[] = rows.map((r) => ({
     id: r.id,
     title: r.title,

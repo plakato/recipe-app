@@ -132,10 +132,65 @@ type JsonSchema = { name: string; schema: Record<string, unknown> };
 // Reading a few photos takes a free model 1–2 minutes when it works at all.
 const MODEL_TIMEOUT_MS = 150_000;
 
+// What a model answered, read from either kind of response.
+type Answer = {
+  content?: string;
+  finishReason?: string;
+  usage?: {
+    cost?: number;
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    completion_tokens_details?: { reasoning_tokens?: number };
+  };
+};
+
+// Read a streamed answer (server-sent events), passing the text so far to
+// onText as it grows. A model failing mid-answer sends an error event: thrown
+// as an "OpenRouter <code>" error, so busy counts as busy.
+async function readStream(res: Response, model: string, onText: (text: string) => void): Promise<Answer> {
+  const answer: Answer = { content: "" };
+  const reader = res.body!.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += value;
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      // Comments (": OPENROUTER PROCESSING") keep the connection alive.
+      if (!line.startsWith("data:")) continue;
+      const data = line.slice(5).trim();
+      if (data === "[DONE]") continue;
+      let event: {
+        error?: { code?: number | string; message?: string };
+        choices?: { delta?: { content?: string }; finish_reason?: string | null }[];
+        usage?: Answer["usage"];
+      };
+      try {
+        event = JSON.parse(data);
+      } catch {
+        continue;
+      }
+      if (event.error) throw new Error(`OpenRouter ${event.error.code ?? "error"} for ${model}: ${event.error.message ?? ""}`);
+      const choice = event.choices?.[0];
+      if (choice?.delta?.content) {
+        answer.content += choice.delta.content;
+        onText(answer.content!);
+      }
+      if (choice?.finish_reason) answer.finishReason = choice.finish_reason;
+      if (event.usage) answer.usage = event.usage;
+    }
+  }
+  return answer;
+}
+
+// onText: stream the answer, telling the text so far as it comes.
 async function callModel(
   model: string,
   messages: ChatMessage[],
   schema?: JsonSchema,
+  onText?: (text: string) => void,
 ): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -167,6 +222,8 @@ async function callModel(
         response_format: schema
           ? { type: "json_schema", json_schema: { ...schema, strict: true } }
           : { type: "json_object" },
+        // Streamed: the usage comes in the last event.
+        ...(onText ? { stream: true, usage: { include: true } } : {}),
       }),
     }).catch((err) => {
       if (err instanceof DOMException && err.name === "TimeoutError") {
@@ -176,17 +233,18 @@ async function callModel(
     });
 
     if (res.ok) {
-      const data = (await res.json()) as {
-        choices?: { message?: { content?: string }; finish_reason?: string }[];
-        usage?: {
-          cost?: number;
-          prompt_tokens?: number;
-          completion_tokens?: number;
-          completion_tokens_details?: { reasoning_tokens?: number };
+      let data: Answer;
+      if (onText) data = await readStream(res, model, onText);
+      else {
+        const json = (await res.json()) as {
+          choices?: { message?: { content?: string }; finish_reason?: string }[];
+          usage?: Answer["usage"];
         };
-      };
-      if (data.choices?.[0]?.finish_reason === "length") {
-        const tail = (data.choices[0].message?.content ?? "").slice(-300);
+        const choice = json.choices?.[0];
+        data = { content: choice?.message?.content, finishReason: choice?.finish_reason, usage: json.usage };
+      }
+      if (data.finishReason === "length") {
+        const tail = (data.content ?? "").slice(-300);
         console.warn(
           `${model} hit the length cap (${data.usage?.completion_tokens_details?.reasoning_tokens ?? "?"} reasoning tokens). Answer ends: ${tail}`,
         );
@@ -200,8 +258,7 @@ async function callModel(
         promptTokens: data.usage?.prompt_tokens ?? 0,
         completionTokens: data.usage?.completion_tokens ?? 0,
       });
-      const content = data.choices?.[0]?.message?.content;
-      if (content) return content;
+      if (data.content) return data.content;
       // Free models sometimes return an empty completion — retry before failing.
       if (attempt < maxAttempts) {
         await sleep(attempt * 3000);
@@ -248,17 +305,21 @@ function runModels<T = RecipeDraft>(
   parse: (parsed: unknown) => T[],
   modelOverride?: string,
   schema?: JsonSchema,
+  onText?: (text: string) => void,
 ): Promise<T[]> {
   return withUsage({ purpose: "read-recipe" }, () =>
-    tryModels(messages, parse, modelOverride, schema),
+    tryModels(messages, parse, modelOverride, schema, onText),
   );
 }
 
+// onText: each model's answer as it comes (streamed); a model that fails
+// starts over from "".
 async function tryModels<T>(
   messages: ChatMessage[],
   parse: (parsed: unknown) => T[],
   modelOverride?: string,
   schema?: JsonSchema,
+  onText?: (text: string) => void,
 ): Promise<T[]> {
   const models = [...new Set([modelOverride, ...freeModels()].filter(Boolean) as string[])];
   const paid = paidFallback(models);
@@ -271,7 +332,8 @@ async function tryModels<T>(
     if (model === paid && !(errors.every(isBusy) && (await paidBudgetLeft()))) break;
     if (model === paid) console.warn(`Free models busy; reading the recipe with paid ${paid}.`);
     try {
-      const content = await callModel(model, messages, schema);
+      onText?.("");
+      const content = await callModel(model, messages, schema, onText);
       const drafts = parse(extractJsonObject(content));
       if (drafts.length === 0) {
         throw new Error("Model did not find a recipe in the material.");
@@ -671,12 +733,27 @@ function keepPictured(recipes: PageRecipe[], pictures: Set<number>): PageRecipe[
   return pictured.length > 0 ? pictured : recipes;
 }
 
+// The titles in a partial answer of PAGES_SCHEMA's shape, as far as it has
+// come: each one whose closing quote has arrived, in normal case.
+export function titlesSoFar(partial: string): string[] {
+  const titles: string[] = [];
+  for (const m of partial.matchAll(/"title"\s*:\s*("(?:[^"\\]|\\.)*")/g)) {
+    try {
+      const title = withoutShouting(String(JSON.parse(m[1])).trim());
+      if (title) titles.push(title);
+    } catch {}
+  }
+  return titles;
+}
+
 // Read every recipe from photos taken together (data: URLs, in the order the
 // person picked them), with the photos each one is on and where its dish is
-// pictured.
+// pictured. onTitles: the recipes' titles as soon as they are read, before
+// the rest (called again whenever the list changes).
 export async function extractRecipesFromPhotos(
   imageDataUrls: string[],
   modelOverride?: string,
+  onTitles?: (titles: string[]) => void,
 ): Promise<PageRecipe[]> {
   const content: ContentPart[] = [
     {
@@ -703,6 +780,7 @@ export async function extractRecipesFromPhotos(
     },
     modelOverride,
     PAGES_SCHEMA,
+    onTitles && changedTitles(onTitles),
   );
   // A photo the model used for nothing — no recipe's text, no dish — is
   // usually a full-page picture of a dish it overlooked (it then takes the
@@ -719,6 +797,18 @@ export async function extractRecipesFromPhotos(
     pictures.add(photo);
   }
   return keepPictured(recipes, pictures);
+}
+
+// Calls onTitles with the titles of the answer so far, when they change.
+function changedTitles(onTitles: (titles: string[]) => void): (text: string) => void {
+  let last = "[]";
+  return (text) => {
+    const titles = titlesSoFar(text);
+    const key = JSON.stringify(titles);
+    if (key === last) return;
+    last = key;
+    onTitles(titles);
+  };
 }
 
 // Which of these recipes (by title) is the dish on this photo? Its index, or

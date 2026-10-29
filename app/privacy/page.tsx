@@ -59,10 +59,6 @@ export default function PrivacyPage() {
           receptu z fotky (na ochranu pred zneužitím) a záznamy o používaní, napr. koľko receptov sa
           pridalo (na denné limity a štatistiky).
         </li>
-        <li>
-          <strong>Upozornenia:</strong> ak ich v telefóne alebo prehliadači povolíte, uložíme adresu, na
-          ktorú vám môžeme poslať správu, že sa recept prečítal. Nič iné cez ňu neposielame.
-        </li>
       </ul>
 
       <h2 className={h2}>Na čo ich používame</h2>
@@ -92,10 +88,6 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Google alebo Facebook</strong> — len ak sa cez ne prihlasujete (overia, že ste to vy).
-        </li>
-        <li>
-          <strong>Apple, Google alebo Mozilla</strong> (podľa vášho telefónu či prehliadača) — len ak
-          povolíte upozornenia: doručia správu „recept je prečítaný“ s jeho názvom.
         </li>
         <li>
           <strong>OpenAI (ChatGPT)</strong> — len ak si Receptík v ChatGPT sami pripojíte: potom smie čítať

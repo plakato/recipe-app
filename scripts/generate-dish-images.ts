@@ -9,7 +9,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
-import { visibleRecipes } from "@/lib/features";
+import { listedRecipes } from "@/lib/features";
 import { parseList } from "@/lib/recipes";
 import { getShowcaseUserId } from "@/lib/showcase";
 import { describeDish, drawDish } from "@/lib/dishImage";
@@ -37,7 +37,7 @@ async function main() {
     where: {
       userId,
       deletedAt: null,
-      ...visibleRecipes,
+      ...listedRecipes,
       ...(title ? { OR: title.split("|").map((t) => ({ title: { contains: t.trim() } })) } : {}),
     },
     orderBy: { createdAt: "asc" },
