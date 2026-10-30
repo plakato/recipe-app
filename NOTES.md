@@ -282,7 +282,26 @@ recipes are hidden, not deleted. In order:
   (Requested 2026-10-30.)
 
 - **Share button.** Share a recipe with a friend from the recipe page.
-  (Requested 2026-10-26.)
+  (Requested 2026-10-26, again 2026-10-31.)
+
+- **Select and remove several recipes at once.** Pick more recipes in the
+  list (and in the Trash) and delete / restore them together.
+  (Requested 2026-10-31.)
+
+- **Looking at other people's recipes.** Browse recipes of other users, not
+  only the showcase. Needs a decision on what is shared (opt-in per recipe
+  or account?) and an update of the privacy policy in the same change.
+  (Requested 2026-10-31.)
+
+- **Better statistics** (/admin/stats). (Requested 2026-10-31.)
+  - New users per day; per user: their recipes and what they do (imports,
+    edits, deletes, ChatGPT use).
+  - What people change when they review a recipe read from a photo (draft
+    as read vs. as saved: title, ingredients, steps), to learn what we
+    didn't read correctly. Needs the read version kept until it is saved
+    (today editing overwrites it).
+  - Seeing users' recipes and edits is new data use: update the privacy
+    policy in the same change.
 
 - **Search.** Find recipes by title and ingredients. (Requested 2026-10-08.) Being done as the ChatGPT app (step 9), so the searching runs on the user's ChatGPT account and its tokens, not ours. Our server only exposes the recipes as tools (list, read, search by words).
 
