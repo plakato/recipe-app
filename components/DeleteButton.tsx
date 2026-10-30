@@ -24,7 +24,14 @@ export default function DeleteButton({
     <form action={action}>
       <input type="hidden" name="id" value={id} />
       {botCheckKey && (
-        <Turnstile key={state?.at ?? 0} siteKey={botCheckKey} action="demo" onToken={(t) => setReady(!!t)} />
+        // Out of the button row: if it has to show, it drops below the buttons.
+        <Turnstile
+          key={state?.at ?? 0}
+          siteKey={botCheckKey}
+          action="demo"
+          onToken={(t) => setReady(!!t)}
+          className="absolute right-3 top-16 z-10 sm:right-4"
+        />
       )}
       <ConfirmButton
         confirm="Zmazať tento recept? Nájdete ho potom v koši."
