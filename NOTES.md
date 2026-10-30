@@ -266,6 +266,21 @@ recipes are hidden, not deleted. In order:
 
 ## Deferred features
 
+- **Continuous integration / deploying while someone reads a photo.**
+  Today a deploy restarts the app and cuts off any photo reading in progress
+  (it ends as failed after 15 min), so we check first that nobody is reading.
+  Goal: deploy at any time — e.g. automatic checks and deploy on push, with
+  readings that survive a restart (picked up again from their stored photos)
+  or a new version started before the old one stops. (Requested 2026-10-30.)
+
+- **Multiple languages.** The app is in Slovak only; add other languages
+  (also needed for the ChatGPT app review — see roadmap step 9).
+  (Requested 2026-10-30.)
+
+- **Swipe back on iPhone.** Swiping from the left edge goes back a page, as
+  in other iPhone apps (the home-screen app has no back button of its own).
+  (Requested 2026-10-30.)
+
 - **Share button.** Share a recipe with a friend from the recipe page.
   (Requested 2026-10-26.)
 
