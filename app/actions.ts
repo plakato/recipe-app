@@ -17,7 +17,7 @@ import { clientIp } from "@/lib/clientIp";
 import { AppError, USER_MESSAGES, toUserMessage } from "@/lib/userErrors";
 import { extractRecipesFromText } from "@/lib/extractRecipe";
 import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
-import { dismissReading, keepDrafts, readAndSave, readingList, retryReading, startReading } from "@/lib/photoReading";
+import { dismissReading, keepDrafts, prepareAndRead, readingList, retryReading, startReading } from "@/lib/photoReading";
 import type { ReadingItem } from "@/lib/readingList";
 import { generateRecipePicture } from "@/lib/dishImage";
 import { access, unlink } from "node:fs/promises";
@@ -157,21 +157,14 @@ export async function importRecipesFromPhotos(formData: FormData): Promise<Photo
   const slot = await reserveImport(who.user);
   if ("error" in slot) return { ok: false, error: slot.error };
   after(runHousekeeping);
-  const photos: NonNullable<Awaited<ReturnType<typeof saveUploadedImage>>>[] = [];
-  for (const file of files) {
-    const saved = await saveUploadedImage(file);
-    if (!saved) {
-      await refundImport(slot.id);
-      return {
-        ok: false,
-        error: `Fotku ${file.name} nevieme otvoriť: tento typ nepodporujeme alebo je príliš veľká (najviac 8 MB).`,
-      };
-    }
-    photos.push(saved);
-  }
+  // Answer as soon as the photos are here: converting them takes ~1.5 s each,
+  // so it happens with the reading (lib/photoReading.ts → prepareAndRead).
+  const uploads = await Promise.all(
+    files.map(async (f) => ({ buf: Buffer.from(await f.arrayBuffer()), type: f.type, name: f.name })),
+  );
   const reader = { userId: slot.userId, isGuest: slot.isGuest };
-  const readingId = await startReading(reader, photos);
-  after(() => readAndSave(readingId, slot.id, reader, photos, startedAt));
+  const readingId = await startReading(reader);
+  after(() => prepareAndRead(readingId, slot.id, reader, uploads, startedAt));
   return { ok: true, readingId };
 }
 

@@ -165,6 +165,12 @@ recipes are hidden, not deleted. In order:
    photo checks; a reading now takes ~20 s instead of 1–1.5 min. Free ones only
    if it is busy or the budget ($5/month, $0.50/day) is spent. Revisit if it
    costs too much.
+   2026-10-30 sending: the "Posielam fotky…" wait was the server converting
+   each HEIC before answering (3.5 s a photo; heic-convert encoded a full-size
+   JPEG in JavaScript). Now heic-decode → sharp (1.5 s) and it runs after the
+   answer, with the reading; a photo that can't be opened fails the reading
+   ("bad-photo"). Sends over 10 MB (3+ phone photos) used to be cut off by
+   proxy.ts' body copy → proxyClientMaxBodySize 42mb in next.config.ts.
    Was: **Daily usage statistics.** A daily summary of AI use: tokens and cost per
    model (free and paid), how many imports and edits, from accounts vs.
    demo visitors. Today `AiUsage` records imports and paid-call costs only;
@@ -356,7 +362,7 @@ recipes are hidden, not deleted. In order:
   fetches with a 403 — use photo import for those.
 - **Photo uploads** are downscaled to 3000px JPEG (`lib/saveImage.ts`) to avoid
   out-of-memory errors and huge payloads; the Server Action body limit is
-  raised to 12mb (`next.config.ts`). HEIC is decoded by `heic-convert` (WASM),
+  raised to 12mb (`next.config.ts`). HEIC is decoded by `heic-decode` (WASM) straight into sharp,
   which still loads the full image — extremely large HEICs (e.g. 48MP) could in
   theory still strain memory; typical 12MP phone photos are fine. sharp here
   can't decode HEIC (libvips has no HEVC plugin), so it's only used to resize.

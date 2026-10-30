@@ -109,22 +109,22 @@ export async function preparePhoto(
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return null;
 
   // iPhone photos are often HEIC/HEIF. Browsers can't display them and sharp's
-  // libvips here can't decode HEVC, so convert to JPEG with heic-convert first.
-  // The type is sometimes empty on these, so also sniff the filename.
+  // libvips here can't decode HEVC, so heic-decode turns them into pixels for
+  // sharp (no JPEG in between: encoding a full-size one in JavaScript took ~2 s
+  // a photo). The type is sometimes empty on these, so also sniff the filename.
   const isHeic =
     type === "image/heic" ||
     type === "image/heif" ||
     /\.hei[cf]$/i.test(fileName ?? "");
+  let raw: { width: number; height: number; channels: 4 } | undefined;
   if (isHeic) {
     try {
-      const { default: convert } = await import("heic-convert");
-      // High-quality JPEG intermediate. (PNG would be lossless but heic-convert
-      // encodes PNG extremely slowly — minutes for a full-size photo.) q0.95
-      // keeps handwriting detail; the final JPEG below is q90.
-      const out = await convert({ buffer: buf, format: "JPEG", quality: 0.95 });
-      buf = Buffer.from(out);
+      const { default: decode } = await import("heic-decode");
+      const img = await decode({ buffer: buf });
+      buf = Buffer.from(img.data.buffer, img.data.byteOffset, img.data.byteLength);
+      raw = { width: img.width, height: img.height, channels: 4 };
     } catch {
-      return null; // conversion failed — treated as unsupported
+      return null; // decoding failed — treated as unsupported
     }
   } else if (!EXT_BY_TYPE[type]) {
     return null; // not an image type we accept
@@ -134,10 +134,10 @@ export async function preparePhoto(
   // "out of memory": full-res photos become huge base64 payloads. It also makes
   // reading faster and cheaper. Auto-rotate honors the photo's EXIF orientation.
   // isJpeg tracks the true output format so the file extension can't lie.
-  let isJpeg = isHeic; // HEIC was already converted to JPEG above
+  let isJpeg = false;
   try {
     const { default: sharp } = await import("sharp");
-    buf = await sharp(buf)
+    buf = await sharp(buf, raw ? { raw } : undefined)
       .rotate()
       .resize(MAX_DIMENSION, MAX_DIMENSION, {
         fit: "inside",
@@ -147,8 +147,9 @@ export async function preparePhoto(
       .toBuffer();
     isJpeg = true;
   } catch {
-    // sharp couldn't process it: keep the buffer as-is. HEIC is already JPEG;
-    // other accepted types keep their original extension/mime below.
+    // sharp couldn't process it: keep the buffer as-is (other accepted types
+    // keep their original extension/mime below) — but HEIC pixels are no file.
+    if (raw) return null;
   }
 
   const ext = isJpeg ? "jpg" : EXT_BY_TYPE[type] ?? "jpg";

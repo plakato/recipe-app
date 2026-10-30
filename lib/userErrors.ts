@@ -4,6 +4,7 @@
 export type ErrorCode =
   | "busy"
   | "no-recipe"
+  | "bad-photo"
   | "limit-account"
   | "limit-visitor"
   | "limit-ip"
@@ -14,6 +15,7 @@ export type ErrorCode =
 export const USER_MESSAGES: Record<ErrorCode, string> = {
   busy: "Čítačka receptov je práve veľmi vyťažená. Skúste to prosím o pár minút — ospravedlňujeme sa za čakanie!",
   "no-recipe": "Nenašli sme tu recept. Skúste ostrú, dobre osvetlenú fotku, na ktorej je celý recept.",
+  "bad-photo": "Jednu z fotiek nevieme otvoriť: tento typ nepodporujeme alebo je príliš veľká (najviac 8 MB).",
   "limit-account":
     "Dosiahli ste dnešný limit pridávania receptov pomocou AI. Obnoví sa do 24 hodín — ďakujeme za trpezlivosť!",
   "limit-visitor":

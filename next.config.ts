@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
       // (MAX_PHOTOS in lib/features.ts, saveImage), plus multipart overhead.
       bodySizeLimit: "42mb",
     },
+    // proxy.ts makes Next.js hold a copy of every request body, cut off at
+    // 10 MB by default: three phone photos already broke the send ("Unexpected
+    // end of form"). The same limit as above.
+    proxyClientMaxBodySize: "42mb",
   },
 };
 

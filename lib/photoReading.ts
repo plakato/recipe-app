@@ -1,7 +1,8 @@
 // Reading recipes from photos in the background: reading takes a free model
 // a minute or more, so nobody waits for it. The Server Action
-// (app/actions.ts → importRecipesFromPhotos) saves the photos and starts a
-// reading; this runs after its answer and saves every recipe read as a draft
+// (app/actions.ts → importRecipesFromPhotos) takes the photos and starts a
+// reading; this runs after its answer — converts and stores the photos, reads
+// them — and saves every recipe read as a draft
 // (Recipe.readingId). The photo page lists the readings
 // (components/ReadingList.tsx): "Čítam…" with each title as soon as it is
 // read, then each draft to review or keep as it is. Drafts are not among the
@@ -20,13 +21,15 @@ import { extractRecipesFromPhotos } from "@/lib/extractRecipe";
 import { listedRecipes, visibleRecipes } from "@/lib/features";
 import type { ReadingItem } from "@/lib/readingList";
 import { parseList } from "@/lib/recipes";
-import { loadStoredPhoto, saveImageBuffer } from "@/lib/saveImage";
+import { loadStoredPhoto, preparePhoto, saveImageBuffer } from "@/lib/saveImage";
 import { findDuplicate } from "@/lib/similarity";
 import { enterUsage } from "@/lib/usageContext";
 import { AppError, USER_MESSAGES, toUserMessage, type ErrorCode } from "@/lib/userErrors";
 
 type Who = { userId: string; isGuest: boolean };
 type Photo = { imagePath: string; dataUrl: string; buf: Buffer };
+// A photo as it arrived, before it is converted and stored.
+export type Upload = { buf: Buffer; type: string; name: string };
 // One saved recipe of a reading; like: the id of an older recipe it resembles.
 type Saved = { id: string; like?: string };
 
@@ -34,11 +37,41 @@ type Saved = { id: string; like?: string };
 // after 150 s, three of them at most, plus cropping).
 const READING_STALE_MS = 15 * 60 * 1000;
 
-export async function startReading(who: Who, photos: Photo[]): Promise<string> {
+// photos: already stored (reading again); none when they still need preparing.
+export async function startReading(who: Who, photos: Photo[] = []): Promise<string> {
   const row = await prisma.aiUsage.create({
     data: { kind: "wait", ...who, purpose: "reading", photoPaths: JSON.stringify(photos.map((p) => p.imagePath)) },
   });
   return row.id;
+}
+
+// Convert and store the photos as they arrived (HEIC decoded, downscaled;
+// ~1.5 s each — so after answering, not while the person waits), then read
+// them. One that can't be opened fails the reading. Never throws.
+export async function prepareAndRead(
+  readingId: string,
+  importId: string,
+  who: Who,
+  uploads: Upload[],
+  startedAt: number,
+): Promise<void> {
+  const photos: Photo[] = [];
+  for (const u of uploads) {
+    const prepared = await preparePhoto(u.buf, u.type, u.name).catch(() => null);
+    if (!prepared) {
+      console.warn(`Photo ${u.name} (${u.type || "no type"}) could not be opened.`);
+      await refundImport(importId);
+      await prisma.aiUsage
+        .update({ where: { id: readingId }, data: { purpose: "bad-photo", durationMs: Date.now() - startedAt } })
+        .catch(() => {});
+      return;
+    }
+    photos.push({ imagePath: await saveImageBuffer(prepared.buf, prepared.ext), dataUrl: prepared.dataUrl, buf: prepared.buf });
+  }
+  await prisma.aiUsage
+    .update({ where: { id: readingId }, data: { photoPaths: JSON.stringify(photos.map((p) => p.imagePath)) } })
+    .catch(() => {});
+  await readAndSave(readingId, importId, who, photos, startedAt);
 }
 
 // Read and save the drafts. `importId` is the day's import reservation (given back
