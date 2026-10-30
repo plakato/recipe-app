@@ -48,7 +48,7 @@ export default async function RecipeDetailPage({
   return (
     <article className="mx-auto max-w-4xl space-y-8">
       {draft && (
-        // One row, also on phones: back (icon), the note, "Uložiť".
+        // One row, also on phones: back (icon), "Je recept správne?", "Uložiť".
         <div className="flex items-center gap-2 rounded-xl border border-olive-200 bg-olive-50 py-1.5 pl-1.5 pr-2 dark:border-olive-900/50 dark:bg-olive-950/30">
           <Link
             href={back}
@@ -58,7 +58,7 @@ export default async function RecipeDetailPage({
           >
             <BackIcon />
           </Link>
-          <p className="min-w-0 flex-1 text-sm leading-tight text-olive-900 dark:text-olive-200">Môžete skontrolovať recept</p>
+          <p className="min-w-0 flex-1 text-sm leading-tight text-olive-900 dark:text-olive-200">Je recept správne?</p>
           <form action={keepReadRecipe} className="shrink-0">
             <input type="hidden" name="id" value={recipe.id} />
             <button
