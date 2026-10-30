@@ -155,9 +155,10 @@ recipes are hidden, not deleted. In order:
    Čítam…", the title as soon as the model has written it (the answer is
    streamed; AiUsage.readTitles), then Skontrolovať (the recipe's page:
    "Uložiť recept" keeps it; editing leaves it a draft) or ✓ (keep as read), "Uložiť všetky bez kontroly" from 2 read ones
-   (a bin only for one that "looks like … you already have": inside that
-   red note, a row away from ✓, so a slip can't do the opposite; always on
-   the recipe's page). ✓ keeps it
+   ("· 🗑 Zahodiť" only for one that "looks like … you already have", at the
+   end of that red sentence — chosen 2026-10-30 from 5 mockups; a row away
+   from ✓, so a slip can't do the opposite; a bin always on the recipe's
+   page). ✓ keeps it
    quietly, no message. Read recipes are drafts (Recipe.readingId = their reading)
    and are left out of the recipes, search, ChatGPT, demo copies and sync
    (`listedRecipes` in lib/features.ts) until kept; the home page links to

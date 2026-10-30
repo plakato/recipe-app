@@ -16,8 +16,9 @@ const EVERY_MS = 3000;
 // "Nový recept · Čítam…", its title as soon as that is read, then — read —
 // "Skontrolovať" (the recipe's page, where it can be edited, kept or thrown
 // away) or ✓ to keep it as read, quietly. "Uložiť všetky" keeps every read
-// one. A bin only for one that looks like a recipe they already have, in its
-// red note — never next to ✓, where a slip would do the opposite. Drafts
+// one. "Zahodiť" only for one that looks like a recipe they already have, at
+// the end of that red sentence — never next to ✓, where a slip would do the
+// opposite. Drafts
 // stay here, not among the recipes, until kept. Asks every few seconds while
 // something is being read; `sent` changes when new photos were sent.
 export default function ReadingList({
@@ -204,26 +205,25 @@ export default function ReadingList({
               <Link href={`/recipes/${item.id}`} className="line-clamp-2 break-words font-medium hover:underline">
                 {item.title}
               </Link>
-              {/* Looks like a recipe they have: a red note with its own bin —
-                  a row away from ✓, so a slip can't do the opposite. */}
+              {/* Looks like a recipe they have: "Zahodiť" ends the red sentence —
+                  a row away from ✓, so a slip can't do the opposite. (A div,
+                  not a p: it holds the button's form.) */}
               {item.like && (
-                <div className="mt-1 flex items-center gap-2 rounded-lg bg-brick-50 py-1 pl-3 pr-1 text-sm text-brick-700 dark:bg-brick-950/40 dark:text-brick-300">
-                  <p className="min-w-0 flex-1">
-                    Vyzerá ako{" "}
-                    <Link href={`/recipes/${item.like.id}`} className="font-medium underline underline-offset-2">
-                      {item.like.title}
-                    </Link>
-                    , ktorý už máte.
-                  </p>
-                  <form action={() => trash(item.id, item.key)}>
+                <div className="mt-0.5 text-sm text-brick-700 dark:text-brick-300">
+                  Vyzerá ako{" "}
+                  <Link href={`/recipes/${item.like.id}`} className="font-medium underline underline-offset-2">
+                    {item.like.title}
+                  </Link>
+                  , ktorý už máte.{" "}
+                  <form action={() => trash(item.id, item.key)} className="inline whitespace-nowrap">
+                    ·{" "}
                     <ConfirmButton
                       confirm={`Zahodiť recept „${item.title}“? Nájdete ho potom v koši.`}
                       confirmLabel="Zahodiť"
-                      title="Zahodiť"
                       aria-label={`Zahodiť ${item.title}`}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-brick-600 transition hover:bg-brick-100 dark:text-brick-300 dark:hover:bg-brick-900/50"
+                      className="-mx-1 inline-flex items-center gap-1 rounded px-1 align-bottom font-semibold hover:bg-brick-50 hover:underline dark:hover:bg-brick-950/40"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" /> Zahodiť
                     </ConfirmButton>
                   </form>
                 </div>
