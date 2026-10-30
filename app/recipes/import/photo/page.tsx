@@ -5,7 +5,7 @@ import { getShowcaseUserId } from "@/lib/showcase";
 import { turnstileSiteKey } from "@/lib/turnstile";
 import { URL_IMPORT_ENABLED } from "@/lib/features";
 import PhotoImport from "@/components/PhotoImport";
-import { readingList } from "@/lib/photoReading";
+import { readingListData } from "@/lib/photoReading";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ export default async function ImportFromPhotoPage() {
         </p>
       </div>
 
-      <PhotoImport botCheckKey={signedIn ? null : turnstileSiteKey()} readings={user ? await readingList(user.id) : []} />
+      <PhotoImport botCheckKey={signedIn ? null : turnstileSiteKey()} readings={await readingListData(user?.id ?? null)} />
 
       {/* With link import paused, photo is the only way to add: no chooser. */}
       {URL_IMPORT_ENABLED && (

@@ -25,6 +25,7 @@ function isBrowsable(pathname: string): boolean {
     pathname === "/" ||
     /^\/recipes\/[^/]+(\/edit)?$/.test(pathname) ||
     pathname === "/recipes/import/photo" ||
+    pathname === "/api/photos" ||
     pathname.startsWith("/uploads/")
   );
 }

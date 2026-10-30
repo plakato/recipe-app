@@ -19,7 +19,7 @@ import { cropDish } from "@/lib/dishCrop";
 import { generateRecipePicture } from "@/lib/dishImage";
 import { extractRecipesFromPhotos } from "@/lib/extractRecipe";
 import { listedRecipes, visibleRecipes } from "@/lib/features";
-import type { ReadingItem } from "@/lib/readingList";
+import type { ReadingItem, ReadingListData } from "@/lib/readingList";
 import { parseList } from "@/lib/recipes";
 import { loadStoredPhoto, preparePhoto, saveImageBuffer } from "@/lib/saveImage";
 import { findDuplicate } from "@/lib/similarity";
@@ -190,8 +190,8 @@ const RETRYABLE = new Set(["busy", "unknown"]);
 const FAILED_SHOWN_MS = 24 * 60 * 60 * 1000;
 
 // The photo page's list: the person's readings still running, failed ones
-// they haven't closed, and the drafts waiting to be kept — oldest first,
-// each reading's recipes together.
+// they haven't closed, and the drafts waiting to be kept — newest first,
+// each reading's recipes together (in the order read).
 export async function readingList(userId: string): Promise<ReadingItem[]> {
   await closeStaleReadings();
   const drafts = await prisma.recipe.findMany({
@@ -209,8 +209,8 @@ export async function readingList(userId: string): Promise<ReadingItem[]> {
         { id: { in: [...new Set(drafts.map((d) => d.readingId!))] } },
       ],
     },
-    select: { id: true, purpose: true, readTitles: true, readResult: true },
-    orderBy: { createdAt: "asc" },
+    select: { id: true, purpose: true, readTitles: true, readResult: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
   });
   // The older recipes the drafts look like.
   const likeOf = new Map<string, string>();
@@ -222,23 +222,38 @@ export async function readingList(userId: string): Promise<ReadingItem[]> {
   const likeById = new Map(liked.map((l) => [l.id, l]));
 
   return rows.flatMap((r): ReadingItem[] => {
+    const at = r.createdAt.getTime();
     if (r.purpose === "reading") {
       const titles = JSON.parse(r.readTitles ?? "[]") as string[];
       return titles.length
-        ? titles.map((title, i) => ({ kind: "reading", key: `${r.id}-${i}`, title }))
-        : [{ kind: "reading", key: r.id, title: null }];
+        ? titles.map((title, i) => ({ kind: "reading", key: `${r.id}-${i}`, readingId: r.id, at, title }))
+        : [{ kind: "reading", key: r.id, readingId: r.id, at, title: null }];
     }
     if (r.purpose !== "ok") {
       const code = r.purpose ?? "unknown";
-      return [{ kind: "failed", key: r.id, readingId: r.id, error: errorMessage(code), canRetry: RETRYABLE.has(code) }];
+      return [{ kind: "failed", key: r.id, readingId: r.id, at, error: errorMessage(code), canRetry: RETRYABLE.has(code) }];
     }
     return drafts
       .filter((d) => d.readingId === r.id)
       .map((d) => {
         const like = likeById.get(likeOf.get(d.id) ?? "");
-        return { kind: "ready", key: d.id, id: d.id, title: d.title, imagePath: d.imagePath, ...(like ? { like } : {}) };
+        return {
+          kind: "ready",
+          key: d.id,
+          readingId: r.id,
+          at,
+          id: d.id,
+          title: d.title,
+          imagePath: d.imagePath,
+          ...(like ? { like } : {}),
+        };
       });
   });
+}
+
+// The list with the server's clock (the photo page and its updates).
+export async function readingListData(userId: string | null): Promise<ReadingListData> {
+  return { items: userId ? await readingList(userId) : [], now: Date.now() };
 }
 
 // Keep drafts as they are (all of the person's, or those of `ids`): they join

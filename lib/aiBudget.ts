@@ -4,7 +4,8 @@
 // model. Usage is recorded in the AiUsage table. Server-only.
 
 import { prisma } from "@/lib/prisma";
-import type { ErrorCode } from "@/lib/userErrors";
+import { clientIp } from "@/lib/clientIp";
+import { USER_MESSAGES, type ErrorCode } from "@/lib/userErrors";
 import { currentUsage } from "@/lib/usageContext";
 
 const num = (value: string | undefined, fallback: number) => {
@@ -111,4 +112,15 @@ export async function recordModelCall(call: {
       },
     })
     .catch((err) => console.warn("Could not record AI call:", err));
+}
+
+// Reserve one AI import for the person (Server Actions, app/api/photos)
+// against the daily limits. Returns the reservation or a message to show.
+export async function reserveImport(
+  user: { id: string; isGuest: boolean },
+): Promise<{ id: string; userId: string; isGuest: boolean } | { error: string }> {
+  // Demo guests get the smaller per-visitor allowance.
+  const slot = await startImport({ userId: user.id, ip: await clientIp(), anonymous: user.isGuest });
+  if ("limit" in slot) return { error: USER_MESSAGES[slot.limit] };
+  return { id: slot.id, userId: user.id, isGuest: user.isGuest };
 }

@@ -171,6 +171,12 @@ recipes are hidden, not deleted. In order:
    answer, with the reading; a photo that can't be opened fails the reading
    ("bad-photo"). Sends over 10 MB (3+ phone photos) used to be cut off by
    proxy.ts' body copy → proxyClientMaxBodySize 42mb in next.config.ts.
+   Later the same day: sending never blocks. The photos clear at once and
+   go to app/api/photos (a Route Handler — the browser sends Server Actions
+   one at a time, so an upload would hold up the next one and the list) with
+   "Nový recept · Nahrávam… N %" at the top of the list; several can go at
+   once; a failed send stays with Skúsiť znova / ×. The list is newest first
+   (photos sent from the page by their send time) and has no heading.
    Was: **Daily usage statistics.** A daily summary of AI use: tokens and cost per
    model (free and paid), how many imports and edits, from accounts vs.
    demo visitors. Today `AiUsage` records imports and paid-call costs only;

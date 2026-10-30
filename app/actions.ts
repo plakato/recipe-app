@@ -12,13 +12,12 @@ import { isUploadPath, linesToList, type RecipeDraft } from "@/lib/recipes";
 import { fetchUrlText } from "@/lib/fetchUrlText";
 import { pickRecipeImages } from "@/lib/pickImage";
 import { runHousekeeping } from "@/lib/housekeeping";
-import { refundImport, startImport } from "@/lib/aiBudget";
-import { clientIp } from "@/lib/clientIp";
+import { refundImport, reserveImport } from "@/lib/aiBudget";
 import { AppError, USER_MESSAGES, toUserMessage } from "@/lib/userErrors";
 import { extractRecipesFromText } from "@/lib/extractRecipe";
 import { saveUploadedImage, uploadFilePath } from "@/lib/saveImage";
-import { dismissReading, keepDrafts, prepareAndRead, readingList, retryReading, startReading } from "@/lib/photoReading";
-import type { ReadingItem } from "@/lib/readingList";
+import { dismissReading, keepDrafts, readingListData, retryReading } from "@/lib/photoReading";
+import type { ReadingListData } from "@/lib/readingList";
 import { generateRecipePicture } from "@/lib/dishImage";
 import { access, unlink } from "node:fs/promises";
 import { parseList } from "@/lib/recipes";
@@ -58,16 +57,6 @@ function readScanPaths(formData: FormData): string | null {
     ? list.filter((p): p is string => typeof p === "string" && isUploadPath(p)).slice(0, MAX_PHOTOS)
     : [];
   return paths.length ? JSON.stringify(paths) : null;
-}
-
-// Reserve one AI import for the signed-in person against the daily limits
-// (lib/aiBudget.ts). Checks the session for real — the proxy only checks that
-// a cookie exists. Returns the reservation id or a message to show.
-async function reserveImport(user: User): Promise<{ id: string; userId: string; isGuest: boolean } | { error: string }> {
-  // Demo guests get the smaller per-visitor allowance.
-  const slot = await startImport({ userId: user.id, ip: await clientIp(), anonymous: user.isGuest });
-  if ("limit" in slot) return { error: USER_MESSAGES[slot.limit] };
-  return { id: slot.id, userId: user.id, isGuest: user.isGuest };
 }
 
 // Record recipe activity for the daily statistics (never blocks the action).
@@ -136,43 +125,14 @@ export async function importRecipesFromUrl(url: string): Promise<UrlImportResult
   }
 }
 
-// Photo import: saves the photos and starts reading them in the background
-// (lib/photoReading.ts) — reading takes a minute or more. Every recipe found
-// is saved as a draft, listed on the photo page to review or keep; the person
-// can add the next photos meanwhile.
+// Photo import itself is app/api/photos/route.ts: Server Actions run one at
+// a time, and an upload must not hold up the next one or the list.
 export type PhotoImportResult = { ok: true; readingId: string } | { ok: false; error: string };
-
-export async function importRecipesFromPhotos(formData: FormData): Promise<PhotoImportResult> {
-  const startedAt = Date.now();
-  const files = formData.getAll("photo").filter((f): f is File => f instanceof File && f.size > 0);
-  if (files.length === 0) return { ok: false, error: "Najprv prosím vyberte fotku." };
-  if (files.length > MAX_PHOTOS) {
-    return { ok: false, error: `Naraz najviac ${MAX_PHOTOS} fotiek, prosím.` };
-  }
-  // A visitor's demo starts here, at their first change (lib/demoSession.ts).
-  const who = await userForChange(formData);
-  if (!who) redirect("/login");
-  if ("error" in who) return { ok: false, error: who.error };
-  // One import, however many photos (they are read in one request).
-  const slot = await reserveImport(who.user);
-  if ("error" in slot) return { ok: false, error: slot.error };
-  after(runHousekeeping);
-  // Answer as soon as the photos are here: converting them takes ~1.5 s each,
-  // so it happens with the reading (lib/photoReading.ts → prepareAndRead).
-  const uploads = await Promise.all(
-    files.map(async (f) => ({ buf: Buffer.from(await f.arrayBuffer()), type: f.type, name: f.name })),
-  );
-  const reader = { userId: slot.userId, isGuest: slot.isGuest };
-  const readingId = await startReading(reader);
-  after(() => prepareAndRead(readingId, slot.id, reader, uploads, startedAt));
-  return { ok: true, readingId };
-}
 
 // The photo page's reading list (components/ReadingList.tsx): the person's
 // readings and drafts. [] when signed out.
-export async function photoReadings(): Promise<ReadingItem[]> {
-  const user = await getSessionUser();
-  return user ? readingList(user.id) : [];
+export async function photoReadings(): Promise<ReadingListData> {
+  return readingListData((await getSessionUser())?.id ?? null);
 }
 
 // Read a failed reading's photos again ("Skúsiť znova" in the list): a new
