@@ -48,23 +48,24 @@ export default async function RecipeDetailPage({
   return (
     <article className="mx-auto max-w-4xl space-y-8">
       {draft && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-olive-200 bg-olive-50 px-4 py-3 dark:border-olive-900/50 dark:bg-olive-950/30">
-          <p className="min-w-0 flex-1 basis-60 text-sm text-olive-900 dark:text-olive-200">
-            Recept ešte nie je uložený – upravte ho alebo uložte.
-          </p>
+        // One row, also on phones: back (icon), the note, "Uložiť".
+        <div className="flex items-center gap-2 rounded-xl border border-olive-200 bg-olive-50 py-1.5 pl-1.5 pr-2 dark:border-olive-900/50 dark:bg-olive-950/30">
           <Link
             href={back}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-white/60 dark:text-stone-300 dark:hover:bg-stone-800"
+            title="Späť na pridávanie receptov"
+            aria-label="Späť na pridávanie receptov"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-stone-600 hover:bg-white/60 dark:text-stone-300 dark:hover:bg-stone-800"
           >
-            Späť na pridávanie receptov
+            <BackIcon />
           </Link>
-          <form action={keepReadRecipe}>
+          <p className="min-w-0 flex-1 text-sm leading-tight text-olive-900 dark:text-olive-200">Môžete skontrolovať recept</p>
+          <form action={keepReadRecipe} className="shrink-0">
             <input type="hidden" name="id" value={recipe.id} />
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-lg bg-olive-600 px-4 py-2 text-sm font-medium text-white hover:bg-olive-700"
+              className="flex items-center gap-1.5 rounded-lg bg-olive-600 px-3 py-2 text-sm font-medium text-white hover:bg-olive-700"
             >
-              <Check className="h-4 w-4" /> Uložiť recept
+              <Check className="hidden h-4 w-4 sm:block" /> Uložiť
             </button>
           </form>
         </div>
