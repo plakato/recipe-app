@@ -169,6 +169,18 @@ export async function keepReadRecipe(formData: FormData): Promise<void> {
   redirect("/recipes/import/photo");
 }
 
+// Throw away a draft read from photos (the list's bin, for one that looks
+// like a recipe they already have): it goes to the Trash, still a draft.
+export async function trashReadRecipe(id: string): Promise<void> {
+  const user = await getSessionUser();
+  if (!user) return;
+  await prisma.recipe.updateMany({
+    where: { id: String(id), userId: user.id, readingId: { not: null }, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  revalidatePath("/trash");
+}
+
 // Close a failed reading in the list.
 export async function dismissPhotoReading(readingId: string): Promise<void> {
   const user = await getSessionUser();

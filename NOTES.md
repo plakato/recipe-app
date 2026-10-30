@@ -17,7 +17,7 @@ recipes are hidden, not deleted. In order:
    `app/not-found.tsx`. Imports now verify the session (the proxy only checks
    a cookie exists); an expired cookie no longer loops between / and /login.
    A paid read of a handwritten card cost ~$0.0014.
-   - Budget: **$5/month** of paid AI; **10 imports/day per account, 3 per
+   - Budget: **$5/month** of paid AI; **10 imports/day per account (30 since 2026-10-30; per IP 20 → 40), 3 per
      anonymous visitor**; a global daily cap. Paid model only as a hidden,
      capped fallback — drop the user-facing "better reading" (paid) toggle.
    - Every failure shows a kind apology ("busy — try again in a few minutes",
@@ -155,8 +155,9 @@ recipes are hidden, not deleted. In order:
    Čítam…", the title as soon as the model has written it (the answer is
    streamed; AiUsage.readTitles), then Skontrolovať (the recipe's page:
    "Uložiť recept" keeps it; editing leaves it a draft) or ✓ (keep as read), "Uložiť všetky bez kontroly" from 2 read ones
-   (no bin in the list — next to ✓ a slip would do the opposite; it's on
-   the recipe's page). Read recipes are drafts (Recipe.readingId = their reading)
+   (a bin only on the "looks like … you already have" line, away from ✓ —
+   a slip would do the opposite; always on the recipe's page). ✓ keeps it
+   quietly, no message. Read recipes are drafts (Recipe.readingId = their reading)
    and are left out of the recipes, search, ChatGPT, demo copies and sync
    (`listedRecipes` in lib/features.ts) until kept; the home page links to
    them when some wait. Failed readings stay a day with Skúsiť znova / ×.

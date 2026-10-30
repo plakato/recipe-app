@@ -2,24 +2,24 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, LoaderCircle, X } from "lucide-react";
-import { dismissPhotoReading, keepReadRecipes, photoReadings, retryPhotoReading } from "@/app/actions";
+import { Check, LoaderCircle, Trash2, X } from "lucide-react";
+import ConfirmButton from "@/components/ConfirmButton";
+import { dismissPhotoReading, keepReadRecipes, photoReadings, retryPhotoReading, trashReadRecipe } from "@/app/actions";
 import type { ReadingItem, ReadingListData, Sending } from "@/lib/readingList";
 
 const EVERY_MS = 3000;
-
-const recipes = (n: number) => `${n} ${n === 1 ? "recept" : n < 5 ? "recepty" : "receptov"}`;
 
 // Under the photo page's button: the photos sent for reading
 // (lib/photoReading.ts), newest first. Photos still on their way
 // (`sending`, from components/PhotoImport.tsx) show "Nahrávam…" — or, if
 // that failed, why, with onResend / onForget. Then each reading shows
-// "Nový recept · Čítam…", its title as soon as that is read, then — read — "Skontrolovať" (the recipe's page, where it
-// can be edited, kept or thrown away) or ✓ to keep it as read. "Uložiť
-// všetky" keeps every read one. No bin here: next to ✓ a slip would do the
-// opposite. Drafts stay here, not among the recipes, until kept. Asks every
-// few seconds while something is being read; `sent` changes when new photos
-// were sent.
+// "Nový recept · Čítam…", its title as soon as that is read, then — read —
+// "Skontrolovať" (the recipe's page, where it can be edited, kept or thrown
+// away) or ✓ to keep it as read, quietly. "Uložiť všetky" keeps every read
+// one. A bin only for one that looks like a recipe they already have, and on
+// that line — never next to ✓, where a slip would do the opposite. Drafts
+// stay here, not among the recipes, until kept. Asks every few seconds while
+// something is being read; `sent` changes when new photos were sent.
 export default function ReadingList({
   initial,
   sent,
@@ -37,7 +37,6 @@ export default function ReadingList({
   // The server's clock minus the browser's, to order the reading list's
   // times among the photos sent from here.
   const [offset, setOffset] = useState(() => initial.now - Date.now());
-  const [kept, setKept] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -81,8 +80,13 @@ export default function ReadingList({
     setError(null);
     const leaving = ids ?? ready.map((r) => r.key);
     setItems((list) => list.filter((i) => !leaving.includes(i.key)));
-    setKept((n) => n + leaving.length);
     await keepReadRecipes(ids).catch(() => setError("Spojenie so serverom sa prerušilo. Skúste to prosím znova."));
+    refresh();
+  }
+
+  async function trash(id: string, key: string) {
+    setItems((list) => list.filter((i) => i.key !== key));
+    await trashReadRecipe(id).catch(() => {});
     refresh();
   }
 
@@ -102,7 +106,7 @@ export default function ReadingList({
     refresh();
   }
 
-  if (!items.length && !uploads.length && !kept) return null;
+  if (!items.length && !uploads.length) return null;
   const iconBtn = "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition";
   const spinner = (
     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-stone-100 dark:bg-stone-800">
@@ -200,16 +204,29 @@ export default function ReadingList({
                 {item.title}
               </Link>
               {item.like && (
-                <p className="text-sm text-stone-500">
-                  Vyzerá ako{" "}
-                  <Link
-                    href={`/recipes/${item.like.id}`}
-                    className="text-olive-700 underline-offset-2 hover:underline dark:text-olive-400"
-                  >
-                    {item.like.title}
-                  </Link>
-                  , ktorý už máte.
-                </p>
+                <div className="flex items-start gap-2 text-sm text-stone-500">
+                  <p className="min-w-0 flex-1">
+                    Vyzerá ako{" "}
+                    <Link
+                      href={`/recipes/${item.like.id}`}
+                      className="text-olive-700 underline-offset-2 hover:underline dark:text-olive-400"
+                    >
+                      {item.like.title}
+                    </Link>
+                    , ktorý už máte.
+                  </p>
+                  <form action={() => trash(item.id, item.key)}>
+                    <ConfirmButton
+                      confirm={`Zahodiť recept „${item.title}“? Nájdete ho potom v koši.`}
+                      confirmLabel="Zahodiť"
+                      title="Zahodiť"
+                      aria-label={`Zahodiť ${item.title}`}
+                      className="-my-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-stone-400 transition hover:bg-brick-50 hover:text-brick-600 dark:hover:bg-brick-950/40"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </ConfirmButton>
+                  </form>
+                </div>
               )}
             </div>
             <div className="mt-1.5 flex items-center gap-1 sm:mt-0">
@@ -249,14 +266,6 @@ export default function ReadingList({
         </div>
       )}
 
-      {kept > 0 && (
-        <p role="status" className="text-sm text-stone-600 dark:text-stone-400">
-          Uložené: {recipes(kept)}.{" "}
-          <Link href="/" className="font-medium text-olive-700 underline-offset-2 hover:underline dark:text-olive-400">
-            Všetky recepty
-          </Link>
-        </p>
-      )}
       {error && <p className="text-sm text-brick-700 dark:text-brick-300">{error}</p>}
 
       {(items.length > 0 || uploads.length > 0) && (

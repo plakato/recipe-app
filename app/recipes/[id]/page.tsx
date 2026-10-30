@@ -50,7 +50,7 @@ export default async function RecipeDetailPage({
       {draft && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-olive-200 bg-olive-50 px-4 py-3 dark:border-olive-900/50 dark:bg-olive-950/30">
           <p className="min-w-0 flex-1 basis-60 text-sm text-olive-900 dark:text-olive-200">
-            Prečítané z fotky — zatiaľ nie je medzi vašimi receptami. Ak niečo nesedí, upravte ho.
+            Recept ešte nie je uložený – upravte ho alebo uložte.
           </p>
           <Link
             href={back}

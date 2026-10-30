@@ -13,11 +13,13 @@ const num = (value: string | undefined, fallback: number) => {
   return value && Number.isFinite(n) && n >= 0 ? n : fallback;
 };
 
-// Defaults agreed 2026-09-30; each can be overridden in .env.
+// Defaults agreed 2026-09-30 (30 per account and 40 per IP since 2026-10-30,
+// for adding many recipes in one go); each can be overridden in .env.
 export const LIMITS = {
-  importsPerAccount: num(process.env.AI_IMPORTS_PER_ACCOUNT_DAY, 10),
+  importsPerAccount: num(process.env.AI_IMPORTS_PER_ACCOUNT_DAY, 30),
   importsPerVisitor: num(process.env.AI_IMPORTS_PER_VISITOR_DAY, 3),
-  importsPerIp: num(process.env.AI_IMPORTS_PER_IP_DAY, 20),
+  // Above one account's limit: a household shares an IP.
+  importsPerIp: num(process.env.AI_IMPORTS_PER_IP_DAY, 40),
   importsForEveryone: num(process.env.AI_IMPORTS_ALL_DAY, 200),
   paidUsdPerMonth: num(process.env.AI_PAID_USD_PER_MONTH, 5),
   // At most a tenth of the month's budget in one day.
