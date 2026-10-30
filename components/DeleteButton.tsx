@@ -23,16 +23,6 @@ export default function DeleteButton({
   return (
     <form action={action}>
       <input type="hidden" name="id" value={id} />
-      {botCheckKey && (
-        // Out of the button row: if it has to show, it drops below the buttons.
-        <Turnstile
-          key={state?.at ?? 0}
-          siteKey={botCheckKey}
-          action="demo"
-          onToken={(t) => setReady(!!t)}
-          className="absolute right-3 top-16 z-10 sm:right-4"
-        />
-      )}
       <ConfirmButton
         confirm="Zmazať tento recept? Nájdete ho potom v koši."
         disabled={pending || !ready}
@@ -42,11 +32,18 @@ export default function DeleteButton({
       >
         <TrashIcon />
       </ConfirmButton>
-      {state?.error && (
-        <p role="alert" className="absolute right-3 top-16 z-10 max-w-xs rounded-lg bg-white p-3 text-sm text-brick-700 shadow-lg dark:bg-stone-900 dark:text-brick-300">
-          {state.error}
-        </p>
-      )}
+      {/* Below the buttons, out of their row: the bot check (only when it has
+          to show) with the error under it, stacked so they never overlap. */}
+      <div className="absolute right-3 top-16 z-10 flex flex-col items-end gap-2 sm:right-4">
+        {botCheckKey && (
+          <Turnstile key={state?.at ?? 0} siteKey={botCheckKey} action="demo" onToken={(t) => setReady(!!t)} />
+        )}
+        {state?.error && (
+          <p role="alert" className="max-w-xs rounded-lg bg-white p-3 text-sm text-brick-700 shadow-lg dark:bg-stone-900 dark:text-brick-300">
+            {state.error}
+          </p>
+        )}
+      </div>
     </form>
   );
 }
