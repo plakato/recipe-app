@@ -16,8 +16,8 @@ const EVERY_MS = 3000;
 // "Nový recept · Čítam…", its title as soon as that is read, then — read —
 // "Skontrolovať" (the recipe's page, where it can be edited, kept or thrown
 // away) or ✓ to keep it as read, quietly. "Uložiť všetky" keeps every read
-// one. A bin only for one that looks like a recipe they already have, and on
-// that line — never next to ✓, where a slip would do the opposite. Drafts
+// one. A bin only for one that looks like a recipe they already have, in its
+// red note — never next to ✓, where a slip would do the opposite. Drafts
 // stay here, not among the recipes, until kept. Asks every few seconds while
 // something is being read; `sent` changes when new photos were sent.
 export default function ReadingList({
@@ -151,7 +151,8 @@ export default function ReadingList({
   );
 
   const itemLine = (item: ReadingItem) => (
-    <li key={item.key} className="flex items-center gap-3 px-3 py-2.5">
+    // Read ones (often two lines and buttons) start level with their picture.
+    <li key={item.key} className={`flex gap-3 px-3 py-2.5 ${item.kind === "ready" ? "items-start" : "items-center"}`}>
       {item.kind === "reading" && (
         <>
           {spinner}
@@ -198,19 +199,34 @@ export default function ReadingList({
             <span className="h-12 w-12 shrink-0 rounded-lg bg-stone-100 dark:bg-stone-800" />
           )}
           {/* On phones the buttons go under the title, so the title can be read. */}
-          <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-3">
-            <div className="min-w-0 sm:flex-1">
+          <div className="min-w-0 flex-1 sm:flex sm:items-start sm:gap-3">
+            <div className="min-w-0 sm:flex-1 sm:pt-1.5">
               <Link href={`/recipes/${item.id}`} className="line-clamp-2 break-words font-medium hover:underline">
                 {item.title}
               </Link>
+              {/* Looks like a recipe they have: a red note with its own bin —
+                  a row away from ✓, so a slip can't do the opposite. */}
               {item.like && (
-                <p className="text-sm text-brick-700 dark:text-brick-300">
-                  Vyzerá ako{" "}
-                  <Link href={`/recipes/${item.like.id}`} className="font-medium underline underline-offset-2">
-                    {item.like.title}
-                  </Link>
-                  , ktorý už máte.
-                </p>
+                <div className="mt-1 flex items-center gap-2 rounded-lg bg-brick-50 py-1 pl-3 pr-1 text-sm text-brick-700 dark:bg-brick-950/40 dark:text-brick-300">
+                  <p className="min-w-0 flex-1">
+                    Vyzerá ako{" "}
+                    <Link href={`/recipes/${item.like.id}`} className="font-medium underline underline-offset-2">
+                      {item.like.title}
+                    </Link>
+                    , ktorý už máte.
+                  </p>
+                  <form action={() => trash(item.id, item.key)}>
+                    <ConfirmButton
+                      confirm={`Zahodiť recept „${item.title}“? Nájdete ho potom v koši.`}
+                      confirmLabel="Zahodiť"
+                      title="Zahodiť"
+                      aria-label={`Zahodiť ${item.title}`}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-brick-600 transition hover:bg-brick-100 dark:text-brick-300 dark:hover:bg-brick-900/50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </ConfirmButton>
+                  </form>
+                </div>
               )}
             </div>
             <div className="mt-1.5 flex items-center gap-1 sm:mt-0">
@@ -229,27 +245,6 @@ export default function ReadingList({
               >
                 <Check className="h-5 w-5" />
               </button>
-              {/* Throwing away one that looks like a recipe they have: in the
-                  same row and size as ✓, but red and well apart from it (far
-                  right on phones) — a slip must not do the opposite. */}
-              {item.like && (
-                <form action={() => trash(item.id, item.key)} className="ml-auto sm:ml-8">
-                  <ConfirmButton
-                    confirm={`Zahodiť recept „${item.title}“? Nájdete ho potom v koši.`}
-                    confirmLabel="Zahodiť"
-                    title="Zahodiť"
-                    aria-label={`Zahodiť ${item.title}`}
-                    className={`${iconBtn} text-brick-600 hover:bg-brick-50 dark:text-brick-300 dark:hover:bg-brick-950/40`}
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </ConfirmButton>
-                </form>
-              )}
-              {/* Side by side (wide screens): the same space without a bin, so
-                  every row's buttons line up. */}
-              {!item.like && ready.some((r) => r.kind === "ready" && r.like) && (
-                <span aria-hidden className="hidden h-9 w-9 shrink-0 sm:ml-8 sm:block" />
-              )}
             </div>
           </div>
         </>
