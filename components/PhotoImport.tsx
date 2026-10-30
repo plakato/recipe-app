@@ -218,7 +218,7 @@ export default function PhotoImport({
         type="button"
         onClick={handleExtract}
         disabled={!picked.length || waitingForDemo || (needsBotCheck && !botToken)}
-        className="rounded-lg bg-olive-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
+        className="w-full rounded-lg bg-olive-600 px-5 py-2.5 font-medium sm:w-auto text-white shadow-sm transition hover:bg-olive-700 disabled:opacity-60"
       >
         {picked.length > 1 ? `Prečítať recept z ${picked.length} fotiek` : "Prečítať recept z fotky"}
       </button>
