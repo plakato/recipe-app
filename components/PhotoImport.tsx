@@ -10,7 +10,8 @@ import type { ReadingListData, Sending } from "@/lib/readingList";
 
 const MAX_BYTES = 8 * 1024 * 1024; // per photo, as on the server (lib/saveImage.ts)
 
-type Picked = { file: File; url: string | null };
+// shown: false once the browser failed to display it (HEIC outside Safari).
+type Picked = { file: File; url: string; shown: boolean };
 
 const LOST = "Spojenie so serverom sa prerušilo. Skúste to prosím znova.";
 
@@ -78,7 +79,7 @@ export default function PhotoImport({
   useEffect(() => {
     pickedRef.current = picked;
   }, [picked]);
-  useEffect(() => () => pickedRef.current.forEach((p) => p.url && URL.revokeObjectURL(p.url)), []);
+  useEffect(() => () => pickedRef.current.forEach((p) => URL.revokeObjectURL(p.url)), []);
 
   function add(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -94,15 +95,17 @@ export default function PhotoImport({
       ...picked,
       ...usable.slice(0, Math.max(0, room)).map((file) => ({
         file,
-        // HEIC often can't be previewed by the browser; show its name instead.
-        url: /\.hei[cf]$/i.test(file.name) ? null : URL.createObjectURL(file),
+        // Safari shows HEIC (iPhone photos) too; where it can't (Chrome,
+        // Firefox), the photo's name is shown instead — see onError below.
+        url: URL.createObjectURL(file),
+        shown: true,
       })),
     ]);
   }
 
   function remove(i: number) {
     const p = picked[i];
-    if (p.url) URL.revokeObjectURL(p.url);
+    URL.revokeObjectURL(p.url);
     setPicked(picked.filter((_, j) => j !== i));
     setError(null);
   }
@@ -136,7 +139,7 @@ export default function PhotoImport({
     const key = crypto.randomUUID();
     const files = picked.map((p) => p.file);
     setSending((list) => [{ key, files, at: Date.now(), progress: 0, error: null, readingId: null }, ...list]);
-    picked.forEach((p) => p.url && URL.revokeObjectURL(p.url));
+    picked.forEach((p) => URL.revokeObjectURL(p.url));
     setPicked([]);
     send(key, files);
   }
@@ -171,10 +174,15 @@ export default function PhotoImport({
       {picked.length > 0 && (
         <ol className="grid grid-cols-3 gap-3 sm:grid-cols-5">
           {picked.map((p, i) => (
-            <li key={p.url ?? `${p.file.name}-${i}`} className="relative">
-              {p.url ? (
+            <li key={p.url} className="relative">
+              {p.shown ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.url} alt={`Fotka ${i + 1}`} className="aspect-[3/4] w-full rounded-lg object-cover" />
+                <img
+                  src={p.url}
+                  alt={`Fotka ${i + 1}`}
+                  onError={() => setPicked((list) => list.map((x) => (x.url === p.url ? { ...x, shown: false } : x)))}
+                  className="aspect-[3/4] w-full rounded-lg object-cover"
+                />
               ) : (
                 <div className="flex aspect-[3/4] w-full items-center justify-center break-all rounded-lg bg-stone-100 p-2 text-center text-xs text-stone-500 dark:bg-stone-800">
                   {p.file.name}
