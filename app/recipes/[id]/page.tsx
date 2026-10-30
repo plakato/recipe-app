@@ -56,7 +56,7 @@ export default async function RecipeDetailPage({
             href={back}
             className="rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-white/60 dark:text-stone-300 dark:hover:bg-stone-800"
           >
-            Späť na čítané recepty
+            Späť na pridávanie receptov
           </Link>
           <form action={keepReadRecipe}>
             <input type="hidden" name="id" value={recipe.id} />
@@ -90,8 +90,8 @@ export default async function RecipeDetailPage({
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 sm:p-4">
             <Link
               href={back}
-              title={draft ? "Čítané recepty" : "Všetky recepty"}
-              aria-label={draft ? "Čítané recepty" : "Všetky recepty"}
+              title={draft ? "Späť na pridávanie receptov" : "Všetky recepty"}
+              aria-label={draft ? "Späť na pridávanie receptov" : "Všetky recepty"}
               className={heroBtn}
             >
               <BackIcon />

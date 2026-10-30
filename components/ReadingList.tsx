@@ -204,29 +204,13 @@ export default function ReadingList({
                 {item.title}
               </Link>
               {item.like && (
-                <div className="flex items-start gap-2 text-sm text-stone-500">
-                  <p className="min-w-0 flex-1">
-                    Vyzerá ako{" "}
-                    <Link
-                      href={`/recipes/${item.like.id}`}
-                      className="text-olive-700 underline-offset-2 hover:underline dark:text-olive-400"
-                    >
-                      {item.like.title}
-                    </Link>
-                    , ktorý už máte.
-                  </p>
-                  <form action={() => trash(item.id, item.key)}>
-                    <ConfirmButton
-                      confirm={`Zahodiť recept „${item.title}“? Nájdete ho potom v koši.`}
-                      confirmLabel="Zahodiť"
-                      title="Zahodiť"
-                      aria-label={`Zahodiť ${item.title}`}
-                      className="-my-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-stone-400 transition hover:bg-brick-50 hover:text-brick-600 dark:hover:bg-brick-950/40"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </ConfirmButton>
-                  </form>
-                </div>
+                <p className="text-sm text-brick-700 dark:text-brick-300">
+                  Vyzerá ako{" "}
+                  <Link href={`/recipes/${item.like.id}`} className="font-medium underline underline-offset-2">
+                    {item.like.title}
+                  </Link>
+                  , ktorý už máte.
+                </p>
               )}
             </div>
             <div className="mt-1.5 flex items-center gap-1 sm:mt-0">
@@ -245,6 +229,27 @@ export default function ReadingList({
               >
                 <Check className="h-5 w-5" />
               </button>
+              {/* Throwing away one that looks like a recipe they have: in the
+                  same row and size as ✓, but red and well apart from it (far
+                  right on phones) — a slip must not do the opposite. */}
+              {item.like && (
+                <form action={() => trash(item.id, item.key)} className="ml-auto sm:ml-8">
+                  <ConfirmButton
+                    confirm={`Zahodiť recept „${item.title}“? Nájdete ho potom v koši.`}
+                    confirmLabel="Zahodiť"
+                    title="Zahodiť"
+                    aria-label={`Zahodiť ${item.title}`}
+                    className={`${iconBtn} text-brick-600 hover:bg-brick-50 dark:text-brick-300 dark:hover:bg-brick-950/40`}
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </ConfirmButton>
+                </form>
+              )}
+              {/* Side by side (wide screens): the same space without a bin, so
+                  every row's buttons line up. */}
+              {!item.like && ready.some((r) => r.kind === "ready" && r.like) && (
+                <span aria-hidden className="hidden h-9 w-9 shrink-0 sm:ml-8 sm:block" />
+              )}
             </div>
           </div>
         </>
