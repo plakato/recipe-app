@@ -229,10 +229,11 @@ export default function ReadingList({
                 </div>
               )}
             </div>
-            <div className="mt-1.5 flex items-center gap-1 sm:mt-0">
+            {/* On phones "Skontrolovať" fills the row, so ✓ ends at the list's edge. */}
+            <div className="mt-1.5 flex items-center gap-2 sm:mt-0 sm:gap-1">
               <Link
                 href={`/recipes/${item.id}`}
-                className="shrink-0 rounded-lg bg-olive-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-olive-700"
+                className="flex-1 rounded-lg bg-olive-600 text-center sm:flex-none px-3 py-1.5 text-sm font-medium text-white hover:bg-olive-700"
               >
                 Skontrolovať
               </Link>
@@ -241,7 +242,7 @@ export default function ReadingList({
                 onClick={() => keep([item.id])}
                 title="Uložiť bez kontroly"
                 aria-label={`Uložiť ${item.title} bez kontroly`}
-                className={`${iconBtn} text-olive-700 hover:bg-olive-50 dark:text-olive-400 dark:hover:bg-olive-950/40`}
+                className={`${iconBtn} border border-olive-300 text-olive-700 hover:bg-olive-50 sm:border-transparent dark:border-olive-800 sm:dark:border-transparent dark:text-olive-400 dark:hover:bg-olive-950/40`}
               >
                 <Check className="h-5 w-5" />
               </button>
@@ -255,11 +256,12 @@ export default function ReadingList({
   return (
     <section className="space-y-3">
       {ready.length > 1 && (
-        <div className="flex justify-end">
+        // On phones as wide as the button above it; from sm on, at the right.
+        <div className="flex sm:justify-end">
           <button
             type="button"
             onClick={() => keep(null)}
-            className="flex items-center gap-1.5 rounded-lg border border-olive-300 px-3 py-1.5 text-sm font-medium text-olive-800 hover:bg-olive-50 dark:border-olive-800 dark:text-olive-300 dark:hover:bg-olive-950/40"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border sm:w-auto border-olive-300 px-3 py-1.5 text-sm font-medium text-olive-800 hover:bg-olive-50 dark:border-olive-800 dark:text-olive-300 dark:hover:bg-olive-950/40"
           >
             <Check className="h-4 w-4" /> Uložiť všetky bez kontroly
           </button>
